@@ -1,0 +1,38 @@
+import { ADMIN_PASSWORD_HASH, ADMIN_SESSION_EXPIRY_HOURS } from '$lib/server/config';
+import { saveAdminSessionKey } from '$lib/server/db';
+import type { Actions } from '../admin-login/$types';
+import { fail, redirect } from '@sveltejs/kit';
+
+export const actions: Actions = {
+	default: async ({ request, cookies }) => {
+		const data = await request.formData();
+		const password = data.get('password');
+
+		if (typeof password !== 'string') {
+			return fail(400, { error: 'Invalid input' });
+		}
+
+		console.log('Received: ', password);
+
+		if (password === ADMIN_PASSWORD_HASH) {
+			// Generate a session token
+			const sessionToken = crypto.randomUUID();
+
+			// Store sessionToken in your database
+			await saveAdminSessionKey(sessionToken);
+
+			// Set cookie
+			cookies.set('admin-auth', sessionToken, {
+				path: '/',
+				httpOnly: true,
+				sameSite: 'strict',
+				secure: process.env.NODE_ENV === 'production',
+				maxAge: 60 * 60 * ADMIN_SESSION_EXPIRY_HOURS
+			});
+
+			throw redirect(303, '/admin');
+		}
+
+		return fail(401, { error: 'Incorrect password' });
+	}
+};
