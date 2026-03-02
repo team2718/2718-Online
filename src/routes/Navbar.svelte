@@ -36,21 +36,21 @@
 		</NavBrand>
 
 		<div class="flex md:order-2">
-			<ToolbarButton class="block md:hidden" onclick={toggle}>
+			<!-- <ToolbarButton class="block md:hidden" onclick={toggle}>
 				<SearchOutline class="h-5 w-5 text-gray-500 dark:text-gray-400" />
-			</ToolbarButton>
+			</ToolbarButton> -->
 			<!-- <div class="hidden md:block">
 				<Search size="md" class="ms-auto" placeholder="Search..." />
 			</div> -->
-			<!-- <DarkMode />
-			<NavHamburger /> -->
+			<!-- <DarkMode /> -->
+			<NavHamburger />
 		</div>
 
-		{#if !hidden}
+		<!-- {#if !hidden}
 			<div class="mt-2 w-full md:hidden" transition:fade>
 				<Search size="md" placeholder="Search..." />
 			</div>
-		{/if}
+		{/if} -->
 
 		<NavUl {activeUrl}>
 			<NavLi href="/">Home</NavLi>
