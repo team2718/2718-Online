@@ -5,6 +5,7 @@
     let autofffs: string[] = [];
 
     let form = {
+        scoutName: '',
         teamNumber: '',
         driverYOE: '', 
         hopperCapacity: '',
@@ -12,6 +13,7 @@
         shooterType: '',
         intakeType: '',
         autoFeatures: autofffs, // checkboxes
+        autoStart: '',
         climb: '',
         maxSpeedFtPerS: '',
         weightLbs: '',
@@ -27,11 +29,11 @@
         '21-40',
         '41-60',
         '61-80',
-        '80+'
+        '81+'
     ];
 
     const DRIVETRAIN_OPTIONS = [
-        'Tank / Tank-drive',
+        'Tank',
         'Swerve',
         'Mecanum',
         'Other'
@@ -76,6 +78,15 @@
         { key: 'climb', label: 'Climb in Auto' }
     ];
 
+    const AUTO_START_OPTIONS = [
+        'Dont care',
+        'Depot side under trench',
+        'Depot side by ramp',
+        'Center',
+        'Outpost side by ramp',
+        'Outpost side under trench',
+    ];
+
     function toggleAuto(key: string) {
         if (form.autoFeatures.includes(key)) {
             form.autoFeatures = form.autoFeatures.filter(k => k !== key);
@@ -110,6 +121,7 @@
 
     function clearForm() {
         form = {
+            scoutName: '',
             teamNumber: '',
             driverYOE: '',
             hopperCapacity: '',
@@ -117,6 +129,7 @@
             shooterType: '',
             intakeType: '',
             autoFeatures: [],
+            autoStart: '',
             climb: '',
             maxSpeedFtPerS: '',
             weightLbs: '',
@@ -175,6 +188,13 @@
 
 <form on:submit|preventDefault={save} aria-label="Pit scouting form for FRC 2026 robot">
     <h1>Pit Scouting Form</h1>
+    <div class="row">
+        <div class="field">
+            <label for="scoutName">Scouter's Name</label>
+            <input id="scoutName" type="text" bind:value={form.scoutName} placeholder="e.g. Carter" />
+        </div>
+    </div>
+
     <div class="row">
         <div class="field">
             <label for="teamNumber">Team Number</label>
@@ -242,6 +262,18 @@
             {#each AUTO_OPTIONS as a}
                 <label><input type="checkbox" checked={form.autoFeatures.includes(a.key)} on:change={() => toggleAuto(a.key)} /> {a.label}</label>
             {/each}
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="field">
+            <label for="autoStart">Auto Start Preference</label>
+            <select id="autoStart" bind:value={form.autoStart}>
+                <option value="" disabled selected>Auto Start Preference</option>
+                {#each AUTO_START_OPTIONS as c}
+                    <option value={c}>{c}</option>
+                {/each}
+            </select>
         </div>
     </div>
 
