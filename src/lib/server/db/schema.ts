@@ -42,6 +42,18 @@ export const scoutingReports = sqliteTable('scouting_reports', {
 	createdAt: integer('created_at').default(sql`(strftime('%s', 'now'))`)
 });
 
+export const pitScoutingReports = sqliteTable('pit_scouting_reports', {
+	id: integer('id').primaryKey({ autoIncrement: true }),
+	teamNumber: integer('team_number')
+		.notNull()
+		.references(() => teams.number),
+	userId: text('user_id')
+		.notNull()
+		.references(() => users.id),
+	data: text('data', { mode: 'json' }), // Flexible JSON for game-specific stats
+	createdAt: integer('created_at').default(sql`(strftime('%s', 'now'))`)
+});
+
 // admin auth consists of an cryptographic ID stored in a secure, HttpOnly cookie
 // the creation date is stored and can be used for expiration policies
 export const admin_sessions = sqliteTable('admin_sessions', {
@@ -122,4 +134,9 @@ export const scoutingReportsRelations = relations(scoutingReports, ({ one }) => 
 	match: one(matches, { fields: [scoutingReports.matchId], references: [matches.id] }),
 	team: one(teams, { fields: [scoutingReports.teamNumber], references: [teams.number] }),
 	user: one(users, { fields: [scoutingReports.userId], references: [users.id] })
+}));
+
+export const pitScoutingReportsRelations = relations(pitScoutingReports, ({ one }) => ({
+	team: one(teams, { fields: [pitScoutingReports.teamNumber], references: [teams.number] }),
+	user: one(users, { fields: [pitScoutingReports.userId], references: [users.id] })
 }));
