@@ -150,6 +150,15 @@
         font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
     }
     .row { display: flex; gap: 0.75rem; }
+    @media (max-width: 600px) {
+        .row {
+            flex-direction: column;
+        }
+        form {
+            max-width: 98vw;
+            padding: 0 1vw;
+        }
+    }
     .field { flex: 1; display:flex; flex-direction:column; }
     label { font-size: 0.9rem; margin-bottom:0.25rem; }
     input, select, textarea { padding:0.5rem; border:1px solid #ccc; border-radius:6px; font-size:0.95rem; }
