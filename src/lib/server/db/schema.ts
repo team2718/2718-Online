@@ -1,5 +1,4 @@
 import { relations, sql } from 'drizzle-orm';
-import { uuid } from 'drizzle-orm/gel-core';
 import { integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 export const teams = sqliteTable('teams', {
@@ -8,23 +7,18 @@ export const teams = sqliteTable('teams', {
 });
 
 export const events = sqliteTable('events', {
-	id: text('id').primaryKey(), // e.g. "2026okok"
+	id: text('id').primaryKey(), 
 	name: text('name').notNull(),
 	year: integer('year')
 });
 
 export const matches = sqliteTable('matches', {
-	id: text('id').primaryKey(), // e.g. "2026okok_qm1"
+	id: text('id').primaryKey(), 
 	eventId: text('eventId')
 		.notNull()
 		.references(() => events.id),
 	matchNumber: integer('matchNumber').notNull(),
-	type: text('type').default('qualification').notNull() // practice, qualification, playoff
-});
-
-export const users = sqliteTable('users', {
-	id: text('id').primaryKey(),
-	name: text('name').notNull()
+	type: text('type').default('qualification').notNull() 
 });
 
 export const scoutingReports = sqliteTable('scouting_reports', {
@@ -35,10 +29,8 @@ export const scoutingReports = sqliteTable('scouting_reports', {
 	teamNumber: integer('team_number')
 		.notNull()
 		.references(() => teams.number),
-	userId: text('user_id')
-		.notNull()
-		.references(() => users.id),
-	data: text('data', { mode: 'json' }), // Flexible JSON for game-specific stats
+	scouterName: text('scouter_name').notNull(),
+	data: text('data', { mode: 'json' }), 
 	createdAt: integer('created_at').default(sql`(strftime('%s', 'now'))`)
 });
 
@@ -47,37 +39,18 @@ export const pitScoutingReports = sqliteTable('pit_scouting_reports', {
 	teamNumber: integer('team_number')
 		.notNull()
 		.references(() => teams.number),
-	userId: text('user_id')
-		.notNull()
-		.references(() => users.id),
-	data: text('data', { mode: 'json' }), // Flexible JSON for game-specific stats
+	scouterName: text('scouter_name').notNull(),
+	data: text('data', { mode: 'json' }), 
 	createdAt: integer('created_at').default(sql`(strftime('%s', 'now'))`)
 });
 
-// admin auth consists of an cryptographic ID stored in a secure, HttpOnly cookie
-// the creation date is stored and can be used for expiration policies
 export const admin_sessions = sqliteTable('admin_sessions', {
 	cookieId: text('cookie_id').primaryKey(),
 	createdAt: integer('created_at').default(sql`(strftime('%s', 'now'))`)
 });
 
-// --- JUNCTION TABLES FOR MANY-TO-MANY ---
+// --- JUNCTION TABLES ---
 
-// Users to Teams (A user can be linked to 1+ teams)
-export const usersToTeams = sqliteTable(
-	'users_to_teams',
-	{
-		userId: text('user_id')
-			.notNull()
-			.references(() => users.id),
-		teamNumber: integer('team_number')
-			.notNull()
-			.references(() => teams.number)
-	},
-	(t) => [primaryKey({ columns: [t.userId, t.teamNumber] })]
-);
-
-// Matches to Teams (Each match has multiple teams)
 export const matchesToTeams = sqliteTable(
 	'matches_to_teams',
 	{
@@ -87,12 +60,11 @@ export const matchesToTeams = sqliteTable(
 		teamNumber: integer('team_number')
 			.notNull()
 			.references(() => teams.number),
-		station: text('station') // e.g., "Red 1", "Blue 2"
+		station: text('station') 
 	},
 	(t) => [primaryKey({ columns: [t.matchId, t.teamNumber] })]
 );
 
-// Events to Teams (An event consists of multiple teams)
 export const eventsToTeams = sqliteTable(
 	'events_to_teams',
 	{
@@ -106,17 +78,12 @@ export const eventsToTeams = sqliteTable(
 	(t) => [primaryKey({ columns: [t.eventId, t.teamNumber] })]
 );
 
-// --- RELATIONSHIP DEFINITIONS (FOR DRIZZLE QUERIES) ---
+// --- RELATIONS ---
 
 export const teamsRelations = relations(teams, ({ many }) => ({
-	users: many(usersToTeams),
 	matches: many(matchesToTeams),
-	reports: many(scoutingReports)
-}));
-
-export const eventsRelations = relations(events, ({ many }) => ({
-	matches: many(matches),
-	teams: many(eventsToTeams)
+	reports: many(scoutingReports),
+	pitReports: many(pitScoutingReports)
 }));
 
 export const matchesRelations = relations(matches, ({ one, many }) => ({
@@ -125,18 +92,11 @@ export const matchesRelations = relations(matches, ({ one, many }) => ({
 	reports: many(scoutingReports)
 }));
 
-export const usersRelations = relations(users, ({ many }) => ({
-	teams: many(usersToTeams),
-	reports: many(scoutingReports)
-}));
-
 export const scoutingReportsRelations = relations(scoutingReports, ({ one }) => ({
 	match: one(matches, { fields: [scoutingReports.matchId], references: [matches.id] }),
-	team: one(teams, { fields: [scoutingReports.teamNumber], references: [teams.number] }),
-	user: one(users, { fields: [scoutingReports.userId], references: [users.id] })
+	team: one(teams, { fields: [scoutingReports.teamNumber], references: [teams.number] })
 }));
 
 export const pitScoutingReportsRelations = relations(pitScoutingReports, ({ one }) => ({
-	team: one(teams, { fields: [pitScoutingReports.teamNumber], references: [teams.number] }),
-	user: one(users, { fields: [pitScoutingReports.userId], references: [users.id] })
+	team: one(teams, { fields: [pitScoutingReports.teamNumber], references: [teams.number] })
 }));

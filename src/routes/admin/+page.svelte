@@ -3,5 +3,5 @@
 </script>
 
 <div class="mt-px py-4">
-	<a href={resolve('/admin/users')}>Manage Users</a>
+	<!-- <a href={resolve('/admin/users')}>Manage Users</a> -->
 </div>
