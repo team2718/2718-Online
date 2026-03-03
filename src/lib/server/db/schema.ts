@@ -22,7 +22,7 @@ export const matches = sqliteTable('matches', {
 });
 
 export const scoutingReports = sqliteTable('scouting_reports', {
-	id: integer('id').primaryKey({ autoIncrement: true }),
+	id: integer('id').primaryKey(),
 	matchId: text('match_id')
 		.notNull()
 		.references(() => matches.id),

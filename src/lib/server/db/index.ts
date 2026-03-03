@@ -40,6 +40,7 @@ export async function checkAdminSessionKey(sessionId: string): Promise<boolean> 
  * Add a new match scouting report
  */
 export async function addScoutingReport(report: typeof scoutingReports.$inferInsert) {
+	console.log("Adding scouting report to database:", report);
 	return await db.insert(scoutingReports).values(report).run();
 }
 

@@ -19,6 +19,8 @@
 					// Send data to your SvelteKit Action
 					const formData = new FormData();
 					formData.append('report', decodedText);
+
+					console.log("Submitting report:", decodedText);
 					
 					const response = await fetch('?/submitScan', {
 						method: 'POST',
@@ -48,6 +50,6 @@
 </main>
 
 <style>
-	#reader { width: 100%; max-width: 500px; margin: auto; }
+	#reader { width: 100%; max-width: 420px; margin: auto; }
 	.status { text-align: center; font-weight: bold; margin-top: 1rem; }
 </style>

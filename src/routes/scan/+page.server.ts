@@ -10,12 +10,21 @@ export const actions: Actions = {
 
 		try {
 			const parsed = JSON.parse(rawData);
+
+			if (!parsed.uid || !parsed.matchNumber || !parsed.teamNumber) {
+				return fail(400, { message: 'Invalid data format' });
+			}
+
+			if (parsed.stagesComplete < 4) {
+				return fail(400, { message: 'Report is incomplete' });
+			}
 			
 			// Map QR JSON to the database schema
 			await addScoutingReport({
-				matchId: parsed.matchId,
+				id: parsed.uid,
+				matchId: parsed.matchNumber,
 				teamNumber: Number(parsed.teamNumber),
-				scouterName: parsed.scouterName || 'Unknown',
+				scouterName: parsed.scoutName || 'Unknown',
 				data: parsed // Store the full object in the JSON column
 			});
 

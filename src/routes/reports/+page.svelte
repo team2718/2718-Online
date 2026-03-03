@@ -1,5 +1,7 @@
 <script lang="ts">
 	export let data; // Data comes from +page.server.ts
+
+	console.log("Loaded reports data:", data);
 </script>
 
 <nav>
