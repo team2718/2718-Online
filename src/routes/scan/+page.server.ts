@@ -1,5 +1,7 @@
 import { fail, type Actions } from '@sveltejs/kit';
-import { addScoutingReport } from '$lib/server/db'; // Adjust path to your index.ts
+import { addScoutingReport, db } from '$lib/server/db';
+import { eq } from 'drizzle-orm';
+import { scoutingReports, teams, matches } from '$lib/server/db/schema';
 
 export const actions: Actions = {
 	submitScan: async ({ request }) => {
@@ -19,17 +21,46 @@ export const actions: Actions = {
 				return fail(400, { message: 'Report is incomplete' });
 			}
 			
-			// Map QR JSON to the database schema
+			const uid = !isNaN(Number(parsed.uid)) ? Number(parsed.uid) : Math.floor(Math.random() * 100000000);
+			const teamNum = Number(parsed.teamNumber);
+			const matchNumStr = String(parsed.matchNumber);
+
+			// 1. Check for duplicates
+			const existingReport = await db.query.scoutingReports.findFirst({
+				where: eq(scoutingReports.id, uid)
+			});
+
+			if (existingReport) {
+				return fail(409, { message: 'This report has already been scanned!' });
+			}
+
+			// 2. Ensure Team exists
+			await db.insert(teams)
+				.values({ number: teamNum, name: `Team ${teamNum}` })
+				.onConflictDoNothing()
+				.run();
+
+			// 3. Ensure Match exists (Simplified: No event reference needed)
+			await db.insert(matches)
+				.values({
+					id: matchNumStr,
+					matchNumber: Number(parsed.matchNumber)
+				})
+				.onConflictDoNothing()
+				.run();
+
+			// 4. Save report
 			await addScoutingReport({
-				id: parsed.uid,
-				matchId: parsed.matchNumber,
-				teamNumber: Number(parsed.teamNumber),
+				id: uid,
+				matchId: matchNumStr,
+				teamNumber: teamNum,
 				scouterName: parsed.scoutName || 'Unknown',
-				data: parsed // Store the full object in the JSON column
+				data: parsed
 			});
 
 			return { success: true };
 		} catch (err) {
+			console.error("Scan error:", err);
 			return fail(500, { message: 'Failed to save report' });
 		}
 	}

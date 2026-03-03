@@ -1,24 +1,16 @@
 import { relations, sql } from 'drizzle-orm';
 import { integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import type { ScoutingReportData } from '$lib/types';
 
 export const teams = sqliteTable('teams', {
 	number: integer('teamNumber').primaryKey(),
 	name: text('name').notNull()
 });
 
-export const events = sqliteTable('events', {
-	id: text('id').primaryKey(), 
-	name: text('name').notNull(),
-	year: integer('year')
-});
-
+// Simplified matches table (removed eventId and type)
 export const matches = sqliteTable('matches', {
 	id: text('id').primaryKey(), 
-	eventId: text('eventId')
-		.notNull()
-		.references(() => events.id),
-	matchNumber: integer('matchNumber').notNull(),
-	type: text('type').default('qualification').notNull() 
+	matchNumber: integer('matchNumber').notNull()
 });
 
 export const scoutingReports = sqliteTable('scouting_reports', {
@@ -30,7 +22,7 @@ export const scoutingReports = sqliteTable('scouting_reports', {
 		.notNull()
 		.references(() => teams.number),
 	scouterName: text('scouter_name').notNull(),
-	data: text('data', { mode: 'json' }), 
+	data: text('data', { mode: 'json' }).$type<ScoutingReportData>(), 
 	createdAt: integer('created_at').default(sql`(strftime('%s', 'now'))`)
 });
 
@@ -65,19 +57,6 @@ export const matchesToTeams = sqliteTable(
 	(t) => [primaryKey({ columns: [t.matchId, t.teamNumber] })]
 );
 
-export const eventsToTeams = sqliteTable(
-	'events_to_teams',
-	{
-		eventId: text('event_id')
-			.notNull()
-			.references(() => events.id),
-		teamNumber: integer('team_number')
-			.notNull()
-			.references(() => teams.number)
-	},
-	(t) => [primaryKey({ columns: [t.eventId, t.teamNumber] })]
-);
-
 // --- RELATIONS ---
 
 export const teamsRelations = relations(teams, ({ many }) => ({
@@ -86,8 +65,7 @@ export const teamsRelations = relations(teams, ({ many }) => ({
 	pitReports: many(pitScoutingReports)
 }));
 
-export const matchesRelations = relations(matches, ({ one, many }) => ({
-	event: one(events, { fields: [matches.eventId], references: [events.id] }),
+export const matchesRelations = relations(matches, ({ many }) => ({
 	teams: many(matchesToTeams),
 	reports: many(scoutingReports)
 }));
