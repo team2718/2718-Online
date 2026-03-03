@@ -25,12 +25,12 @@
 	<div>
 		<Heading tag="h2" class="mb-4 text-2xl font-bold text-gray-700 dark:text-gray-300">Collect Data</Heading>
 		<div class="grid gap-6 md:grid-cols-2">
-			<Card href="/scan" class="max-w-none p-4 shadow-sm sm:p-6 transition hover:shadow-lg hover:-translate-y-1 border-t-4 border-t-green-500">
+			<Card href="/scan" class="max-w-none p-4 shadow-sm sm:p-6 transition hover:shadow-lg hover:-translate-y-1">
 				<Heading tag="h3" class="mb-2 text-xl font-bold text-green-600">Scan QR</Heading>
-				<p class="text-gray-500 dark:text-gray-400">Scan match scouting QR codes from scouter devices to upload results.</p>
+				<p class="text-gray-500 dark:text-gray-400">Scan match scouting QR codes from scouting tablets to upload results.</p>
 			</Card>
 
-			<Card href="/pit-scout" class="max-w-none p-4 shadow-sm sm:p-6 transition hover:shadow-lg hover:-translate-y-1 border-t-4 border-t-green-500">
+			<Card href="/pit-scout" class="max-w-none p-4 shadow-sm sm:p-6 transition hover:shadow-lg hover:-translate-y-1">
 				<Heading tag="h3" class="mb-2 text-xl font-bold text-green-600">Pit Scout</Heading>
 				<p class="text-gray-500 dark:text-gray-400">Fill out and save pit scouting information for teams in the pits.</p>
 			</Card>

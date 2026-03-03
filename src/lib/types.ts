@@ -61,11 +61,11 @@ export interface PitScoutReportData {
     /** Highest level of climbing capable */
     climb: string;
     /** Scoring speed in fuel per second */
-    maxSpeedFtPerS: string;
+    fuelPerSecond: string;
     /** Total weight of the robot in pounds */
     weightLbs: string;
     /** Known electrical or mechanical weak points */
-    electricalIssues: string;
+    knownIssues: string;
     /** General notes from the pit crew */
     comments: string;
     /** ISO timestamp of when the report was saved */

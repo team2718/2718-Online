@@ -30,7 +30,7 @@ export const actions: Actions = {
 				data: parsed
 			});
 
-			return { success: true };
+			return { success: true }; 
 		} catch (err) {
 			console.error("Pit scouting upload error:", err);
 			return fail(500, { message: 'Failed to save pit report' });
