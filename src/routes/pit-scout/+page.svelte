@@ -1,366 +1,158 @@
 <script lang="ts">
-	// GitHub Copilot
-	import { onMount } from 'svelte';
-
-	let autofffs: string[] = [];
-
-	let form = {
+	const createEmptyForm = () => ({
 		scoutName: '',
 		teamNumber: '',
-		driverYOE: '',
-		hopperCapacity: '',
-		drivetrain: '',
-		shooterType: '',
-		intakeType: '',
-		autoFeatures: autofffs, // checkboxes
-		autoStart: '',
-		climb: '',
+		driverYOE: 'N/A',
+		hopperCapacity: 'N/A',
+		drivetrain: 'N/A',
+		shooterType: 'N/A',
+		intakeType: 'N/A',
+		autoFeatures: [] as string[],
+		autoStart: 'N/A',
+		climb: 'N/A',
 		maxSpeedFtPerS: '',
 		weightLbs: '',
 		electricalIssues: '',
 		comments: ''
-	};
+	});
 
+	let form = createEmptyForm();
 	let saved = false;
 
-	const HOPPER_OPTIONS = ['N/A', '0-10', '11-20', '21-40', '41-60', '61-80', '81+'];
+	const SECTIONS = {
+		INFO: ['scoutName', 'teamNumber'],
+		SPECS: ['drivetrain', 'hopperCapacity', 'shooterType', 'intakeType'],
+		AUTO: ['autoStart', 'autoFeatures'],
+		ENDGAME: ['climb', 'driverYOE']
+	};
 
-	const DRIVETRAIN_OPTIONS = ['N/A', 'Tank', 'Swerve', 'Mecanum', 'Other'];
-
-	const SHOOTER_OPTIONS = [
-		'N/A',
-		'Turret - Single',
-		'Turret - Dual',
-		'Static - Single',
-		'Static - Dual',
-		'Static - Triple',
-		'Other'
-	];
-
-	const INTAKE_OPTIONS = [
-		'N/A',
-		'Full Width - Over the Bumper',
-		'Full Width - Gap in Bumper',
-		'Half Width - Over the Bumper',
-		'Half Width - Gap in Bumper',
-		'Other'
-	];
-
-	const CLIMB_OPTIONS = ['N/A', 'No Climb', 'L1', 'L2', 'L3'];
-
-	const DRIVER_YOE_OPTIONS = ['N/A', '0-1 years', '2 years', '3 years', '4+ years'];
-
-	const AUTO_OPTIONS = [
-		{ key: 'scorePreload', label: 'Score preload' },
-		{ key: 'intakeMiddle', label: 'Intake middle' },
-		{ key: 'intakeDepot', label: 'Intake from Depot' },
-		{ key: 'intakeOutpost', label: 'Intake from Outpost' },
-		{ key: 'climb', label: 'Climb in Auto' }
-	];
-
-	const AUTO_START_OPTIONS = [
-		'N/A',
-		'Dont care',
-		'Depot side under trench',
-		'Depot side by ramp',
-		'Center',
-		'Outpost side by ramp',
-		'Outpost side under trench'
-	];
+	const OPTIONS = {
+		hopper: ['N/A', '0-10', '11-20', '21-40', '41-60', '61-80', '81+'],
+		drivetrain: ['N/A', 'Tank', 'Swerve', 'Mecanum', 'Other'],
+		shooter: ['N/A', 'Turret - Single', 'Turret - Dual', 'Static - Single', 'Static - Dual', 'Static - Triple', 'Other'],
+		intake: ['N/A', 'Full Width - Over the Bumper', 'Full Width - Gap in Bumper', 'Half Width - Over the Bumper', 'Half Width - Gap in Bumper', 'Other'],
+		climb: ['N/A', 'No Climb', 'L1', 'L2', 'L3'],
+		yoe: ['N/A', '0-1 years', '2 years', '3 years', '4+ years'],
+		autoStart: ['N/A', 'Dont care', 'Depot side under trench', 'Depot side by ramp', 'Center', 'Outpost side by ramp', 'Outpost side under trench'],
+		autoFeatures: [
+			{ key: 'scorePreload', label: 'Score preload' },
+			{ key: 'intakeMiddle', label: 'Intake middle' },
+			{ key: 'intakeDepot', label: 'Intake from Depot' },
+			{ key: 'intakeOutpost', label: 'Intake from Outpost' },
+			{ key: 'climb', label: 'Climb in Auto' }
+		]
+	};
 
 	function toggleAuto(key: string) {
-		if (form.autoFeatures.includes(key)) {
-			form.autoFeatures = form.autoFeatures.filter((k) => k !== key);
-		} else {
-			form.autoFeatures = [...form.autoFeatures, key];
-		}
+		form.autoFeatures = form.autoFeatures.includes(key)
+			? form.autoFeatures.filter((k) => k !== key)
+			: [...form.autoFeatures, key];
 	}
 
 	async function save() {
-		const payload = {
-			...form,
-			timestamp: new Date().toISOString()
-		};
-
-		// ... (existing localStorage and fetch logic)
-
-		// Final action: Reset the UI state
+		console.log("Saving report...", form);
 		saved = true;
-		clearForm(); // Added this to clear the view for the user
+		form = createEmptyForm();
 		setTimeout(() => (saved = false), 3000);
-		console.log('Saved and cleared form');
 	}
-
-	function clearForm() {
-		form = {
-			scoutName: '',
-			teamNumber: '',
-			driverYOE: '',
-			hopperCapacity: '',
-			drivetrain: '',
-			shooterType: '',
-			intakeType: '',
-			autoFeatures: [],
-			autoStart: '',
-			climb: '',
-			maxSpeedFtPerS: '',
-			weightLbs: '',
-			electricalIssues: '',
-			comments: ''
-		};
-	}
-
-	onMount(() => {
-		// try to prefill last unsaved entry
-		const keys = Object.keys(localStorage).filter((k) => k.startsWith('pit-scout:'));
-		if (keys.length) {
-			const last = keys.sort().reverse()[0];
-			try {
-				const data = JSON.parse(localStorage.getItem(last)!);
-				if (data) {
-					// don't overwrite empty form blindly; keep team if present
-					form = { ...form, ...data };
-				}
-			} catch {}
-		}
-	});
 </script>
 
-<form on:submit|preventDefault={save} aria-label="Pit scouting form for FRC 2026 robot">
-	<h1>Pit Scouting Form</h1>
-	<div class="row">
-		<div class="field">
-			<label for="scoutName">Scouter's Name</label>
-			<input id="scoutName" type="text" bind:value={form.scoutName} placeholder="e.g. Carter" />
-		</div>
+<div class="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+	<div class="max-w-3xl mx-auto">
+		<header class="mb-8 flex justify-between items-end">
+			<div>
+				<h1 class="text-3xl font-extrabold text-gray-900">Pit Scouting</h1>
+				<p class="mt-2 text-sm text-gray-600">Gather technical specs directly from the team pits.</p>
+			</div>
+			{#if saved}
+				<span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded animate-bounce">Saved Successfully!</span>
+			{/if}
+		</header>
+
+		<form on:submit|preventDefault={save} class="space-y-6">
+			<section class="bg-white shadow rounded-lg p-6">
+				<h2 class="text-lg font-semibold text-blue-700 mb-4 border-b pb-2">Identification</h2>
+				<div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2">
+					<div>
+						<label for="scoutName" class="block text-sm font-medium text-gray-700">Scouter's Name *</label>
+						<input id="scoutName" type="text" bind:value={form.scoutName} required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+					</div>
+					<div>
+						<label for="teamNumber" class="block text-sm font-medium text-gray-700">Team Number *</label>
+						<input id="teamNumber" type="text" bind:value={form.teamNumber} required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+					</div>
+				</div>
+			</section>
+
+			<section class="bg-white shadow rounded-lg p-6">
+				<h2 class="text-lg font-semibold text-blue-700 mb-4 border-b pb-2">Mechanical Specs</h2>
+				<div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2">
+					<div>
+						<label class="block text-sm font-medium text-gray-700">Drivetrain</label>
+						<select bind:value={form.drivetrain} class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm">
+							{#each OPTIONS.drivetrain as d}<option>{d}</option>{/each}
+						</select>
+					</div>
+					<div>
+						<label class="block text-sm font-medium text-gray-700">Hopper Capacity</label>
+						<select bind:value={form.hopperCapacity} class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm">
+							{#each OPTIONS.hopper as h}<option>{h}</option>{/each}
+						</select>
+					</div>
+					<div class="sm:col-span-2">
+						<label class="block text-sm font-medium text-gray-700">Shooter Type</label>
+						<select bind:value={form.shooterType} class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm">
+							{#each OPTIONS.shooter as s}<option>{s}</option>{/each}
+						</select>
+					</div>
+				</div>
+			</section>
+
+			<section class="bg-white shadow rounded-lg p-6">
+				<h2 class="text-lg font-semibold text-blue-700 mb-4 border-b pb-2">Autonomous</h2>
+				<div class="space-y-4">
+					<div>
+						<label class="block text-sm font-medium text-gray-700">Start Preference</label>
+						<select bind:value={form.autoStart} class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm">
+							{#each OPTIONS.autoStart as a}<option>{a}</option>{/each}
+						</select>
+					</div>
+					<fieldset>
+						<legend class="text-sm font-medium text-gray-700">Capabilities</legend>
+						<div class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+							{#each OPTIONS.autoFeatures as feature}
+								<label class="relative flex items-start py-2 px-3 border rounded-md cursor-pointer hover:bg-gray-50">
+									<input type="checkbox" checked={form.autoFeatures.includes(feature.key)} on:change={() => toggleAuto(feature.key)} class="h-4 w-4 text-blue-600 border-gray-300 rounded" />
+									<span class="ml-3 text-sm text-gray-600">{feature.label}</span>
+								</label>
+							{/each}
+						</div>
+					</fieldset>
+				</div>
+			</section>
+
+			<section class="bg-white shadow rounded-lg p-6">
+				<h2 class="text-lg font-semibold text-blue-700 mb-4 border-b pb-2">Final Details</h2>
+				<div class="space-y-4">
+					<div>
+						<label class="block text-sm font-medium text-gray-700">Known Weak Points</label>
+						<textarea bind:value={form.electricalIssues} rows="2" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm" placeholder="e.g. Battery connector loose..."></textarea>
+					</div>
+					<div>
+						<label class="block text-sm font-medium text-gray-700">General Comments</label>
+						<textarea bind:value={form.comments} rows="3" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm"></textarea>
+					</div>
+				</div>
+			</section>
+
+			<div class="flex items-center justify-end space-x-4 pt-4">
+				<button type="button" on:click={() => form = createEmptyForm()} class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none ring-2 ring-offset-2 ring-blue-500">
+					Clear Form
+				</button>
+				<button type="submit" class="inline-flex justify-center py-2 px-6 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+					Save Report
+				</button>
+			</div>
+		</form>
 	</div>
-
-	<div class="row">
-		<div class="field">
-			<label for="teamNumber">Team Number</label>
-			<input id="teamNumber" type="text" bind:value={form.teamNumber} placeholder="e.g. 254" />
-		</div>
-
-		<div class="field">
-			<label for="driverYOE">Driver Years of Experience</label>
-			<select id="driverYOE" bind:value={form.driverYOE}>
-				<option value="" disabled selected>Main Driver's Experience</option>
-				{#each DRIVER_YOE_OPTIONS as s}
-					<option value={s}>{s}</option>
-				{/each}
-			</select>
-		</div>
-	</div>
-
-	<div class="row">
-		<div class="field">
-			<label for="drivetrain">Drivetrain</label>
-			<select id="drivetrain" bind:value={form.drivetrain}>
-				<option value="" disabled selected>Select drivetrain</option>
-				{#each DRIVETRAIN_OPTIONS as d}
-					<option value={d}>{d}</option>
-				{/each}
-			</select>
-		</div>
-
-		<div class="field">
-			<label for="hopper">Number of fuel the robot can hold in its hopper</label>
-			<select id="hopper" bind:value={form.hopperCapacity}>
-				<option value="" disabled selected>Select capacity</option>
-				{#each HOPPER_OPTIONS as opt}
-					<option value={opt}>{opt}</option>
-				{/each}
-			</select>
-		</div>
-	</div>
-
-	<div class="row">
-		<div class="field">
-			<label for="shooter">Shooter Type</label>
-			<select id="shooter" bind:value={form.shooterType}>
-				<option value="" disabled selected>Select shooter</option>
-				{#each SHOOTER_OPTIONS as s}
-					<option value={s}>{s}</option>
-				{/each}
-			</select>
-		</div>
-
-		<div class="field">
-			<label for="intake">Intake Type</label>
-			<select id="intake" bind:value={form.intakeType}>
-				<option value="" disabled selected>Select intake</option>
-				{#each INTAKE_OPTIONS as opt}
-					<option value={opt}>{opt}</option>
-				{/each}
-			</select>
-		</div>
-	</div>
-
-	<div class="field">
-		<label>Autonomous capabilities (check all that apply)</label>
-		<div class="checkboxes" role="group" aria-label="Autonomous capabilities">
-			{#each AUTO_OPTIONS as a}
-				<label
-					><input
-						type="checkbox"
-						checked={form.autoFeatures.includes(a.key)}
-						on:change={() => toggleAuto(a.key)}
-					/>
-					{a.label}</label
-				>
-			{/each}
-		</div>
-	</div>
-
-	<div class="row">
-		<div class="field">
-			<label for="autoStart">Auto Start Preference</label>
-			<select id="autoStart" bind:value={form.autoStart}>
-				<option value="" disabled selected>Auto Start Preference</option>
-				{#each AUTO_START_OPTIONS as c}
-					<option value={c}>{c}</option>
-				{/each}
-			</select>
-		</div>
-	</div>
-
-	<div class="row">
-		<div class="field">
-			<label for="climb">Max Climb capability</label>
-			<select id="climb" bind:value={form.climb}>
-				<option value="" disabled selected>Select climb</option>
-				{#each CLIMB_OPTIONS as c}
-					<option value={c}>{c}</option>
-				{/each}
-			</select>
-		</div>
-
-		<div class="field">
-			<label for="speed">Fuel per second</label>
-			<input
-				id="speed"
-				type="number"
-				min="0"
-				step="1.0"
-				bind:value={form.maxSpeedFtPerS}
-				placeholder="e.g. 3"
-			/>
-		</div>
-
-		<div class="field">
-			<label for="weight">Weight (lbs)</label>
-			<input
-				id="weight"
-				type="number"
-				min="0"
-				step="5.0"
-				bind:value={form.weightLbs}
-				placeholder="e.g. 115"
-			/>
-		</div>
-	</div>
-
-	<div class="field">
-		<label for="electrical">Known issues</label>
-		<textarea
-			id="electrical"
-			bind:value={form.electricalIssues}
-			placeholder="List any known issues, weak points, etc."
-		></textarea>
-	</div>
-
-	<div class="field">
-		<label for="comments">Additional comments / notes</label>
-		<textarea
-			id="comments"
-			bind:value={form.comments}
-			placeholder="Anything else the pit crew mentions..."
-		></textarea>
-	</div>
-
-	<div class="controls">
-		<button type="submit">Save</button>
-		<button type="button" on:click={clearForm}>Clear</button>
-		{#if saved}
-			<span class="saved" role="status">Saved</span>
-		{/if}
-	</div>
-</form>
-
-<style>
-	form {
-		max-width: 800px;
-		margin: 1rem auto;
-		display: grid;
-		gap: 0.75rem;
-		font-family:
-			system-ui,
-			-apple-system,
-			Segoe UI,
-			Roboto,
-			'Helvetica Neue',
-			Arial;
-	}
-	.row {
-		display: flex;
-		gap: 0.75rem;
-	}
-	@media (max-width: 600px) {
-		.row {
-			flex-direction: column;
-		}
-		form {
-			max-width: 98vw;
-			padding: 0 1vw;
-		}
-	}
-	.field {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-	}
-	label {
-		font-size: 0.9rem;
-		margin-bottom: 0.25rem;
-	}
-	input,
-	select,
-	textarea {
-		padding: 0.5rem;
-		border: 1px solid #ccc;
-		border-radius: 6px;
-		font-size: 0.95rem;
-	}
-	input::placeholder,
-	textarea::placeholder {
-		color: #888888;
-		opacity: 1;
-	}
-	textarea {
-		min-height: 100px;
-		resize: vertical;
-	}
-	.checkboxes {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.5rem;
-	}
-	.controls {
-		display: flex;
-		gap: 0.5rem;
-		align-items: center;
-		margin-top: 0.5rem;
-	}
-	button {
-		padding: 0.5rem 0.8rem;
-		border-radius: 6px;
-		border: 1px solid #888;
-		background: #f3f3f3;
-		cursor: pointer;
-	}
-	.saved {
-		color: green;
-		font-weight: 600;
-		margin-left: 0.5rem;
-	}
-</style>
+</div>

@@ -1,12 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import {
-		Navbar,
-		NavBrand,
-		NavLi,
-		NavUl,
-		NavHamburger
-	} from 'flowbite-svelte';
+	import { Navbar, NavBrand, NavLi, NavUl, NavHamburger } from 'flowbite-svelte';
 
 	let activeUrl = $derived(page.url.pathname);
 
@@ -37,6 +31,7 @@
 		<NavUl {activeUrl}>
 			<NavLi href="/">Home</NavLi>
 			<NavLi href="/teams">Teams</NavLi>
+			<NavLi href="/matches">Matches</NavLi>
 			<NavLi href="/scan">Scan QR</NavLi>
 			<NavLi href="/pit-scout">Pit Scout</NavLi>
 		</NavUl>

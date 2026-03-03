@@ -7,13 +7,13 @@ export interface ScoutingReportData {
     matchNumber: number;
     /** Name of the student performing the scouting */
     scoutName: string;
-    /** 0 for Blue alliance, 1 for Red alliance */
+    /** 0 for Red alliance, 1 for Blue alliance */
     alliance: number;
-    /** Starting position on the field (0-2) */
+    /** 0: Left Trench (Depot side), 1: Left Bump, 2: Center, 3: Right Bump, 4: Right Trench (Outpost side) */
     startingPosition: number;
     /** Completion timestamp in Unix seconds */
     unixTimeComplete: number;
-    /** Current stage of the scouting form completion */
+    /** 0=New, 1=Match Info, 2=Auto, etc. */
     stagesComplete: number;
     /** Qualitative scouter notes */
     notes: string;
@@ -33,8 +33,41 @@ export interface ScoutingReportData {
     telePassScore: number;
     /** Teleop defensive capability (1-5 scale) */
     teleDefScore: number;
-    /** 0: No Climb, 1: Parked, 2: Climbed, 3: Level */
+    /** 0: None, 1: L1, 2: L2, 3: L3 */
     climbType: number;
-    /** Penalties received: 0 (None), 1 (Yellow), 2 (Red) */
+    /** 0: None, 1: Yellow, 2: Red */
     cardReceived: number;
+}
+
+export interface PitScoutReportData {
+    /** Name of the student performing the pit scouting */
+    scoutName: string;
+    /** Team number being scouted */
+    teamNumber: string;
+    /** Main driver's years of experience (e.g., "2 years") */
+    driverYOE: string;
+    /** Capacity of the robot's hopper (e.g., "21-40") */
+    hopperCapacity: string;
+    /** Type of drivetrain (e.g., "Swerve", "Tank") */
+    drivetrain: string;
+    /** Type of shooter mechanism used */
+    shooterType: string;
+    /** Intake mechanism configuration */
+    intakeType: string;
+    /** List of keys for autonomous capabilities (scorePreload, intakeMiddle, etc.) */
+    autoFeatures: string[];
+    /** Preferred starting location for autonomous */
+    autoStart: string;
+    /** Highest level of climbing capable */
+    climb: string;
+    /** Scoring speed in fuel per second */
+    maxSpeedFtPerS: string;
+    /** Total weight of the robot in pounds */
+    weightLbs: string;
+    /** Known electrical or mechanical weak points */
+    electricalIssues: string;
+    /** General notes from the pit crew */
+    comments: string;
+    /** ISO timestamp of when the report was saved */
+    timestamp: string;
 }

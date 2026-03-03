@@ -15,9 +15,9 @@
 				<p class="text-gray-500 dark:text-gray-400">View detailed dashboards and match history for each scouted team.</p>
 			</Card>
 
-			<Card href="/reports" class="max-w-none p-4 shadow-sm sm:p-6 transition hover:shadow-lg hover:-translate-y-1">
-				<Heading tag="h3" class="mb-2 text-xl font-bold text-blue-600">Reports</Heading>
-				<p class="text-gray-500 dark:text-gray-400">Browse an aggregate list of all submitted match scouting reports.</p>
+			<Card href="/matches" class="max-w-none p-4 shadow-sm sm:p-6 transition hover:shadow-lg hover:-translate-y-1">
+				<Heading tag="h3" class="mb-2 text-xl font-bold text-blue-600">Matches</Heading>
+				<p class="text-gray-500 dark:text-gray-400">Browse scouting reports organized by match number.</p>
 			</Card>
 		</div>
 	</div>

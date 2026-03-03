@@ -1,6 +1,6 @@
 import { relations, sql } from 'drizzle-orm';
 import { integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
-import type { ScoutingReportData } from '$lib/types';
+import type { PitScoutReportData, ScoutingReportData } from '$lib/types';
 
 export const teams = sqliteTable('teams', {
 	number: integer('teamNumber').primaryKey(),
@@ -32,7 +32,7 @@ export const pitScoutingReports = sqliteTable('pit_scouting_reports', {
 		.notNull()
 		.references(() => teams.number),
 	scouterName: text('scouter_name').notNull(),
-	data: text('data', { mode: 'json' }), 
+	data: text('data', { mode: 'json' }).$type<PitScoutReportData>(),
 	createdAt: integer('created_at').default(sql`(strftime('%s', 'now'))`)
 });
 
