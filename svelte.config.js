@@ -13,7 +13,7 @@ const config = {
 			precompress: true // recommended for better performance
 		}),
 		csrf: {
-			checkOrigin: false // yolo
+			trustedOrigins: ['http://127.0.0.1:2723', 'https://2718.online']
 		}
 	}
 };
