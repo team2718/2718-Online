@@ -11,7 +11,10 @@ const config = {
 		adapter: adapter({
 			out: 'build',
 			precompress: true // recommended for better performance
-		})
+		}),
+		csrf: {
+			checkOrigin: false // yolo
+		}
 	}
 };
 
