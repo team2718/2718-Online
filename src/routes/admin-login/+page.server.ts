@@ -3,6 +3,7 @@ import { saveAdminSessionKey } from '$lib/server/db';
 import type { Actions } from '../admin-login/$types';
 import { fail, redirect } from '@sveltejs/kit';
 import { createHash } from 'crypto';
+import { dev } from '$app/environment';
 
 export const actions: Actions = {
 	default: async ({ request, cookies }) => {
@@ -27,7 +28,7 @@ export const actions: Actions = {
 				path: '/',
 				httpOnly: true,
 				sameSite: 'strict',
-				secure: process.env.NODE_ENV === 'production',
+				secure: !dev,
 				maxAge: 60 * 60 * ADMIN_SESSION_EXPIRY_HOURS
 			});
 

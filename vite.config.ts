@@ -15,5 +15,8 @@ export default defineConfig({
         port: 2723,
         strictPort: true,
     },
-    plugins: [tailwindcss(), sveltekit()]
+    plugins: [tailwindcss(), sveltekit()],
+    ssr: {
+		external: ['@libsql/client']
+	}
 });
