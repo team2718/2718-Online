@@ -85,3 +85,17 @@ export async function getPitReports(teamNumber?: number) {
 	}
 	return await db.query.pitScoutingReports.findMany();
 }
+
+/**
+ * Delete a match scouting report by ID
+ */
+export async function deleteScoutingReport(id: number) {
+	return await db.delete(scoutingReports).where(eq(scoutingReports.id, id)).run();
+}
+
+/**
+ * Delete a pit scouting report by ID
+ */
+export async function deletePitReport(id: number) {
+	return await db.delete(pitScoutingReports).where(eq(pitScoutingReports.id, id)).run();
+}

@@ -1,5 +1,7 @@
 <script lang="ts">
-    import { Heading, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Badge } from 'flowbite-svelte';
+    import { Heading, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Badge, Button } from 'flowbite-svelte';
+    import { enhance } from '$app/forms';
+
     export let data;
 
     const getPosLabel = (val: number) => [
@@ -7,7 +9,6 @@
     ][val] ?? val;
 
     const getClimbLabel = (val: number) => ['None', 'L1', 'L2', 'L3'][val] ?? 'None';
-    
     const getCardLabel = (val: number) => ['None', 'Yellow', 'Red'][val] ?? 'None';
 </script>
 
@@ -27,6 +28,9 @@
             <TableHeadCell>Teleop (Rate/Acc/Pass/Def)</TableHeadCell>
             <TableHeadCell>Endgame</TableHeadCell>
             <TableHeadCell>Notes</TableHeadCell>
+            {#if data.isAdmin}
+                <TableHeadCell>Actions</TableHeadCell>
+            {/if}
         </TableHead>
         <TableBody>
             {#each data.reports as report}
@@ -59,6 +63,14 @@
                     <TableBodyCell class="max-w-xs whitespace-normal text-xs">
                         {report.data?.notes ?? ''}
                     </TableBodyCell>
+                    {#if data.isAdmin}
+                        <TableBodyCell>
+                            <form method="POST" action="?/deleteReport" use:enhance>
+                                <input type="hidden" name="id" value={report.id} />
+                                <Button type="submit" color="red" size="xs">Delete</Button>
+                            </form>
+                        </TableBodyCell>
+                    {/if}
                 </TableBodyRow>
             {/each}
         </TableBody>

@@ -17,7 +17,7 @@ export interface ScoutingReportData {
     stagesComplete: number;
     /** Qualitative scouter notes */
     notes: string;
-    /** Whether the robot left the starting tarmac in Auto */
+    /** Whether the robot moved at all in Auto */
     didLeave: boolean;
     /** Total fuel/game pieces scored in Auto */
     autoFuel: number;

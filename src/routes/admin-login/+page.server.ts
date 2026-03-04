@@ -2,6 +2,7 @@ import { ADMIN_PASSWORD_HASH, ADMIN_SESSION_EXPIRY_HOURS } from '$lib/server/con
 import { saveAdminSessionKey } from '$lib/server/db';
 import type { Actions } from '../admin-login/$types';
 import { fail, redirect } from '@sveltejs/kit';
+import { createHash } from 'crypto';
 
 export const actions: Actions = {
 	default: async ({ request, cookies }) => {
@@ -12,9 +13,9 @@ export const actions: Actions = {
 			return fail(400, { error: 'Invalid input' });
 		}
 
-		console.log('Received: ', password);
+		const hashedInput = createHash('sha256').update(password).digest('hex');
 
-		if (password === ADMIN_PASSWORD_HASH) {
+		if (hashedInput === ADMIN_PASSWORD_HASH) {
 			// Generate a session token
 			const sessionToken = crypto.randomUUID();
 
