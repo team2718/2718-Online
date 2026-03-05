@@ -1,17 +1,8 @@
 import { db } from '$lib/server/db';
-import { scoutingReports, pitScoutingReports } from '$lib/server/db/schema';
+import { teams } from '$lib/server/db/schema';
+import { asc } from 'drizzle-orm';
 
 export async function load() {
-	// Aggregate distinct team numbers from both sets of reports
-    const matchTeams = await db.select({ teamNumber: scoutingReports.teamNumber }).from(scoutingReports);
-    const pitTeams = await db.select({ teamNumber: pitScoutingReports.teamNumber }).from(pitScoutingReports);
-    
-    const uniqueTeams = new Set([
-		...matchTeams.map(r => r.teamNumber), 
-		...pitTeams.map(r => r.teamNumber)
-	]);
-    
-    return {
-        teams: Array.from(uniqueTeams).sort((a, b) => a - b)
-    };
+	const allTeams = await db.select().from(teams).orderBy(asc(teams.number)).all();
+	return { teams: allTeams };
 }

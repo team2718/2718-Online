@@ -66,11 +66,21 @@
 
 <div class="min-h-screen bg-gray-50">
 	<div class="mx-auto max-w-7xl px-4 py-8">
-		<div class="mb-8 flex items-center">
-			<Button href="/teams" color="light" pill size="sm" class="mr-4">
+		<div class="mb-8 flex items-start gap-4">
+			<Button href="/teams" color="light" pill size="sm" class="mt-1 shrink-0">
 				<ArrowLeftOutline class="mr-2 h-4 w-4" /> Teams
 			</Button>
-			<h1 class="text-4xl font-black tracking-tight text-gray-900">Team {data.teamnum}</h1>
+			<div>
+				<h1 class="text-4xl font-black tracking-tight text-gray-900">Team {data.teamnum}</h1>
+				{#if data.team}
+					<p class="mt-1 text-lg font-semibold text-gray-600">{data.team.name}</p>
+					{#if (data.team.metadata as Record<string, unknown>)?.state_prov}
+						<p class="mt-0.5 text-sm text-gray-400">
+							{[(data.team.metadata as Record<string, unknown>)?.city, (data.team.metadata as Record<string, unknown>)?.state_prov, (data.team.metadata as Record<string, unknown>)?.country].filter(Boolean).join(', ')}
+						</p>
+					{/if}
+				{/if}
+			</div>
 		</div>
 
 		<div class="grid grid-cols-1 gap-8 lg:grid-cols-12">

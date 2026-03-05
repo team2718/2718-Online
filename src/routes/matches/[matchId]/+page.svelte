@@ -1,78 +1,234 @@
 <script lang="ts">
-    import { Heading, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Badge, Button } from 'flowbite-svelte';
     import { enhance } from '$app/forms';
 
-    export let data;
+    let { data } = $props();
 
-    const getPosLabel = (val: number) => [
-        'Left Trench', 'Left Bump', 'Center', 'Right Bump', 'Right Trench'
-    ][val] ?? val;
+    const m = $derived(data.match);
+    const reports = $derived(data.reports ?? []);
 
-    const getClimbLabel = (val: number) => ['None', 'L1', 'L2', 'L3'][val] ?? 'None';
-    const getCardLabel = (val: number) => ['None', 'Yellow', 'Red'][val] ?? 'None';
+    // Build a map of teamNumber → report for quick lookup
+    const reportByTeam = $derived(
+        new Map(reports.map((r) => [r.teamNumber, r]))
+    );
+
+    // Resolve alliance slots from schedule or from report data
+    const redSlots = $derived.by((): (number | null)[] => {
+        if (m?.red1 || m?.red2 || m?.red3) return [m.red1, m.red2, m.red3];
+        // Fall back: teams that reported Red alliance (0)
+        return reports.filter((r) => r.data?.alliance === 0).map((r) => r.teamNumber);
+    });
+
+    const blueSlots = $derived.by((): (number | null)[] => {
+        if (m?.blue1 || m?.blue2 || m?.blue3) return [m.blue1, m.blue2, m.blue3];
+        return reports.filter((r) => r.data?.alliance === 1).map((r) => r.teamNumber);
+    });
+
+    const matchLabel = $derived.by(() => {
+        if (!m) return data.matchId;
+        if (m.matchType === 'qualification') return `Qual ${m.matchNumber}`;
+        if (m.matchType === 'practice') return `Practice ${m.matchNumber}`;
+        if (m.matchType === 'playoff') return `Playoff – ${m.id.toUpperCase()}`;
+        return `Match ${m.matchNumber}`;
+    });
+
+    const reportCount = $derived(reports.length);
+
+    function climbLabel(v: number | undefined) {
+        return ['None', 'L1', 'L2', 'L3'][v ?? 0] ?? 'None';
+    }
+    function cardLabel(v: number | undefined) {
+        return ['None', 'Yellow', 'Red'][v ?? 0] ?? 'None';
+    }
+    function posLabel(v: number | undefined) {
+        return ['L Trench', 'L Bump', 'Center', 'R Bump', 'R Trench'][v ?? 2] ?? '—';
+    }
+    function yn(v: boolean | undefined) {
+        return v ? '✓' : '✗';
+    }
 </script>
 
-<div class="p-6 max-w-full mx-auto overflow-x-auto">
-    <header class="mb-6">
-        <a href="/matches" class="text-blue-600 hover:underline">← All Matches</a>
-        <Heading tag="h1" class="mt-2">Reports for Match {data.matchId}</Heading>
-    </header>
-
-    <Table hoverable={true} divClass="relative overflow-x-auto shadow-md sm:rounded-lg">
-        <TableHead>
-            <TableHeadCell>Team</TableHeadCell>
-            <TableHeadCell>Scouter</TableHeadCell>
-            <TableHeadCell>Info</TableHeadCell>
-            <TableHeadCell>Auto Move</TableHeadCell>
-            <TableHeadCell>Auto Score</TableHeadCell>
-            <TableHeadCell>Teleop (Rate/Acc/Pass/Def)</TableHeadCell>
-            <TableHeadCell>Endgame</TableHeadCell>
-            <TableHeadCell>Notes</TableHeadCell>
-            {#if data.isAdmin}
-                <TableHeadCell>Actions</TableHeadCell>
+<div class="mx-auto max-w-5xl px-3 py-5">
+    <!-- Header -->
+    <div class="mb-5">
+        <a href="/matches" class="text-sm text-blue-600 hover:underline">← All Matches</a>
+        <div class="mt-1 flex flex-wrap items-baseline gap-3">
+            <h1 class="text-2xl font-black text-gray-900">{matchLabel}</h1>
+            {#if m?.matchType}
+                <span class="rounded-full px-2 py-0.5 text-xs font-semibold uppercase tracking-wide
+                    {m.matchType === 'qualification' ? 'bg-green-100 text-green-700' :
+                     m.matchType === 'practice'     ? 'bg-yellow-100 text-yellow-700' :
+                                                      'bg-purple-100 text-purple-700'}">
+                    {m.matchType}
+                </span>
             {/if}
-        </TableHead>
-        <TableBody>
-            {#each data.reports as report}
-                <TableBodyRow>
-                    <TableBodyCell class="font-bold">{report.teamNumber}</TableBodyCell>
-                    <TableBodyCell>{report.scouterName}</TableBodyCell>
-                    <TableBodyCell>
-                        <div class="flex flex-col gap-1">
-                            <Badge color={report.data?.alliance === 0 ? 'red' : 'blue'}>
-                                {report.data?.alliance === 0 ? 'Red' : 'Blue'}
-                            </Badge>
-                            <span class="text-xs text-gray-500">{getPosLabel(report.data?.startingPosition)}</span>
+            <span class="text-sm text-gray-400">{reportCount} report{reportCount !== 1 ? 's' : ''}</span>
+        </div>
+    </div>
+
+    <!-- Red Alliance -->
+    <div class="mb-4">
+        <p class="mb-2 text-xs font-bold tracking-widest text-red-500 uppercase">Red Alliance</p>
+        <div class="grid grid-cols-3 gap-2">
+            {#each [redSlots[0], redSlots[1], redSlots[2]] as teamNum}
+                {@const report = teamNum != null ? reportByTeam.get(teamNum) : undefined}
+                <div class="overflow-hidden rounded-xl border bg-white shadow-sm
+                    {report ? 'border-red-200' : 'border-gray-200'}">
+                    <!-- Team header -->
+                    <div class="border-b px-2 py-2 text-center
+                        {report ? 'border-red-100 bg-red-50' : 'border-gray-100 bg-gray-50'}">
+                        {#if teamNum != null}
+                            <a href="/teams/{teamNum}"
+                               class="block text-base font-black leading-tight hover:underline
+                                   {report ? 'text-red-700' : 'text-gray-400'}">
+                                {teamNum}
+                            </a>
+                            {#if report}
+                                <p class="truncate text-[10px] text-gray-400">{report.scouterName}</p>
+                            {:else}
+                                <p class="text-[10px] text-gray-400 italic">No report</p>
+                            {/if}
+                        {:else}
+                            <span class="text-sm text-gray-300">—</span>
+                        {/if}
+                    </div>
+
+                    {#if report}
+                        <div class="space-y-2 p-2 text-[11px]">
+                            <!-- Alliance/position -->
+                            <div class="text-gray-500">{posLabel(report.data?.startingPosition)}</div>
+
+                            <!-- Auto -->
+                            <div>
+                                <p class="font-semibold text-gray-600 uppercase tracking-wide text-[9px] mb-0.5">Auto</p>
+                                <div class="grid grid-cols-2 gap-x-1 gap-y-0.5 text-gray-700">
+                                    <span>Move</span><span class="font-semibold {report.data?.didLeave ? 'text-green-600' : 'text-gray-400'}">{yn(report.data?.didLeave)}</span>
+                                    <span>Climb</span><span class="font-semibold {report.data?.autoClimbed ? 'text-green-600' : 'text-gray-400'}">{yn(report.data?.autoClimbed)}</span>
+                                    <span>Scored</span><span class="font-semibold text-blue-600">{report.data?.autoFuel ?? 0}</span>
+                                    <span>Missed</span><span class="font-semibold text-red-400">{report.data?.autoFuelMissed ?? 0}</span>
+                                </div>
+                            </div>
+
+                            <!-- Teleop -->
+                            <div>
+                                <p class="font-semibold text-gray-600 uppercase tracking-wide text-[9px] mb-0.5">Teleop</p>
+                                <div class="grid grid-cols-2 gap-x-1 gap-y-0.5 text-gray-700">
+                                    <span>Rate</span><span class="font-semibold">{report.data?.teleFuelRateScore}/5</span>
+                                    <span>Acc</span><span class="font-semibold">{report.data?.teleAccScore}/5</span>
+                                    <span>Pass</span><span class="font-semibold">{report.data?.telePassScore}/5</span>
+                                    <span>Def</span><span class="font-semibold">{report.data?.teleDefScore}/5</span>
+                                </div>
+                            </div>
+
+                            <!-- Endgame -->
+                            <div>
+                                <p class="font-semibold text-gray-600 uppercase tracking-wide text-[9px] mb-0.5">Endgame</p>
+                                <div class="grid grid-cols-2 gap-x-1 gap-y-0.5 text-gray-700">
+                                    <span>Climb</span><span class="font-semibold">{climbLabel(report.data?.climbType)}</span>
+                                    {#if (report.data?.cardReceived ?? 0) > 0}
+                                        <span>Card</span><span class="font-semibold text-yellow-600">{cardLabel(report.data?.cardReceived)}</span>
+                                    {/if}
+                                </div>
+                            </div>
+
+                            <!-- Notes -->
+                            {#if report.data?.notes}
+                                <p class="text-gray-500 italic leading-snug">{report.data.notes}</p>
+                            {/if}
+
+                            <!-- Admin delete -->
+                            {#if data.isAdmin}
+                                <form method="POST" action="?/deleteReport" use:enhance class="pt-1">
+                                    <input type="hidden" name="id" value={report.id} />
+                                    <button type="submit"
+                                        class="w-full rounded bg-red-50 py-1 text-[10px] font-semibold text-red-500 hover:bg-red-100">
+                                        Delete
+                                    </button>
+                                </form>
+                            {/if}
                         </div>
-                    </TableBodyCell>
-                    <TableBodyCell>
-                        Leave: {report.data?.didLeave ? 'Yes' : 'No'}<br/>
-                        Climb: {report.data?.autoClimbed ? 'Yes' : 'No'}
-                    </TableBodyCell>
-                    <TableBodyCell>
-                        Scored: {report.data?.autoFuel ?? 0}<br/>
-                        Missed: {report.data?.autoFuelMissed ?? 0}
-                    </TableBodyCell>
-                    <TableBodyCell>
-                        {report.data?.teleFuelRateScore} / {report.data?.teleAccScore} / {report.data?.telePassScore} / {report.data?.teleDefScore}
-                    </TableBodyCell>
-                    <TableBodyCell>
-                        Climb: {getClimbLabel(report.data?.climbType)}<br/>
-                        Card: {getCardLabel(report.data?.cardReceived)}
-                    </TableBodyCell>
-                    <TableBodyCell class="max-w-xs whitespace-normal text-xs">
-                        {report.data?.notes ?? ''}
-                    </TableBodyCell>
-                    {#if data.isAdmin}
-                        <TableBodyCell>
-                            <form method="POST" action="?/deleteReport" use:enhance>
-                                <input type="hidden" name="id" value={report.id} />
-                                <Button type="submit" color="red" size="xs">Delete</Button>
-                            </form>
-                        </TableBodyCell>
                     {/if}
-                </TableBodyRow>
+                </div>
             {/each}
-        </TableBody>
-    </Table>
+        </div>
+    </div>
+
+    <!-- Blue Alliance -->
+    <div>
+        <p class="mb-2 text-xs font-bold tracking-widest text-blue-500 uppercase">Blue Alliance</p>
+        <div class="grid grid-cols-3 gap-2">
+            {#each [blueSlots[0], blueSlots[1], blueSlots[2]] as teamNum}
+                {@const report = teamNum != null ? reportByTeam.get(teamNum) : undefined}
+                <div class="overflow-hidden rounded-xl border bg-white shadow-sm
+                    {report ? 'border-blue-200' : 'border-gray-200'}">
+                    <div class="border-b px-2 py-2 text-center
+                        {report ? 'border-blue-100 bg-blue-50' : 'border-gray-100 bg-gray-50'}">
+                        {#if teamNum != null}
+                            <a href="/teams/{teamNum}"
+                               class="block text-base font-black leading-tight hover:underline
+                                   {report ? 'text-blue-700' : 'text-gray-400'}">
+                                {teamNum}
+                            </a>
+                            {#if report}
+                                <p class="truncate text-[10px] text-gray-400">{report.scouterName}</p>
+                            {:else}
+                                <p class="text-[10px] text-gray-400 italic">No report</p>
+                            {/if}
+                        {:else}
+                            <span class="text-sm text-gray-300">—</span>
+                        {/if}
+                    </div>
+
+                    {#if report}
+                        <div class="space-y-2 p-2 text-[11px]">
+                            <div class="text-gray-500">{posLabel(report.data?.startingPosition)}</div>
+
+                            <div>
+                                <p class="font-semibold text-gray-600 uppercase tracking-wide text-[9px] mb-0.5">Auto</p>
+                                <div class="grid grid-cols-2 gap-x-1 gap-y-0.5 text-gray-700">
+                                    <span>Move</span><span class="font-semibold {report.data?.didLeave ? 'text-green-600' : 'text-gray-400'}">{yn(report.data?.didLeave)}</span>
+                                    <span>Climb</span><span class="font-semibold {report.data?.autoClimbed ? 'text-green-600' : 'text-gray-400'}">{yn(report.data?.autoClimbed)}</span>
+                                    <span>Scored</span><span class="font-semibold text-blue-600">{report.data?.autoFuel ?? 0}</span>
+                                    <span>Missed</span><span class="font-semibold text-red-400">{report.data?.autoFuelMissed ?? 0}</span>
+                                </div>
+                            </div>
+
+                            <div>
+                                <p class="font-semibold text-gray-600 uppercase tracking-wide text-[9px] mb-0.5">Teleop</p>
+                                <div class="grid grid-cols-2 gap-x-1 gap-y-0.5 text-gray-700">
+                                    <span>Rate</span><span class="font-semibold">{report.data?.teleFuelRateScore}/5</span>
+                                    <span>Acc</span><span class="font-semibold">{report.data?.teleAccScore}/5</span>
+                                    <span>Pass</span><span class="font-semibold">{report.data?.telePassScore}/5</span>
+                                    <span>Def</span><span class="font-semibold">{report.data?.teleDefScore}/5</span>
+                                </div>
+                            </div>
+
+                            <div>
+                                <p class="font-semibold text-gray-600 uppercase tracking-wide text-[9px] mb-0.5">Endgame</p>
+                                <div class="grid grid-cols-2 gap-x-1 gap-y-0.5 text-gray-700">
+                                    <span>Climb</span><span class="font-semibold">{climbLabel(report.data?.climbType)}</span>
+                                    {#if (report.data?.cardReceived ?? 0) > 0}
+                                        <span>Card</span><span class="font-semibold text-yellow-600">{cardLabel(report.data?.cardReceived)}</span>
+                                    {/if}
+                                </div>
+                            </div>
+
+                            {#if report.data?.notes}
+                                <p class="text-gray-500 italic leading-snug">{report.data.notes}</p>
+                            {/if}
+
+                            {#if data.isAdmin}
+                                <form method="POST" action="?/deleteReport" use:enhance class="pt-1">
+                                    <input type="hidden" name="id" value={report.id} />
+                                    <button type="submit"
+                                        class="w-full rounded bg-red-50 py-1 text-[10px] font-semibold text-red-500 hover:bg-red-100">
+                                        Delete
+                                    </button>
+                                </form>
+                            {/if}
+                        </div>
+                    {/if}
+                </div>
+            {/each}
+        </div>
+    </div>
 </div>

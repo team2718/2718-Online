@@ -11,3 +11,6 @@ export const ADMIN_PASSWORD_HASH = env.ADMIN_PASSWORD_SHA256.trim().toLowerCase(
 export const ADMIN_SESSION_EXPIRY_HOURS = env.ADMIN_SESSION_EXPIRY_HOURS
 	? Number(env.ADMIN_SESSION_EXPIRY_HOURS)
 	: 12;
+
+// Optional — can also be supplied per-request from the admin UI
+export const TBA_API_KEY = env.TBA_API_KEY ?? '';

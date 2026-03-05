@@ -2,20 +2,21 @@
 	import { onMount } from 'svelte';
 	import { Html5Qrcode } from 'html5-qrcode';
 
+	let { data } = $props();
+
 	let scanner: Html5Qrcode;
 	let status = "Waiting for scan...";
-	
+
 	// Popup state
 	let notification: { message: string; type: 'success' | 'error' | 'warning' } | null = null;
 
 	const showNotification = (message: string, type: 'success' | 'error' | 'warning', shouldPause: boolean) => {
 		notification = { message, type };
-		
+
 		if (shouldPause) {
-			scanner.pause(true); // Pause with visual overlay
+			scanner.pause(true);
 		}
 
-		// Clear notification and resume after 1.5 seconds
 		setTimeout(() => {
 			notification = null;
 			if (shouldPause) {
@@ -26,33 +27,31 @@
 
 	onMount(() => {
 		scanner = new Html5Qrcode("reader");
-		
+
 		scanner.start(
 			{ facingMode: "environment" },
 			{ fps: 10, qrbox: { width: 250, height: 250 } },
 			async (decodedText: string) => {
-				// Prevent double-processing if a scan is already mid-flight
 				if (notification && (notification.type === 'success' || notification.type === 'warning')) return;
 
 				try {
 					const formData = new FormData();
 					formData.append('report', decodedText);
-					
+
 					const response = await fetch('?/submitScan', {
 						method: 'POST',
 						body: formData
 					});
 
 					const result = await response.json();
-					// SvelteKit actions wrap the return in a 'data' or 'error' object
 					const actionData = JSON.parse(result.data);
 
 					if (response.ok) {
-						showNotification("Success! Report saved.", 'success', true);
+						const label = actionData?.matchId ?? 'saved';
+						showNotification(`Saved — ${label}`, 'success', true);
 					} else if (response.status === 409) {
 						showNotification("Duplicate: Already scanned!", 'warning', true);
 					} else {
-						// Other failures (400, 500) don't pause the scanner
 						const errorMsg = actionData?.message || "Scan failed.";
 						showNotification(errorMsg, 'error', false);
 					}
@@ -68,11 +67,20 @@
 </script>
 
 <main>
-	<h1>Scan Scouting Report</h1>
-	
+	<div class="header">
+		<h1>Scan Scouting Report</h1>
+		<a
+			href="/admin"
+			class="mode-badge {data.matchType === 'practice' ? 'practice' : 'qualification'}"
+			title="Change in Admin settings"
+		>
+			{data.matchType === 'practice' ? 'Practice' : 'Qualification'} mode
+		</a>
+	</div>
+
 	<div class="scanner-container">
 		<div id="reader"></div>
-		
+
 		{#if notification}
 			<div class="popup {notification.type}">
 				{notification.message}
@@ -84,6 +92,42 @@
 </main>
 
 <style>
+	.header {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.75rem;
+		flex-wrap: wrap;
+		margin-bottom: 0.5rem;
+	}
+
+	h1 {
+		margin: 0;
+	}
+
+	.mode-badge {
+		display: inline-block;
+		padding: 0.25rem 0.75rem;
+		border-radius: 999px;
+		font-size: 0.75rem;
+		font-weight: 700;
+		text-decoration: none;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+	}
+
+	.mode-badge.qualification {
+		background: #e8f5e9;
+		color: #2e7d32;
+		border: 1px solid #a5d6a7;
+	}
+
+	.mode-badge.practice {
+		background: #fff8e1;
+		color: #e65100;
+		border: 1px solid #ffcc80;
+	}
+
 	.scanner-container {
 		position: relative;
 		width: 100%;

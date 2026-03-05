@@ -1,129 +1,126 @@
 <script lang="ts">
-	import { Badge, Button, Card, Heading } from 'flowbite-svelte';
-	import { UsersGroupOutline, ChevronRightOutline } from 'flowbite-svelte-icons';
+	import { Heading } from 'flowbite-svelte';
+	import { ChevronRightOutline } from 'flowbite-svelte-icons';
 
 	let { data } = $props();
 
 	const reports = $derived(data?.reports ?? []);
 	const matches = $derived(data?.matches ?? []);
 
-	const getReportsForMatch = (matchId: string) => {
-		return reports.filter((r) => r.matchId === matchId);
+	const reportedTeamsForMatch = (matchId: string): Set<number> =>
+		new Set(reports.filter((r) => r.matchId === matchId).map((r) => r.teamNumber));
+
+	const teamsByAllianceFromReports = (matchId: string, alliance: number): (number | null)[] =>
+		[...new Set(
+			reports
+				.filter((r) => r.matchId === matchId && r.data?.alliance === alliance)
+				.map((r) => r.teamNumber)
+		)];
+
+	const hasSchedule = (match: (typeof matches)[number]): boolean =>
+		match.red1 != null || match.red2 != null || match.red3 != null ||
+		match.blue1 != null || match.blue2 != null || match.blue3 != null;
+
+	const matchLabel = (match: (typeof matches)[number]): string => {
+		if (match.matchType === 'qualification') return `Q${match.matchNumber}`;
+		if (match.matchType === 'practice') return `P${match.matchNumber}`;
+		if (match.matchType === 'playoff') return match.id.toUpperCase();
+		return `M${match.matchNumber}`;
 	};
 
-	// Helper to get unique teams for an alliance from reports
-	const TeamsByAlliance = (matchId: string, alliance: number) => {
-		const matchReports = getReportsForMatch(matchId);
-		// ScoutingReportData: alliance 0 = Red, 1 = Blue
-		return [
-			...new Set(matchReports.filter((r) => r.data?.alliance === alliance).map((r) => r.teamNumber))
-		];
+	const typeColor = (t: string | null) => {
+		if (t === 'qualification') return 'text-green-700 bg-green-50 border-green-200';
+		if (t === 'practice') return 'text-yellow-700 bg-yellow-50 border-yellow-200';
+		if (t === 'playoff') return 'text-purple-700 bg-purple-50 border-purple-200';
+		return 'text-gray-600 bg-gray-50 border-gray-200';
 	};
 </script>
 
-<div class="mx-auto mt-px max-w-7xl py-4">
-	<Heading tag="h1" class="mb-4 px-4 text-3xl font-bold">Matches</Heading>
+<div class="mx-auto mt-px max-w-5xl px-4 py-4">
+	<Heading tag="h1" class="mb-4 text-3xl font-bold">Matches</Heading>
 
-	{#if data.matches.length > 0}
-		<div class="mx-auto max-w-7xl px-4">
-			<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-				{#each matches as match}
-					{@const matchReports = getReportsForMatch(match.id)}
-					{@const redTeams = TeamsByAlliance(match.id, 0)}
-					{@const blueTeams = TeamsByAlliance(match.id, 1)}
-
-					<div
-						class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md"
-					>
-						<div
-							class="flex items-center justify-between border-b border-gray-100 bg-gray-50/50 px-5 py-4"
-						>
-							<span class="text-lg font-bold text-gray-700">Match #{match.matchNumber}</span>
-							{#if matchReports.length > 0}
-								<Badge color="green" rounded pill>
-									<UsersGroupOutline class="mr-1 h-3 w-3" />
-									{matchReports.length} Reports
-								</Badge>
-							{:else}
-								<Badge color="dark" rounded pill>Upcoming</Badge>
-							{/if}
-						</div>
-
-						<div class="p-5">
-							<div class="grid grid-cols-7 items-center gap-2">
-								<div class="col-span-3 space-y-2">
-									<div
-										class="text-center text-[10px] font-bold tracking-widest text-red-500 uppercase"
-									>
-										Red Alliance
-									</div>
-									<div class="flex flex-col gap-1">
-										{#each redTeams as team}
-											<a
-												href="/teams/{team}"
-												class="block rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-center font-bold text-red-700 hover:bg-red-100"
-												>{team}</a
-											>
-										{:else}
-											<div
-												class="rounded-lg border border-dashed border-gray-200 py-2 text-center text-xs text-gray-400"
-											>
-												No Data
-											</div>
-										{/each}
-									</div>
-								</div>
-
-								<div class="col-span-1 flex flex-col items-center justify-center">
-									<div class="relative h-full w-px bg-gray-200">
-										<span
-											class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-1 text-[10px] font-black text-gray-400"
-											>VS</span
-										>
-									</div>
-								</div>
-
-								<div class="col-span-3 space-y-2">
-									<div
-										class="text-center text-[10px] font-bold tracking-widest text-blue-500 uppercase"
-									>
-										Blue Alliance
-									</div>
-									<div class="flex flex-col gap-1">
-										{#each blueTeams as team}
-											<a
-												href="/teams/{team}"
-												class="block rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-center font-bold text-blue-700 hover:bg-blue-100"
-												>{team}</a
-											>
-										{:else}
-											<div
-												class="rounded-lg border border-dashed border-gray-200 py-2 text-center text-xs text-gray-400"
-											>
-												No Data
-											</div>
-										{/each}
-									</div>
-								</div>
-							</div>
-						</div>
-
-						<a
-							href="/matches/{match.id}"
-							class="group block w-full border-t border-gray-100 bg-white px-5 py-3 text-sm font-semibold text-gray-500 hover:text-blue-600"
-						>
-							<div class="flex items-center justify-between">
-								<span>View Match Details</span>
-								<ChevronRightOutline
-									class="h-4 w-4 transition-transform group-hover:translate-x-1"
-								/>
-							</div>
-						</a>
-					</div>
-				{/each}
+	{#if matches.length > 0}
+		<div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+			<!-- Header row -->
+			<div class="grid grid-cols-[5rem_1fr_auto_1fr_2rem] items-center border-b border-gray-200 bg-gray-50 px-3 py-1.5 text-[10px] font-bold tracking-widest text-gray-400 uppercase">
+				<span>Match</span>
+				<span class="text-center text-red-400">Red Alliance</span>
+				<span></span>
+				<span class="text-center text-blue-400">Blue Alliance</span>
+				<span></span>
 			</div>
+
+			{#each matches as match, i}
+				{@const reported = reportedTeamsForMatch(match.id)}
+				{@const scheduled = hasSchedule(match)}
+				{@const red = scheduled
+					? [match.red1, match.red2, match.red3]
+					: teamsByAllianceFromReports(match.id, 0)}
+				{@const blue = scheduled
+					? [match.blue1, match.blue2, match.blue3]
+					: teamsByAllianceFromReports(match.id, 1)}
+
+				<a
+					href="/matches/{match.id}"
+					class="grid grid-cols-[5rem_1fr_auto_1fr_2rem] items-center gap-x-2 px-3 py-2 transition-colors hover:bg-gray-50
+						{i > 0 ? 'border-t border-gray-100' : ''}"
+				>
+					<!-- Match label -->
+					<span class="inline-flex items-center justify-center rounded border px-1.5 py-0.5 text-xs font-bold {typeColor(match.matchType)}">
+						{matchLabel(match)}
+					</span>
+
+					<!-- Red alliance -->
+					<div class="flex justify-center gap-1">
+						{#each red as team}
+							{#if team != null}
+								{@const hasReport = reported.has(team)}
+								<span class="relative inline-flex min-w-[3.5rem] items-center justify-center rounded px-1.5 py-0.5 text-xs font-bold
+									{hasReport ? 'bg-red-100 text-red-700' : scheduled ? 'bg-orange-50 text-orange-600 ring-1 ring-orange-300' : 'bg-red-100 text-red-700'}">
+									{team}
+									{#if scheduled && !hasReport}
+										<span class="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-orange-400"></span>
+									{/if}
+								</span>
+							{:else if scheduled}
+								<span class="inline-flex min-w-[3.5rem] items-center justify-center rounded border border-dashed border-gray-200 px-1.5 py-0.5 text-xs text-gray-300">—</span>
+							{/if}
+						{/each}
+						{#if red.length === 0}
+							<span class="text-xs text-gray-300 italic">No data</span>
+						{/if}
+					</div>
+
+					<!-- VS -->
+					<span class="text-[10px] font-black text-gray-300">VS</span>
+
+					<!-- Blue alliance -->
+					<div class="flex justify-center gap-1">
+						{#each blue as team}
+							{#if team != null}
+								{@const hasReport = reported.has(team)}
+								<span class="relative inline-flex min-w-[3.5rem] items-center justify-center rounded px-1.5 py-0.5 text-xs font-bold
+									{hasReport ? 'bg-blue-100 text-blue-700' : scheduled ? 'bg-orange-50 text-orange-600 ring-1 ring-orange-300' : 'bg-blue-100 text-blue-700'}">
+									{team}
+									{#if scheduled && !hasReport}
+										<span class="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-orange-400"></span>
+									{/if}
+								</span>
+							{:else if scheduled}
+								<span class="inline-flex min-w-[3.5rem] items-center justify-center rounded border border-dashed border-gray-200 px-1.5 py-0.5 text-xs text-gray-300">—</span>
+							{/if}
+						{/each}
+						{#if blue.length === 0}
+							<span class="text-xs text-gray-300 italic">No data</span>
+						{/if}
+					</div>
+
+					<!-- Chevron -->
+					<ChevronRightOutline class="h-3.5 w-3.5 text-gray-300" />
+				</a>
+			{/each}
 		</div>
 	{:else}
-		<p class="px-4 text-gray-500">No matches have been scouted yet.</p>
+		<p class="text-gray-500">No matches in the schedule yet.</p>
 	{/if}
 </div>

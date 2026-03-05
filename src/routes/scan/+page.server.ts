@@ -1,7 +1,13 @@
 import { fail, type Actions } from '@sveltejs/kit';
-import { addScoutingReport, db } from '$lib/server/db';
+import { addScoutingReport, db, getEventSetting } from '$lib/server/db';
 import { eq } from 'drizzle-orm';
 import { scoutingReports, teams, matches } from '$lib/server/db/schema';
+import type { PageServerLoad } from './$types';
+
+export const load: PageServerLoad = async () => {
+	const matchType = (await getEventSetting('defaultMatchType')) ?? 'qualification';
+	return { matchType };
+};
 
 export const actions: Actions = {
 	submitScan: async ({ request }) => {
@@ -20,10 +26,23 @@ export const actions: Actions = {
 			if (parsed.stagesComplete < 4) {
 				return fail(400, { message: 'Report is incomplete' });
 			}
-			
+
 			const uid = !isNaN(Number(parsed.uid)) ? Number(parsed.uid) : Math.floor(Math.random() * 100000000);
 			const teamNum = Number(parsed.teamNumber);
-			const matchNumStr = String(parsed.matchNumber);
+			const matchNum = Number(parsed.matchNumber);
+
+			// Derive match ID and type from today's setting in a single lookup
+			const setting = await getEventSetting('defaultMatchType');
+			let matchType: string;
+			let matchId: string;
+			if (setting === 'practice') {
+				matchType = 'practice';
+				matchId = `pr${matchNum}`;
+			} else {
+				// Default to qualification
+				matchType = 'qualification';
+				matchId = `qm${matchNum}`;
+			}
 
 			// 1. Check for duplicates
 			const existingReport = await db.query.scoutingReports.findFirst({
@@ -40,25 +59,22 @@ export const actions: Actions = {
 				.onConflictDoNothing()
 				.run();
 
-			// 3. Ensure Match exists (Simplified: No event reference needed)
+			// 3. Ensure Match exists; preserve any TBA schedule data already present
 			await db.insert(matches)
-				.values({
-					id: matchNumStr,
-					matchNumber: Number(parsed.matchNumber)
-				})
+				.values({ id: matchId, matchNumber: matchNum, matchType })
 				.onConflictDoNothing()
 				.run();
 
 			// 4. Save report
 			await addScoutingReport({
 				id: uid,
-				matchId: matchNumStr,
+				matchId,
 				teamNumber: teamNum,
 				scouterName: parsed.scoutName || 'Unknown',
 				data: parsed
 			});
 
-			return { success: true };
+			return { success: true, matchId, matchType };
 		} catch (err) {
 			console.error("Scan error:", err);
 			return fail(500, { message: 'Failed to save report' });

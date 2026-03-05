@@ -4,13 +4,20 @@ import type { PitScoutReportData, ScoutingReportData } from '$lib/types';
 
 export const teams = sqliteTable('teams', {
 	number: integer('teamNumber').primaryKey(),
-	name: text('name').notNull()
+	name: text('name').notNull(),
+	metadata: text('metadata', { mode: 'json' }).$type<Record<string, unknown>>()
 });
 
-// Simplified matches table (removed eventId and type)
 export const matches = sqliteTable('matches', {
-	id: text('id').primaryKey(), 
-	matchNumber: integer('matchNumber').notNull()
+	id: text('id').primaryKey(),
+	matchNumber: integer('matchNumber').notNull(),
+	matchType: text('matchType'), // 'practice' | 'qualification' | 'playoff'
+	red1: integer('red1'),
+	red2: integer('red2'),
+	red3: integer('red3'),
+	blue1: integer('blue1'),
+	blue2: integer('blue2'),
+	blue3: integer('blue3')
 });
 
 export const scoutingReports = sqliteTable('scouting_reports', {
@@ -22,7 +29,7 @@ export const scoutingReports = sqliteTable('scouting_reports', {
 		.notNull()
 		.references(() => teams.number),
 	scouterName: text('scouter_name').notNull(),
-	data: text('data', { mode: 'json' }).$type<ScoutingReportData>(), 
+	data: text('data', { mode: 'json' }).$type<ScoutingReportData>(),
 	createdAt: integer('created_at').default(sql`(strftime('%s', 'now'))`)
 });
 
@@ -41,6 +48,11 @@ export const admin_sessions = sqliteTable('admin_sessions', {
 	createdAt: integer('created_at').default(sql`(strftime('%s', 'now'))`)
 });
 
+export const eventSettings = sqliteTable('event_settings', {
+	key: text('key').primaryKey(),
+	value: text('value').notNull()
+});
+
 // --- JUNCTION TABLES ---
 
 export const matchesToTeams = sqliteTable(
@@ -52,7 +64,7 @@ export const matchesToTeams = sqliteTable(
 		teamNumber: integer('team_number')
 			.notNull()
 			.references(() => teams.number),
-		station: text('station') 
+		station: text('station')
 	},
 	(t) => [primaryKey({ columns: [t.matchId, t.teamNumber] })]
 );

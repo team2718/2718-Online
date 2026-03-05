@@ -5,8 +5,9 @@
 	import '../app.css';
 	interface Props {
 		children: Snippet;
+		data: { teamSearchList: { number: number; name: string }[] };
 	}
-	let { children }: Props = $props();
+	let { children, data }: Props = $props();
 
 	let title = $derived(
 		[
@@ -34,7 +35,7 @@
 <header
 	class="fixed top-0 z-40 mx-auto w-full flex-none border-b border-gray-200 bg-white dark:border-gray-600 dark:bg-gray-800"
 >
-	<Navbar />
+	<Navbar teams={data.teamSearchList} />
 </header>
 
 <div class="mx-auto max-w-screen-2xl pt-[98px] pr-4 pb-10 pl-4">

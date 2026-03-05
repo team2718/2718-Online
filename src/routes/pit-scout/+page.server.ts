@@ -1,39 +1,16 @@
-import { fail, type Actions } from '@sveltejs/kit';
-import { addPitReport, db } from '$lib/server/db';
-import { teams } from '$lib/server/db/schema';
+import { db } from '$lib/server/db';
+import { teams, pitScoutingReports } from '$lib/server/db/schema';
+import { asc } from 'drizzle-orm';
 
-export const actions: Actions = {
-	submit: async ({ request }) => {
-		const formData = await request.formData();
-		const rawData = formData.get('data') as string;
+export async function load() {
+	const [allTeams, allPitReports] = await Promise.all([
+		db.select().from(teams).orderBy(asc(teams.number)).all(),
+		db.select({ teamNumber: pitScoutingReports.teamNumber }).from(pitScoutingReports).all()
+	]);
 
-		if (!rawData) return fail(400, { message: 'No data received' });
+	const scoutedTeamNums = new Set(allPitReports.map((r) => r.teamNumber));
 
-		try {
-			const parsed = JSON.parse(rawData);
-
-			if (!parsed.teamNumber || !parsed.scoutName) {
-				return fail(400, { message: 'Team number and scouter name are required' });
-			}
-
-			const teamNum = Number(parsed.teamNumber);
-
-			// Ensure Team exists
-			await db.insert(teams)
-				.values({ number: teamNum, name: `Team ${teamNum}` })
-				.onConflictDoNothing()
-				.run();
-
-			await addPitReport({
-				teamNumber: teamNum,
-				scouterName: parsed.scoutName,
-				data: parsed
-			});
-
-			return { success: true }; 
-		} catch (err) {
-			console.error("Pit scouting upload error:", err);
-			return fail(500, { message: 'Failed to save pit report' });
-		}
-	}
-};
+	return {
+		teams: allTeams.map((t) => ({ ...t, pitScouted: scoutedTeamNums.has(t.number) }))
+	};
+}
