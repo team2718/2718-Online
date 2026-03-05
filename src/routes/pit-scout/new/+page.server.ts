@@ -1,6 +1,11 @@
 import { fail, type Actions } from '@sveltejs/kit';
+import type { PageServerLoad } from './$types';
 import { addPitReport, db } from '$lib/server/db';
 import { teams } from '$lib/server/db/schema';
+
+export const load: PageServerLoad = ({ url }) => {
+	return { prefillTeam: url.searchParams.get('team') ?? '' };
+};
 
 export const actions: Actions = {
 	submit: async ({ request }) => {

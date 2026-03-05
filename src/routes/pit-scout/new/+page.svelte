@@ -2,9 +2,11 @@
     import type { PitScoutReportData } from "$lib";
     import { deserialize } from '$app/forms';
 
-    const createEmptyForm = (): Partial<PitScoutReportData> => ({
+    let { data } = $props();
+
+    const createEmptyForm = (teamNumber = ''): Partial<PitScoutReportData> => ({
         scoutName: '',
-        teamNumber: '',
+        teamNumber,
         driverYOE: 'N/A',
         hopperCapacity: 'N/A',
         drivetrain: 'N/A',
@@ -20,7 +22,7 @@
         timestamp: ''
     });
 
-    let form = $state(createEmptyForm());
+    let form = $state(createEmptyForm(data.prefillTeam));
     let saved = $state(false);
     let error = $state("");
     let submitting = $state(false);
@@ -113,7 +115,7 @@
                             class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
                     </div>
                     <div>
-                        <label for="teamNumber" class="block text-sm font-medium text-gray-700">Team Number *</label>
+                        <label for="teamNumber" class="block text-sm font-medium text-gray-700">Team Number (Who are you scouting?)*</label>
                         <input id="teamNumber" type="number" bind:value={form.teamNumber} required
                             class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
                     </div>
