@@ -12,6 +12,7 @@
 		if (path === '/') return '/';
 		if (path.startsWith('/teams')) return '/teams';
 		if (path.startsWith('/pit-scout')) return '/pit-scout';
+		if (path.startsWith('/prematch')) return '/prematch';
 		return path;
 	});
 
@@ -19,6 +20,7 @@
 		{ href: '/', label: 'Home' },
 		{ href: '/teams', label: 'Teams' },
 		{ href: '/matches', label: 'Matches' },
+		{ href: '/prematch', label: 'Pre-Match' },
 		{ href: '/scan', label: 'Scan QR' },
 		{ href: '/pit-scout', label: 'Pit Scout' }
 	];

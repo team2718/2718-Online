@@ -97,6 +97,29 @@
 			</div>
 		</div>
 
+		{#if data.team}
+			{@const meta = data.team.metadata as Record<string, unknown> | null}
+			{#if meta?.opr != null || meta?.dpr != null || meta?.ccwm != null}
+				<div class="mb-6 grid grid-cols-3 gap-3">
+					<div class="rounded-xl border border-gray-200 bg-white px-4 py-3 text-center shadow-sm">
+						<p class="text-2xl font-black text-blue-600">{typeof meta.opr === 'number' ? meta.opr.toFixed(1) : '—'}</p>
+						<p class="mt-0.5 text-xs font-semibold tracking-wider text-gray-400 uppercase">OPR</p>
+						<p class="text-xs text-gray-400">Offensive Power Rating</p>
+					</div>
+					<div class="rounded-xl border border-gray-200 bg-white px-4 py-3 text-center shadow-sm">
+						<p class="text-2xl font-black text-red-500">{typeof meta.dpr === 'number' ? meta.dpr.toFixed(1) : '—'}</p>
+						<p class="mt-0.5 text-xs font-semibold tracking-wider text-gray-400 uppercase">DPR</p>
+						<p class="text-xs text-gray-400">Defensive Power Rating</p>
+					</div>
+					<div class="rounded-xl border border-gray-200 bg-white px-4 py-3 text-center shadow-sm">
+						<p class="text-2xl font-black text-green-600">{typeof meta.ccwm === 'number' ? meta.ccwm.toFixed(1) : '—'}</p>
+						<p class="mt-0.5 text-xs font-semibold tracking-wider text-gray-400 uppercase">CCWM</p>
+						<p class="text-xs text-gray-400">Calculated Contribution</p>
+					</div>
+				</div>
+			{/if}
+		{/if}
+
 		<div class="grid grid-cols-1 gap-8 lg:grid-cols-12">
 			<div class="space-y-6 lg:col-span-8">
 				<div>

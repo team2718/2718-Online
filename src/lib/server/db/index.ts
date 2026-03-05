@@ -40,7 +40,6 @@ export async function checkAdminSessionKey(sessionId: string): Promise<boolean> 
  * Add a new match scouting report
  */
 export async function addScoutingReport(report: typeof scoutingReports.$inferInsert) {
-	console.log("Adding scouting report to database:", report);
 	return await db.insert(scoutingReports).values(report).run();
 }
 
@@ -131,6 +130,12 @@ interface TBATeamSimple {
 	country: string | null;
 }
 
+interface TBAOprs {
+	oprs: Record<string, number>;
+	dprs: Record<string, number>;
+	ccwms: Record<string, number>;
+}
+
 interface TBAMatchSimple {
 	key: string;
 	comp_level: string; // 'qm' | 'pr' | 'ef' | 'qf' | 'sf' | 'f'
@@ -190,20 +195,44 @@ export async function importFromTBA(eventKey: string, apiKey: string): Promise<{
 		errors.push(`Failed to fetch teams: ${String(e)}`);
 	}
 
+	// -- Fetch OPR data --
+	let oprData: TBAOprs | null = null;
+	try {
+		const res = await fetch(`https://www.thebluealliance.com/api/v3/event/${eventKey}/oprs`, { headers });
+		if (res.ok) {
+			oprData = await res.json();
+		} else if (res.status !== 404) {
+			errors.push(`TBA OPRs API returned ${res.status}`);
+		}
+	} catch (e) {
+		errors.push(`Failed to fetch OPR data: ${String(e)}`);
+	}
+
 	for (const t of tbaTeams) {
 		try {
+			const tbaKey = `frc${t.team_number}`;
+			const metadata: Record<string, unknown> = {
+				...(t as unknown as Record<string, unknown>),
+				...(oprData
+					? {
+							opr: oprData.oprs[tbaKey] ?? null,
+							dpr: oprData.dprs[tbaKey] ?? null,
+							ccwm: oprData.ccwms[tbaKey] ?? null
+						}
+					: {})
+			};
 			await db
 				.insert(teams)
 				.values({
 					number: t.team_number,
 					name: t.nickname ?? t.name ?? `Team ${t.team_number}`,
-					metadata: t as unknown as Record<string, unknown>
+					metadata
 				})
 				.onConflictDoUpdate({
 					target: teams.number,
 					set: {
 						name: t.nickname ?? t.name ?? `Team ${t.team_number}`,
-						metadata: t as unknown as Record<string, unknown>
+						metadata
 					}
 				})
 				.run();

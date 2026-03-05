@@ -50,10 +50,10 @@
 		<h2 class="mb-3 text-lg font-bold text-gray-700">Rankings</h2>
 		<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
 
-			<!-- Auto Scoring -->
+			<!-- Avg Auto Fuel -->
 			<div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
 				<div class="border-b border-gray-100 bg-gray-50 px-4 py-2.5">
-					<h3 class="text-sm font-bold text-gray-700">Auto Scoring</h3>
+					<h3 class="text-sm font-bold text-gray-700">Avg Auto Fuel</h3>
 					<p class="text-xs text-gray-400">Avg game pieces scored in auto</p>
 				</div>
 				<div>
@@ -68,11 +68,11 @@
 				</div>
 			</div>
 
-			<!-- Teleop Rate -->
+			<!-- Avg Tele Fuel Rate -->
 			<div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
 				<div class="border-b border-gray-100 bg-gray-50 px-4 py-2.5">
-					<h3 class="text-sm font-bold text-gray-700">Teleop Rate</h3>
-					<p class="text-xs text-gray-400">Avg scoring rate score (1–5)</p>
+					<h3 class="text-sm font-bold text-gray-700">Avg Tele Fuel Rate</h3>
+					<p class="text-xs text-gray-400">Avg teleop scoring rate (1–5)</p>
 				</div>
 				<div>
 					{#each rankings.teleopRate as row, i}
@@ -86,11 +86,55 @@
 				</div>
 			</div>
 
-			<!-- Climbing -->
+			<!-- Avg Defense Score -->
 			<div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
 				<div class="border-b border-gray-100 bg-gray-50 px-4 py-2.5">
-					<h3 class="text-sm font-bold text-gray-700">Climbing</h3>
-					<p class="text-xs text-gray-400">% of matches with L2+ climb</p>
+					<h3 class="text-sm font-bold text-gray-700">Avg Defense Score</h3>
+					<p class="text-xs text-gray-400">Avg score when defense was played (1–5)</p>
+				</div>
+				<div>
+					{#if rankings.defense.length > 0}
+						{#each rankings.defense as row, i}
+							<a href="/teams/{row.number}" class="flex items-center gap-2 px-4 py-2 hover:bg-gray-50 {i > 0 ? 'border-t border-gray-100' : ''}">
+								<span class="w-5 text-right text-xs font-bold text-gray-300">{i + 1}</span>
+								<span class="w-12 font-bold text-gray-800">{row.number}</span>
+								<span class="min-w-0 flex-1 truncate text-xs text-gray-500">{row.name}</span>
+								<span class="text-sm font-bold text-orange-600">{fmt1(row.value)}<span class="text-xs font-normal text-gray-400">/5</span></span>
+							</a>
+						{/each}
+					{:else}
+						<p class="px-4 py-6 text-center text-xs text-gray-400 italic">No defense data yet</p>
+					{/if}
+				</div>
+			</div>
+
+			<!-- Avg Pass Score -->
+			<div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+				<div class="border-b border-gray-100 bg-gray-50 px-4 py-2.5">
+					<h3 class="text-sm font-bold text-gray-700">Avg Pass Score</h3>
+					<p class="text-xs text-gray-400">Avg score when passing was performed (1–5)</p>
+				</div>
+				<div>
+					{#if rankings.passScore.length > 0}
+						{#each rankings.passScore as row, i}
+							<a href="/teams/{row.number}" class="flex items-center gap-2 px-4 py-2 hover:bg-gray-50 {i > 0 ? 'border-t border-gray-100' : ''}">
+								<span class="w-5 text-right text-xs font-bold text-gray-300">{i + 1}</span>
+								<span class="w-12 font-bold text-gray-800">{row.number}</span>
+								<span class="min-w-0 flex-1 truncate text-xs text-gray-500">{row.name}</span>
+								<span class="text-sm font-bold text-violet-600">{fmt1(row.value)}<span class="text-xs font-normal text-gray-400">/5</span></span>
+							</a>
+						{/each}
+					{:else}
+						<p class="px-4 py-6 text-center text-xs text-gray-400 italic">No passing data yet</p>
+					{/if}
+				</div>
+			</div>
+
+			<!-- Climbing (at least L1) -->
+			<div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+				<div class="border-b border-gray-100 bg-gray-50 px-4 py-2.5">
+					<h3 class="text-sm font-bold text-gray-700">Climb Rate</h3>
+					<p class="text-xs text-gray-400">% of matches with at least L1 climb</p>
 				</div>
 				<div>
 					{#each rankings.climbing as row, i}
@@ -109,47 +153,6 @@
 				</div>
 			</div>
 
-			<!-- Defense -->
-			<div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-				<div class="border-b border-gray-100 bg-gray-50 px-4 py-2.5">
-					<h3 class="text-sm font-bold text-gray-700">Defense Rating</h3>
-					<p class="text-xs text-gray-400">Avg defense score (1–5)</p>
-				</div>
-				<div>
-					{#each rankings.defense as row, i}
-						<a href="/teams/{row.number}" class="flex items-center gap-2 px-4 py-2 hover:bg-gray-50 {i > 0 ? 'border-t border-gray-100' : ''}">
-							<span class="w-5 text-right text-xs font-bold text-gray-300">{i + 1}</span>
-							<span class="w-12 font-bold text-gray-800">{row.number}</span>
-							<span class="min-w-0 flex-1 truncate text-xs text-gray-500">{row.name}</span>
-							<span class="text-sm font-bold text-orange-600">{fmt1(row.value)}<span class="text-xs font-normal text-gray-400">/5</span></span>
-						</a>
-					{/each}
-				</div>
-			</div>
-
-			<!-- Auto Leave -->
-			<div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-				<div class="border-b border-gray-100 bg-gray-50 px-4 py-2.5">
-					<h3 class="text-sm font-bold text-gray-700">Auto Leave</h3>
-					<p class="text-xs text-gray-400">% of matches where robot moved in auto</p>
-				</div>
-				<div>
-					{#each rankings.autoLeave as row, i}
-						<a href="/teams/{row.number}" class="flex items-center gap-2 px-4 py-2 hover:bg-gray-50 {i > 0 ? 'border-t border-gray-100' : ''}">
-							<span class="w-5 text-right text-xs font-bold text-gray-300">{i + 1}</span>
-							<span class="w-12 font-bold text-gray-800">{row.number}</span>
-							<span class="min-w-0 flex-1 truncate text-xs text-gray-500">{row.name}</span>
-							<div class="flex items-center gap-1.5">
-								<div class="h-1.5 w-12 overflow-hidden rounded-full bg-gray-100">
-									<div class="h-full rounded-full bg-teal-500" style="width: {Math.min(row.value, 100)}%"></div>
-								</div>
-								<span class="text-sm font-bold text-teal-600">{fmtPct(row.value)}</span>
-							</div>
-						</a>
-					{/each}
-				</div>
-			</div>
-
 			<!-- Quick links card -->
 			<div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
 				<div class="border-b border-gray-100 bg-gray-50 px-4 py-2.5">
@@ -157,6 +160,10 @@
 					<p class="text-xs text-gray-400">Jump to a section</p>
 				</div>
 				<div class="p-4 space-y-2">
+					<a href="/prematch" class="flex items-center justify-between rounded-lg border border-gray-100 px-3 py-2.5 hover:border-indigo-200 hover:bg-indigo-50">
+						<span class="text-sm font-semibold text-gray-700">Pre-Match Analysis</span>
+						<span class="text-xs text-gray-400">→</span>
+					</a>
 					<a href="/teams" class="flex items-center justify-between rounded-lg border border-gray-100 px-3 py-2.5 hover:border-blue-200 hover:bg-blue-50">
 						<span class="text-sm font-semibold text-gray-700">All Teams</span>
 						<span class="text-xs text-gray-400">→</span>

@@ -25,9 +25,9 @@ export async function load() {
 		teleFuelRateSum: number;
 		defScoreSum: number;
 		defCount: number;
-		teleAccSum: number;
-		climbL2Plus: number;
-		autoLeave: number;
+		passScoreSum: number;
+		passCount: number;
+		climbL1Plus: number;
 	};
 
 	const teamMap = new Map<number, TeamAgg>();
@@ -40,9 +40,9 @@ export async function load() {
 			teleFuelRateSum: 0,
 			defScoreSum: 0,
 			defCount: 0,
-			teleAccSum: 0,
-			climbL2Plus: 0,
-			autoLeave: 0
+			passScoreSum: 0,
+			passCount: 0,
+			climbL1Plus: 0
 		});
 	}
 
@@ -59,9 +59,9 @@ export async function load() {
 				teleFuelRateSum: 0,
 				defScoreSum: 0,
 				defCount: 0,
-				teleAccSum: 0,
-				climbL2Plus: 0,
-				autoLeave: 0
+				passScoreSum: 0,
+				passCount: 0,
+				climbL1Plus: 0
 			};
 			teamMap.set(r.teamNumber, agg);
 		}
@@ -72,9 +72,11 @@ export async function load() {
 			agg.defScoreSum += Number(d.teleDefScore) || 0;
 			agg.defCount++;
 		}
-		agg.teleAccSum += Number(d.teleAccScore) || 0;
-		if ((d.climbType ?? 0) >= 2) agg.climbL2Plus++;
-		if (d.didLeave) agg.autoLeave++;
+		if (d.teleDidPass) {
+			agg.passScoreSum += Number(d.telePassScore) || 0;
+			agg.passCount++;
+		}
+		if ((d.climbType ?? 0) >= 1) agg.climbL1Plus++;
 	}
 
 	const teamStats = [...teamMap.values()]
@@ -86,13 +88,19 @@ export async function load() {
 			avgAutoFuel: t.autoFuelSum / t.count,
 			avgTeleFuelRate: t.teleFuelRateSum / t.count,
 			avgDefScore: t.defCount > 0 ? t.defScoreSum / t.defCount : 0,
-			avgTeleAcc: t.teleAccSum / t.count,
-			climbPct: (t.climbL2Plus / t.count) * 100,
-			autoLeavePct: (t.autoLeave / t.count) * 100
+			defCount: t.defCount,
+			avgPassScore: t.passCount > 0 ? t.passScoreSum / t.passCount : 0,
+			passCount: t.passCount,
+			climbPct: (t.climbL1Plus / t.count) * 100
 		}));
 
-	const top = (key: keyof (typeof teamStats)[number], n = 8) =>
+	const top = (
+		key: keyof (typeof teamStats)[number],
+		n = 8,
+		predicate?: (t: (typeof teamStats)[number]) => boolean
+	) =>
 		[...teamStats]
+			.filter(predicate ?? (() => true))
 			.sort((a, b) => (b[key] as number) - (a[key] as number))
 			.slice(0, n)
 			.map((t) => ({ number: t.number, name: t.name, value: t[key] as number, count: t.count }));
@@ -108,9 +116,9 @@ export async function load() {
 		rankings: {
 			autoScoring: top('avgAutoFuel'),
 			teleopRate: top('avgTeleFuelRate'),
-			defense: top('avgDefScore'),
-			climbing: top('climbPct'),
-			autoLeave: top('autoLeavePct')
+			defense: top('avgDefScore', 8, (t) => t.defCount > 0),
+			passScore: top('avgPassScore', 8, (t) => t.passCount > 0),
+			climbing: top('climbPct')
 		}
 	};
 }
