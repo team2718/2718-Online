@@ -20,15 +20,21 @@
 		const sum = reports.reduce(
 			(acc, curr) => {
 				const d = curr.data;
+				const didPass = !!d?.teleDidPass;
+				const didDef = !!d?.teleDidDef;
 				return {
 					autoFuel: acc.autoFuel + (Number(d?.autoFuel) || 0),
 					autoFuelMissed: acc.autoFuelMissed + (Number(d?.autoFuelMissed) || 0),
 					teleFuelRateScore: acc.teleFuelRateScore + (Number(d?.teleFuelRateScore) || 0),
 					teleAccScore: acc.teleAccScore + (Number(d?.teleAccScore) || 0),
-					telePassScore: acc.telePassScore + (Number(d?.telePassScore) || 0),
-					teleDefScore: acc.teleDefScore + (Number(d?.teleDefScore) || 0),
+					passCount: acc.passCount + (didPass ? 1 : 0),
+					telePassScore: acc.telePassScore + (didPass ? (Number(d?.telePassScore) || 0) : 0),
+					defCount: acc.defCount + (didDef ? 1 : 0),
+					teleDefScore: acc.teleDefScore + (didDef ? (Number(d?.teleDefScore) || 0) : 0),
 					didLeave: acc.didLeave + (d?.didLeave ? 1 : 0),
-					autoClimbed: acc.autoClimbed + (d?.autoClimbed ? 1 : 0)
+					autoClimbed: acc.autoClimbed + (d?.autoClimbed ? 1 : 0),
+					usesRamp: acc.usesRamp + (d?.teleUsesRamp ? 1 : 0),
+					usesTrench: acc.usesTrench + (d?.teleUsesTrench ? 1 : 0)
 				};
 			},
 			{
@@ -36,10 +42,14 @@
 				autoFuelMissed: 0,
 				teleFuelRateScore: 0,
 				teleAccScore: 0,
+				passCount: 0,
 				telePassScore: 0,
+				defCount: 0,
 				teleDefScore: 0,
 				didLeave: 0,
-				autoClimbed: 0
+				autoClimbed: 0,
+				usesRamp: 0,
+				usesTrench: 0
 			}
 		);
 
@@ -48,10 +58,14 @@
 			autoFuelMissed: (sum.autoFuelMissed / count).toFixed(1),
 			teleFuelRateScore: (sum.teleFuelRateScore / count).toFixed(1),
 			teleAccScore: (sum.teleAccScore / count).toFixed(1),
-			telePassScore: (sum.telePassScore / count).toFixed(1),
-			teleDefScore: (sum.teleDefScore / count).toFixed(1),
+			telePassScore: sum.passCount > 0 ? (sum.telePassScore / sum.passCount).toFixed(1) : null,
+			passPercent: Math.round((sum.passCount / count) * 100),
+			teleDefScore: sum.defCount > 0 ? (sum.teleDefScore / sum.defCount).toFixed(1) : null,
+			defPercent: Math.round((sum.defCount / count) * 100),
 			didLeavePercent: Math.round((sum.didLeave / count) * 100),
 			autoClimbedPercent: Math.round((sum.autoClimbed / count) * 100),
+			rampPercent: Math.round((sum.usesRamp / count) * 100),
+			trenchPercent: Math.round((sum.usesTrench / count) * 100),
 			reportCount: count
 		};
 	});
@@ -141,19 +155,37 @@
 								<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">
 									Teleop Passing
 								</p>
-								<p class="text-2xl font-bold text-gray-900">
-									{avgStats.telePassScore}<span class="text-sm font-normal text-gray-500">
-										/ 5</span
-									>
-								</p>
+								{#if avgStats.telePassScore !== null}
+									<p class="text-2xl font-bold text-gray-900">
+										{avgStats.telePassScore}<span class="text-sm font-normal text-gray-500"> / 5</span>
+									</p>
+									<p class="text-xs text-gray-400">{avgStats.passPercent}% of matches</p>
+								{:else}
+									<p class="text-2xl font-bold text-gray-400">—</p>
+									<p class="text-xs text-gray-400">Never passed</p>
+								{/if}
 							</div>
 							<div>
 								<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">
 									Defense Rating
 								</p>
-								<p class="text-2xl font-bold text-gray-900">
-									{avgStats.teleDefScore}<span class="text-sm font-normal text-gray-500"> / 5</span>
-								</p>
+								{#if avgStats.teleDefScore !== null}
+									<p class="text-2xl font-bold text-gray-900">
+										{avgStats.teleDefScore}<span class="text-sm font-normal text-gray-500"> / 5</span>
+									</p>
+									<p class="text-xs text-gray-400">{avgStats.defPercent}% of matches</p>
+								{:else}
+									<p class="text-2xl font-bold text-gray-400">—</p>
+									<p class="text-xs text-gray-400">Never defended</p>
+								{/if}
+							</div>
+							<div>
+								<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Uses Ramp</p>
+								<p class="text-2xl font-bold text-gray-900">{avgStats.rampPercent}%</p>
+							</div>
+							<div>
+								<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Uses Trench</p>
+								<p class="text-2xl font-bold text-gray-900">{avgStats.trenchPercent}%</p>
 							</div>
 						</div>
 					{:else}

@@ -5,10 +5,7 @@
 	let { data } = $props();
 
 	let scanner: Html5Qrcode;
-	let status = "Waiting for scan...";
-
-	// Popup state
-	let notification: { message: string; type: 'success' | 'error' | 'warning' } | null = null;
+	let notification: { message: string; type: 'success' | 'error' | 'warning' } | null = $state(null);
 
 	const showNotification = (message: string, type: 'success' | 'error' | 'warning', shouldPause: boolean) => {
 		notification = { message, type };
@@ -26,10 +23,10 @@
 	};
 
 	onMount(() => {
-		scanner = new Html5Qrcode("reader");
+		scanner = new Html5Qrcode('reader');
 
 		scanner.start(
-			{ facingMode: "environment" },
+			{ facingMode: 'environment' },
 			{ fps: 10, qrbox: { width: 250, height: 250 } },
 			async (decodedText: string) => {
 				if (notification && (notification.type === 'success' || notification.type === 'warning')) return;
@@ -44,122 +41,56 @@
 					});
 
 					const result = await response.json();
-					const actionData = JSON.parse(result.data);
 
-					if (response.ok) {
-						const label = actionData?.matchId ?? 'saved';
-						showNotification(`Saved — ${label}`, 'success', true);
-					} else if (response.status === 409) {
-						showNotification("Duplicate: Already scanned!", 'warning', true);
-					} else {
-						const errorMsg = actionData?.message || "Scan failed.";
-						showNotification(errorMsg, 'error', false);
+					if (result.type === 'failure') {
+						if (result.status === 409) {
+							showNotification('Duplicate: Already scanned!', 'warning', true);
+						} else {
+							const actionData = JSON.parse(result.data)[0];
+							showNotification(actionData?.message || 'Scan failed.', 'error', false);
+						}
+						return;
 					}
-				} catch (e) {
-					showNotification("Error: Invalid QR data.", 'error', false);
+
+					showNotification('Saved', 'success', true);
+				} catch {
+					showNotification('Error: Invalid QR data.', 'error', false);
 				}
 			},
-			(errorMessage: string) => { /* Silently handle scan misses */ }
+			() => {}
 		);
 
 		return () => scanner.stop();
 	});
 </script>
 
-<main>
-	<div class="header">
-		<h1>Scan Scouting Report</h1>
+<div class="mx-auto max-w-lg px-4 py-6">
+	<div class="mb-4 flex flex-wrap items-center justify-center gap-3">
+		<h1 class="text-2xl font-black text-gray-900">Scan Scouting Report</h1>
 		<a
 			href="/admin"
-			class="mode-badge {data.matchType === 'practice' ? 'practice' : 'qualification'}"
 			title="Change in Admin settings"
+			class="rounded-full border px-3 py-0.5 text-xs font-bold uppercase tracking-wide
+				{data.matchType === 'practice'
+					? 'border-orange-200 bg-orange-50 text-orange-700'
+					: 'border-green-200 bg-green-50 text-green-700'}"
 		>
 			{data.matchType === 'practice' ? 'Practice' : 'Qualification'} mode
 		</a>
 	</div>
 
-	<div class="scanner-container">
-		<div id="reader"></div>
+	<div id="reader" class="w-full"></div>
 
-		{#if notification}
-			<div class="popup {notification.type}">
-				{notification.message}
-			</div>
-		{/if}
+	<p class="mt-4 text-center font-semibold text-gray-400">Waiting for scan...</p>
+</div>
+
+{#if notification}
+	<div class="pointer-events-none fixed inset-0 z-50 flex items-center justify-center">
+		<div class="min-w-56 rounded-xl px-10 py-5 text-center text-lg font-bold text-white shadow-2xl
+			{notification.type === 'success' ? 'bg-green-800' :
+			 notification.type === 'warning' ? 'bg-orange-600' :
+			                                   'bg-red-700'}">
+			{notification.message}
+		</div>
 	</div>
-
-	<p class="status">{status}</p>
-</main>
-
-<style>
-	.header {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.75rem;
-		flex-wrap: wrap;
-		margin-bottom: 0.5rem;
-	}
-
-	h1 {
-		margin: 0;
-	}
-
-	.mode-badge {
-		display: inline-block;
-		padding: 0.25rem 0.75rem;
-		border-radius: 999px;
-		font-size: 0.75rem;
-		font-weight: 700;
-		text-decoration: none;
-		letter-spacing: 0.05em;
-		text-transform: uppercase;
-	}
-
-	.mode-badge.qualification {
-		background: #e8f5e9;
-		color: #2e7d32;
-		border: 1px solid #a5d6a7;
-	}
-
-	.mode-badge.practice {
-		background: #fff8e1;
-		color: #e65100;
-		border: 1px solid #ffcc80;
-	}
-
-	.scanner-container {
-		position: relative;
-		width: 100%;
-		max-width: 420px;
-		margin: auto;
-	}
-
-	#reader { width: 100%; }
-
-	.popup {
-		position: absolute;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-		padding: 1rem 2rem;
-		border-radius: 8px;
-		color: white;
-		font-weight: bold;
-		z-index: 10;
-		text-align: center;
-		box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-		animation: fadeIn 0.2s ease;
-	}
-
-	.success { background-color: #2e7d32; }
-	.warning { background-color: #ed6c02; }
-	.error { background-color: #d32f2f; }
-
-	@keyframes fadeIn {
-		from { opacity: 0; transform: translate(-50%, -40%); }
-		to { opacity: 1; transform: translate(-50%, -50%); }
-	}
-
-	.status { text-align: center; font-weight: bold; margin-top: 1rem; }
-</style>
+{/if}

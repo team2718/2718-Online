@@ -24,8 +24,8 @@ const JOB_NAME = 'TBA_POLLING_JOB';
 if (!globalThis[JOB_NAME]) {
 	console.log('--- Starting Background Tasks ---');
 
-	globalThis[JOB_NAME] = schedule.scheduleJob('*/1 * * * *', async () => {
-		console.log('Polling Match Data from TBA...');
-		// Your logic here
-	});
+	// globalThis[JOB_NAME] = schedule.scheduleJob('*/1 * * * *', async () => {
+	// 	console.log('Polling Match Data from TBA...');
+	// 	// Your logic here
+	// });
 }

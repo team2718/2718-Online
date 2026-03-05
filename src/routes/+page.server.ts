@@ -24,6 +24,7 @@ export async function load() {
 		autoFuelSum: number;
 		teleFuelRateSum: number;
 		defScoreSum: number;
+		defCount: number;
 		teleAccSum: number;
 		climbL2Plus: number;
 		autoLeave: number;
@@ -38,6 +39,7 @@ export async function load() {
 			autoFuelSum: 0,
 			teleFuelRateSum: 0,
 			defScoreSum: 0,
+			defCount: 0,
 			teleAccSum: 0,
 			climbL2Plus: 0,
 			autoLeave: 0
@@ -56,6 +58,7 @@ export async function load() {
 				autoFuelSum: 0,
 				teleFuelRateSum: 0,
 				defScoreSum: 0,
+				defCount: 0,
 				teleAccSum: 0,
 				climbL2Plus: 0,
 				autoLeave: 0
@@ -65,7 +68,10 @@ export async function load() {
 		agg.count++;
 		agg.autoFuelSum += Number(d.autoFuel) || 0;
 		agg.teleFuelRateSum += Number(d.teleFuelRateScore) || 0;
-		agg.defScoreSum += Number(d.teleDefScore) || 0;
+		if (d.teleDidDef) {
+			agg.defScoreSum += Number(d.teleDefScore) || 0;
+			agg.defCount++;
+		}
 		agg.teleAccSum += Number(d.teleAccScore) || 0;
 		if ((d.climbType ?? 0) >= 2) agg.climbL2Plus++;
 		if (d.didLeave) agg.autoLeave++;
@@ -79,7 +85,7 @@ export async function load() {
 			count: t.count,
 			avgAutoFuel: t.autoFuelSum / t.count,
 			avgTeleFuelRate: t.teleFuelRateSum / t.count,
-			avgDefScore: t.defScoreSum / t.count,
+			avgDefScore: t.defCount > 0 ? t.defScoreSum / t.defCount : 0,
 			avgTeleAcc: t.teleAccSum / t.count,
 			climbPct: (t.climbL2Plus / t.count) * 100,
 			autoLeavePct: (t.autoLeave / t.count) * 100

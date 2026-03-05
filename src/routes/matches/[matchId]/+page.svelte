@@ -114,8 +114,10 @@
                                 <div class="grid grid-cols-2 gap-x-1 gap-y-0.5 text-gray-700">
                                     <span>Rate</span><span class="font-semibold">{report.data?.teleFuelRateScore}/5</span>
                                     <span>Acc</span><span class="font-semibold">{report.data?.teleAccScore}/5</span>
-                                    <span>Pass</span><span class="font-semibold">{report.data?.telePassScore}/5</span>
-                                    <span>Def</span><span class="font-semibold">{report.data?.teleDefScore}/5</span>
+                                    <span>Pass</span><span class="font-semibold {report.data?.teleDidPass ? '' : 'text-gray-400'}">{report.data?.teleDidPass ? `${report.data?.telePassScore}/5` : '—'}</span>
+                                    <span>Def</span><span class="font-semibold {report.data?.teleDidDef ? '' : 'text-gray-400'}">{report.data?.teleDidDef ? `${report.data?.teleDefScore}/5` : '—'}</span>
+                                    {#if report.data?.teleUsesRamp}<span>Ramp</span><span class="font-semibold text-green-600">✓</span>{/if}
+                                    {#if report.data?.teleUsesTrench}<span>Trench</span><span class="font-semibold text-green-600">✓</span>{/if}
                                 </div>
                             </div>
 
@@ -197,8 +199,10 @@
                                 <div class="grid grid-cols-2 gap-x-1 gap-y-0.5 text-gray-700">
                                     <span>Rate</span><span class="font-semibold">{report.data?.teleFuelRateScore}/5</span>
                                     <span>Acc</span><span class="font-semibold">{report.data?.teleAccScore}/5</span>
-                                    <span>Pass</span><span class="font-semibold">{report.data?.telePassScore}/5</span>
-                                    <span>Def</span><span class="font-semibold">{report.data?.teleDefScore}/5</span>
+                                    <span>Pass</span><span class="font-semibold {report.data?.teleDidPass ? '' : 'text-gray-400'}">{report.data?.teleDidPass ? `${report.data?.telePassScore}/5` : '—'}</span>
+                                    <span>Def</span><span class="font-semibold {report.data?.teleDidDef ? '' : 'text-gray-400'}">{report.data?.teleDidDef ? `${report.data?.teleDefScore}/5` : '—'}</span>
+                                    {#if report.data?.teleUsesRamp}<span>Ramp</span><span class="font-semibold text-green-600">✓</span>{/if}
+                                    {#if report.data?.teleUsesTrench}<span>Trench</span><span class="font-semibold text-green-600">✓</span>{/if}
                                 </div>
                             </div>
 
