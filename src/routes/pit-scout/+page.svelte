@@ -59,7 +59,6 @@
 	{:else}
 		<div class="rounded-xl border-2 border-dashed border-gray-200 bg-white p-12 text-center">
 			<p class="mb-4 text-gray-400">No teams in the database yet.</p>
-			<Button href="/pit-scout/new" color="blue">Start Pit Scouting</Button>
 		</div>
 	{/if}
 </div>

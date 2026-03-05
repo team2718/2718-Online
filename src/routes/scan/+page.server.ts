@@ -59,11 +59,40 @@ export const actions: Actions = {
 				.onConflictDoNothing()
 				.run();
 
-			// 3. Ensure Match exists; preserve any TBA schedule data already present
-			await db.insert(matches)
-				.values({ id: matchId, matchNumber: matchNum, matchType })
-				.onConflictDoNothing()
-				.run();
+			// 3. Ensure Match exists; for practice, populate alliance slots as scans arrive
+			if (matchType === 'practice') {
+				const existingMatch = await db.select().from(matches).where(eq(matches.id, matchId)).get();
+				if (!existingMatch) {
+					await db.insert(matches).values({
+						id: matchId,
+						matchNumber: matchNum,
+						matchType,
+						red1: parsed.alliance === 0 ? teamNum : null,
+						red2: null,
+						red3: null,
+						blue1: parsed.alliance === 1 ? teamNum : null,
+						blue2: null,
+						blue3: null
+					}).run();
+				} else {
+					// Fill the next available slot for this team's alliance
+					if (parsed.alliance === 0) {
+						if (!existingMatch.red1)      await db.update(matches).set({ red1: teamNum }).where(eq(matches.id, matchId)).run();
+						else if (!existingMatch.red2) await db.update(matches).set({ red2: teamNum }).where(eq(matches.id, matchId)).run();
+						else if (!existingMatch.red3) await db.update(matches).set({ red3: teamNum }).where(eq(matches.id, matchId)).run();
+					} else {
+						if (!existingMatch.blue1)      await db.update(matches).set({ blue1: teamNum }).where(eq(matches.id, matchId)).run();
+						else if (!existingMatch.blue2) await db.update(matches).set({ blue2: teamNum }).where(eq(matches.id, matchId)).run();
+						else if (!existingMatch.blue3) await db.update(matches).set({ blue3: teamNum }).where(eq(matches.id, matchId)).run();
+					}
+				}
+			} else {
+				// Qualification/playoff: preserve any TBA schedule data already present
+				await db.insert(matches)
+					.values({ id: matchId, matchNumber: matchNum, matchType })
+					.onConflictDoNothing()
+					.run();
+			}
 
 			// 4. Save report
 			await addScoutingReport({

@@ -15,6 +15,8 @@
 
 	// Local state for the match type selector (initialised from server load data)
 	let selectedMatchType = $state(data.defaultMatchType ?? 'qualification');
+
+	const tbaMatchesSkipped = $derived((form as Record<string, unknown> | null)?.matchesSkipped === true);
 </script>
 
 <div class="mx-auto max-w-7xl px-4 py-10">
@@ -72,8 +74,12 @@
 					TBA Import Successful
 				</div>
 				<div class="mt-2 text-sm text-green-700">
-					Imported <strong>{form.teamsInserted}</strong> teams and
-					<strong>{form.matchesInserted}</strong> matches.
+					{#if tbaMatchesSkipped}
+						Imported <strong>{form.teamsInserted}</strong> teams. Match import skipped — practice matches are created automatically when scans are submitted.
+					{:else}
+						Imported <strong>{form.teamsInserted}</strong> teams and
+						<strong>{form.matchesInserted}</strong> matches.
+					{/if}
 				</div>
 			</Alert>
 		{:else}
@@ -130,7 +136,11 @@
 		<div class="rounded-xl border border-indigo-200 bg-indigo-50 p-6">
 			<h2 class="text-lg font-bold text-indigo-700">Import from The Blue Alliance</h2>
 			<p class="mb-4 text-sm text-indigo-600">
-				Download the match schedule and team list for an event. Existing records will be updated.
+				{#if selectedMatchType === 'practice'}
+					Download the team list for this event. Match import is skipped in practice mode — TBA does not track practice matches. Matches will be created automatically as scans are submitted.
+				{:else}
+					Download the match schedule and team list for an event. Existing records will be updated.
+				{/if}
 				{#if data.tbaApiKeyConfigured}
 					<span class="font-medium">(TBA_API_KEY is configured in the environment.)</span>
 				{/if}
@@ -143,12 +153,12 @@
 					<Input
 						id="eventKey"
 						name="eventKey"
-						placeholder="e.g. 2026okla"
+						placeholder="e.g. 2026okok"
 						required
 						class="bg-white"
 					/>
 					<p class="mt-1 text-xs text-indigo-500">
-						Find event keys on thebluealliance.com — e.g. <code>2026okla</code> for the 2026 Oklahoma Regional.
+						Find event keys on thebluealliance.com — e.g. <code>2026okok</code> for the 2026 Oklahoma Regional.
 					</p>
 				</div>
 				{#if !data.tbaApiKeyConfigured}
@@ -165,7 +175,9 @@
 						/>
 					</div>
 				{/if}
-				<Button color="purple" type="submit">Download Schedule &amp; Teams</Button>
+				<Button color="purple" type="submit">
+					{selectedMatchType === 'practice' ? 'Download Teams' : 'Download Schedule & Teams'}
+				</Button>
 			</form>
 		</div>
 

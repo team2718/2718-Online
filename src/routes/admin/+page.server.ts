@@ -51,12 +51,15 @@ export const actions: Actions = {
         }
 
         try {
-            const result = await importFromTBA(eventKey, apiKey);
+            const matchType = await getEventSetting('defaultMatchType');
+            const skipMatches = matchType === 'practice';
+            const result = await importFromTBA(eventKey, apiKey, skipMatches);
             return {
                 success: result.errors.length === 0,
                 action: 'fetchTBA',
                 teamsInserted: result.teamsInserted,
                 matchesInserted: result.matchesInserted,
+                matchesSkipped: result.matchesSkipped,
                 errors: result.errors
             };
         } catch (e) {

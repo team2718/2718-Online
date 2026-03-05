@@ -184,9 +184,10 @@ function tbaMatchToLocalId(m: TBAMatchSimple): string {
  * then upsert them into the local database.
  * Returns a summary of what was inserted/updated.
  */
-export async function importFromTBA(eventKey: string, apiKey: string): Promise<{
+export async function importFromTBA(eventKey: string, apiKey: string, skipMatches = false): Promise<{
 	teamsInserted: number;
 	matchesInserted: number;
+	matchesSkipped: boolean;
 	errors: string[];
 }> {
 	const errors: string[] = [];
@@ -261,9 +262,9 @@ export async function importFromTBA(eventKey: string, apiKey: string): Promise<{
 				...(t as unknown as Record<string, unknown>),
 				...(oprData
 					? {
-							opr: oprData.oprs[tbaKey] ?? null,
-							dpr: oprData.dprs[tbaKey] ?? null,
-							ccwm: oprData.ccwms[tbaKey] ?? null
+							opr: oprData.oprs?.[tbaKey] ?? null,
+							dpr: oprData.dprs?.[tbaKey] ?? null,
+							ccwm: oprData.ccwms?.[tbaKey] ?? null
 						}
 					: {}),
 				ranking_score: rankingScoreByTeam[tbaKey] ?? null,
@@ -290,70 +291,76 @@ export async function importFromTBA(eventKey: string, apiKey: string): Promise<{
 		}
 	}
 
-	// -- Fetch matches --
-	let tbaMatches: TBAMatchSimple[] = [];
-	try {
-		const res = await fetch(`https://www.thebluealliance.com/api/v3/event/${eventKey}/matches/simple`, { headers });
-		if (!res.ok) throw new Error(`TBA matches API returned ${res.status}: ${await res.text()}`);
-		tbaMatches = await res.json();
-	} catch (e) {
-		errors.push(`Failed to fetch matches: ${String(e)}`);
-	}
-
-	for (const m of tbaMatches) {
+	// -- Fetch and upsert matches (skipped in practice mode since TBA has no practice matches) --
+	if (!skipMatches) {
+		let tbaMatches: TBAMatchSimple[] = [];
 		try {
-			const localId = tbaMatchToLocalId(m);
-			const matchType = compLevelToMatchType(m.comp_level);
-			const [red1, red2, red3] = m.alliances.red.team_keys.map(tbaTeamKeyToNumber);
-			const [blue1, blue2, blue3] = m.alliances.blue.team_keys.map(tbaTeamKeyToNumber);
+			const res = await fetch(`https://www.thebluealliance.com/api/v3/event/${eventKey}/matches/simple`, { headers });
+			if (res.ok) {
+				tbaMatches = await res.json();
+			} else if (res.status !== 404) {
+				errors.push(`TBA matches API returned ${res.status}`);
+			}
+			// 404 = no matches posted yet, silently skip
+		} catch (e) {
+			errors.push(`Failed to fetch matches: ${String(e)}`);
+		}
 
-			await db
-				.insert(matches)
-				.values({
-					id: localId,
-					matchNumber: m.match_number,
-					matchType,
-					red1: red1 ?? null,
-					red2: red2 ?? null,
-					red3: red3 ?? null,
-					blue1: blue1 ?? null,
-					blue2: blue2 ?? null,
-					blue3: blue3 ?? null
-				})
-				.onConflictDoUpdate({
-					target: matches.id,
-					set: { matchType, red1: red1 ?? null, red2: red2 ?? null, red3: red3 ?? null, blue1: blue1 ?? null, blue2: blue2 ?? null, blue3: blue3 ?? null }
-				})
-				.run();
+		for (const m of tbaMatches) {
+			try {
+				const localId = tbaMatchToLocalId(m);
+				const matchType = compLevelToMatchType(m.comp_level);
+				const [red1, red2, red3] = m.alliances.red.team_keys.map(tbaTeamKeyToNumber);
+				const [blue1, blue2, blue3] = m.alliances.blue.team_keys.map(tbaTeamKeyToNumber);
 
-			// Keep matchesToTeams junction table in sync
-			const stationEntries: { matchId: string; teamNumber: number; station: string }[] = [
-				...(red1 ? [{ matchId: localId, teamNumber: red1, station: 'red1' }] : []),
-				...(red2 ? [{ matchId: localId, teamNumber: red2, station: 'red2' }] : []),
-				...(red3 ? [{ matchId: localId, teamNumber: red3, station: 'red3' }] : []),
-				...(blue1 ? [{ matchId: localId, teamNumber: blue1, station: 'blue1' }] : []),
-				...(blue2 ? [{ matchId: localId, teamNumber: blue2, station: 'blue2' }] : []),
-				...(blue3 ? [{ matchId: localId, teamNumber: blue3, station: 'blue3' }] : [])
-			];
-
-			for (const entry of stationEntries) {
 				await db
-					.insert(matchesToTeams)
-					.values(entry)
+					.insert(matches)
+					.values({
+						id: localId,
+						matchNumber: m.match_number,
+						matchType,
+						red1: red1 ?? null,
+						red2: red2 ?? null,
+						red3: red3 ?? null,
+						blue1: blue1 ?? null,
+						blue2: blue2 ?? null,
+						blue3: blue3 ?? null
+					})
 					.onConflictDoUpdate({
-						target: [matchesToTeams.matchId, matchesToTeams.teamNumber],
-						set: { station: entry.station }
+						target: matches.id,
+						set: { matchType, red1: red1 ?? null, red2: red2 ?? null, red3: red3 ?? null, blue1: blue1 ?? null, blue2: blue2 ?? null, blue3: blue3 ?? null }
 					})
 					.run();
-			}
 
-			matchesInserted++;
-		} catch (e) {
-			errors.push(`Failed to upsert match ${m.key}: ${String(e)}`);
+				// Keep matchesToTeams junction table in sync
+				const stationEntries: { matchId: string; teamNumber: number; station: string }[] = [
+					...(red1 ? [{ matchId: localId, teamNumber: red1, station: 'red1' }] : []),
+					...(red2 ? [{ matchId: localId, teamNumber: red2, station: 'red2' }] : []),
+					...(red3 ? [{ matchId: localId, teamNumber: red3, station: 'red3' }] : []),
+					...(blue1 ? [{ matchId: localId, teamNumber: blue1, station: 'blue1' }] : []),
+					...(blue2 ? [{ matchId: localId, teamNumber: blue2, station: 'blue2' }] : []),
+					...(blue3 ? [{ matchId: localId, teamNumber: blue3, station: 'blue3' }] : [])
+				];
+
+				for (const entry of stationEntries) {
+					await db
+						.insert(matchesToTeams)
+						.values(entry)
+						.onConflictDoUpdate({
+							target: [matchesToTeams.matchId, matchesToTeams.teamNumber],
+							set: { station: entry.station }
+						})
+						.run();
+				}
+
+				matchesInserted++;
+			} catch (e) {
+				errors.push(`Failed to upsert match ${m.key}: ${String(e)}`);
+			}
 		}
 	}
 
-	return { teamsInserted, matchesInserted, errors };
+	return { teamsInserted, matchesInserted, matchesSkipped: skipMatches, errors };
 }
 
 /**
