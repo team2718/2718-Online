@@ -99,6 +99,15 @@ export async function deletePitReport(id: number) {
 	return await db.delete(pitScoutingReports).where(eq(pitScoutingReports.id, id)).run();
 }
 
+/**
+ * Delete a match and its associated scouting reports and team-junction rows
+ */
+export async function deleteMatch(id: string) {
+	await db.delete(scoutingReports).where(eq(scoutingReports.matchId, id)).run();
+	await db.delete(matchesToTeams).where(eq(matchesToTeams.matchId, id)).run();
+	await db.delete(matches).where(eq(matches.id, id)).run();
+}
+
 // --- Event Settings Functions ---
 
 export async function getEventSetting(key: string): Promise<string | null> {

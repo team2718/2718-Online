@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Heading } from 'flowbite-svelte';
 	import { ChevronRightOutline } from 'flowbite-svelte-icons';
+	import { enhance } from '$app/forms';
 
 	let { data } = $props();
 
@@ -60,64 +61,75 @@
 					? [match.blue1, match.blue2, match.blue3]
 					: teamsByAllianceFromReports(match.id, 1)}
 
-				<a
-					href="/matches/{match.id}"
-					class="grid grid-cols-[5rem_1fr_auto_1fr_2rem] items-center gap-x-2 px-3 py-2 transition-colors hover:bg-gray-50
-						{i > 0 ? 'border-t border-gray-100' : ''}"
-				>
-					<!-- Match label -->
-					<span class="inline-flex items-center justify-center rounded border px-1.5 py-0.5 text-xs font-bold {typeColor(match.matchType)}">
-						{matchLabel(match)}
-					</span>
+				<div class="flex items-stretch {i > 0 ? 'border-t border-gray-100' : ''}">
+					<a
+						href="/matches/{match.id}"
+						class="flex-1 grid grid-cols-[5rem_1fr_auto_1fr_2rem] items-center gap-x-2 px-3 py-2 transition-colors hover:bg-gray-50"
+					>
+						<!-- Match label -->
+						<span class="inline-flex items-center justify-center rounded border px-1.5 py-0.5 text-xs font-bold {typeColor(match.matchType)}">
+							{matchLabel(match)}
+						</span>
 
-					<!-- Red alliance -->
-					<div class="flex justify-center gap-1">
-						{#each red as team}
-							{#if team != null}
-								{@const hasReport = reported.has(team)}
-								<span class="relative inline-flex min-w-[3.5rem] items-center justify-center rounded px-1.5 py-0.5 text-xs font-bold
-									{hasReport ? 'bg-red-100 text-red-700' : scheduled ? 'bg-orange-50 text-orange-600 ring-1 ring-orange-300' : 'bg-red-100 text-red-700'}">
-									{team}
-									{#if scheduled && !hasReport}
-										<span class="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-orange-400"></span>
-									{/if}
-								</span>
-							{:else if scheduled}
-								<span class="inline-flex min-w-[3.5rem] items-center justify-center rounded border border-dashed border-gray-200 px-1.5 py-0.5 text-xs text-gray-300">—</span>
+						<!-- Red alliance -->
+						<div class="flex justify-center gap-1">
+							{#each red as team}
+								{#if team != null}
+									{@const hasReport = reported.has(team)}
+									<span class="relative inline-flex min-w-[3.5rem] items-center justify-center rounded px-1.5 py-0.5 text-xs font-bold
+										{hasReport ? 'bg-red-100 text-red-700' : scheduled ? 'bg-orange-50 text-orange-600 ring-1 ring-orange-300' : 'bg-red-100 text-red-700'}">
+										{team}
+										{#if scheduled && !hasReport}
+											<span class="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-orange-400"></span>
+										{/if}
+									</span>
+								{:else if scheduled}
+									<span class="inline-flex min-w-[3.5rem] items-center justify-center rounded border border-dashed border-gray-200 px-1.5 py-0.5 text-xs text-gray-300">—</span>
+								{/if}
+							{/each}
+							{#if red.length === 0}
+								<span class="text-xs text-gray-300 italic">No data</span>
 							{/if}
-						{/each}
-						{#if red.length === 0}
-							<span class="text-xs text-gray-300 italic">No data</span>
-						{/if}
-					</div>
+						</div>
 
-					<!-- VS -->
-					<span class="text-[10px] font-black text-gray-300">VS</span>
+						<!-- VS -->
+						<span class="text-[10px] font-black text-gray-300">VS</span>
 
-					<!-- Blue alliance -->
-					<div class="flex justify-center gap-1">
-						{#each blue as team}
-							{#if team != null}
-								{@const hasReport = reported.has(team)}
-								<span class="relative inline-flex min-w-[3.5rem] items-center justify-center rounded px-1.5 py-0.5 text-xs font-bold
-									{hasReport ? 'bg-blue-100 text-blue-700' : scheduled ? 'bg-orange-50 text-orange-600 ring-1 ring-orange-300' : 'bg-blue-100 text-blue-700'}">
-									{team}
-									{#if scheduled && !hasReport}
-										<span class="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-orange-400"></span>
-									{/if}
-								</span>
-							{:else if scheduled}
-								<span class="inline-flex min-w-[3.5rem] items-center justify-center rounded border border-dashed border-gray-200 px-1.5 py-0.5 text-xs text-gray-300">—</span>
+						<!-- Blue alliance -->
+						<div class="flex justify-center gap-1">
+							{#each blue as team}
+								{#if team != null}
+									{@const hasReport = reported.has(team)}
+									<span class="relative inline-flex min-w-[3.5rem] items-center justify-center rounded px-1.5 py-0.5 text-xs font-bold
+										{hasReport ? 'bg-blue-100 text-blue-700' : scheduled ? 'bg-orange-50 text-orange-600 ring-1 ring-orange-300' : 'bg-blue-100 text-blue-700'}">
+										{team}
+										{#if scheduled && !hasReport}
+											<span class="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-orange-400"></span>
+										{/if}
+									</span>
+								{:else if scheduled}
+									<span class="inline-flex min-w-[3.5rem] items-center justify-center rounded border border-dashed border-gray-200 px-1.5 py-0.5 text-xs text-gray-300">—</span>
+								{/if}
+							{/each}
+							{#if blue.length === 0}
+								<span class="text-xs text-gray-300 italic">No data</span>
 							{/if}
-						{/each}
-						{#if blue.length === 0}
-							<span class="text-xs text-gray-300 italic">No data</span>
-						{/if}
-					</div>
+						</div>
 
-					<!-- Chevron -->
-					<ChevronRightOutline class="h-3.5 w-3.5 text-gray-300" />
-				</a>
+						<!-- Chevron -->
+						<ChevronRightOutline class="h-3.5 w-3.5 text-gray-300" />
+					</a>
+
+					{#if data.isAdmin}
+						<form method="POST" action="?/deleteMatch" use:enhance class="flex items-center border-l border-gray-100 px-2">
+							<input type="hidden" name="id" value={match.id} />
+							<button type="submit"
+								class="rounded bg-red-50 px-2 py-1 text-[10px] font-semibold text-red-500 hover:bg-red-100">
+								Delete
+							</button>
+						</form>
+					{/if}
+				</div>
 			{/each}
 		</div>
 	{:else}
