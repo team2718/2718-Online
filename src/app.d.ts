@@ -12,6 +12,7 @@ declare global {
 	}
 
 	var TBA_POLLING_JOB: schedule.Job | undefined;
+	var DB_BACKUP_JOB: schedule.Job | undefined;
 }
 
 export {};
