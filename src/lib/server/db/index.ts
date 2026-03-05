@@ -136,6 +136,16 @@ interface TBAOprs {
 	ccwms: Record<string, number>;
 }
 
+interface TBARankings {
+	rankings: Array<{
+		team_key: string;
+		rank: number;
+		sort_orders: number[];
+	}>;
+}
+
+type TBACOPRs = Record<string, Record<string, number>>;
+
 interface TBAMatchSimple {
 	key: string;
 	comp_level: string; // 'qm' | 'pr' | 'ef' | 'qf' | 'sf' | 'f'
@@ -208,6 +218,42 @@ export async function importFromTBA(eventKey: string, apiKey: string): Promise<{
 		errors.push(`Failed to fetch OPR data: ${String(e)}`);
 	}
 
+	// -- Fetch rankings --
+	let rankingsData: TBARankings | null = null;
+	try {
+		const res = await fetch(`https://www.thebluealliance.com/api/v3/event/${eventKey}/rankings`, { headers });
+		if (res.ok) {
+			rankingsData = await res.json();
+		} else if (res.status !== 404) {
+			errors.push(`TBA rankings API returned ${res.status}`);
+		}
+	} catch (e) {
+		errors.push(`Failed to fetch rankings data: ${String(e)}`);
+	}
+
+	// -- Fetch COPRs --
+	let coprsData: TBACOPRs | null = null;
+	try {
+		const res = await fetch(`https://www.thebluealliance.com/api/v3/event/${eventKey}/coprs`, { headers });
+		if (res.ok) {
+			coprsData = await res.json();
+		} else if (res.status !== 404) {
+			errors.push(`TBA COPRs API returned ${res.status}`);
+		}
+	} catch (e) {
+		errors.push(`Failed to fetch COPRs data: ${String(e)}`);
+	}
+
+	// Build a ranking score lookup by team key
+	const rankingScoreByTeam: Record<string, number> = {};
+	if (rankingsData?.rankings) {
+		for (const r of rankingsData.rankings) {
+			if (r.sort_orders && r.sort_orders.length > 0) {
+				rankingScoreByTeam[r.team_key] = r.sort_orders[0];
+			}
+		}
+	}
+
 	for (const t of tbaTeams) {
 		try {
 			const tbaKey = `frc${t.team_number}`;
@@ -219,7 +265,9 @@ export async function importFromTBA(eventKey: string, apiKey: string): Promise<{
 							dpr: oprData.dprs[tbaKey] ?? null,
 							ccwm: oprData.ccwms[tbaKey] ?? null
 						}
-					: {})
+					: {}),
+				ranking_score: rankingScoreByTeam[tbaKey] ?? null,
+				hub_total_fuel_count_copr: coprsData?.['Hub Total Fuel Count']?.[tbaKey] ?? null
 			};
 			await db
 				.insert(teams)

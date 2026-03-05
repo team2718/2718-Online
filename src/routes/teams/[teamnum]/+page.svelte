@@ -99,22 +99,30 @@
 
 		{#if data.team}
 			{@const meta = data.team.metadata as Record<string, unknown> | null}
-			{#if meta?.opr != null || meta?.dpr != null || meta?.ccwm != null}
-				<div class="mb-6 grid grid-cols-3 gap-3">
-					<div class="rounded-xl border border-gray-200 bg-white px-4 py-3 text-center shadow-sm">
-						<p class="text-2xl font-black text-blue-600">{typeof meta.opr === 'number' ? meta.opr.toFixed(1) : '—'}</p>
-						<p class="mt-0.5 text-xs font-semibold tracking-wider text-gray-400 uppercase">OPR</p>
-						<p class="text-xs text-gray-400">Offensive Power Rating</p>
+			{#if meta?.opr != null || meta?.ranking_score != null || meta?.hub_total_fuel_count_copr != null}
+				<div class="mb-6">
+					<div class="mb-2 flex items-center gap-2">
+						<span class="text-xs font-semibold tracking-wider text-gray-400 uppercase">TBA Statistics</span>
+						<a
+							href="https://www.thebluealliance.com/team/{data.teamnum}"
+							target="_blank"
+							rel="noopener noreferrer"
+							class="text-xs text-blue-400 transition-colors hover:text-blue-600"
+						>thebluealliance.com ↗</a>
 					</div>
-					<div class="rounded-xl border border-gray-200 bg-white px-4 py-3 text-center shadow-sm">
-						<p class="text-2xl font-black text-red-500">{typeof meta.dpr === 'number' ? meta.dpr.toFixed(1) : '—'}</p>
-						<p class="mt-0.5 text-xs font-semibold tracking-wider text-gray-400 uppercase">DPR</p>
-						<p class="text-xs text-gray-400">Defensive Power Rating</p>
-					</div>
-					<div class="rounded-xl border border-gray-200 bg-white px-4 py-3 text-center shadow-sm">
-						<p class="text-2xl font-black text-green-600">{typeof meta.ccwm === 'number' ? meta.ccwm.toFixed(1) : '—'}</p>
-						<p class="mt-0.5 text-xs font-semibold tracking-wider text-gray-400 uppercase">CCWM</p>
-						<p class="text-xs text-gray-400">Calculated Contribution</p>
+					<div class="grid grid-cols-3 gap-3">
+						<div class="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-center">
+							<p class="text-lg font-bold text-gray-500">{typeof meta.opr === 'number' ? meta.opr.toFixed(1) : '—'}</p>
+							<p class="text-xs font-semibold tracking-wider text-gray-400 uppercase">OPR</p>
+						</div>
+						<div class="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-center">
+							<p class="text-lg font-bold text-gray-500">{typeof meta.ranking_score === 'number' ? meta.ranking_score.toFixed(2) : '—'}</p>
+							<p class="text-xs font-semibold tracking-wider text-gray-400 uppercase">Ranking Score</p>
+						</div>
+						<div class="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-center">
+							<p class="text-lg font-bold text-gray-500">{typeof meta.hub_total_fuel_count_copr === 'number' ? meta.hub_total_fuel_count_copr.toFixed(1) : '—'}</p>
+							<p class="text-xs font-semibold tracking-wider text-gray-400 uppercase">Hub Fuel COPR</p>
+						</div>
 					</div>
 				</div>
 			{/if}
