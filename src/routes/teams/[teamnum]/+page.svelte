@@ -327,7 +327,7 @@
 								>
 									<div class="rounded-lg border border-red-100 bg-red-50 p-4">
 										<p class="text-xs font-bold tracking-wider text-red-700 uppercase">
-											Weak Points / Issues
+											Known Issues
 										</p>
 										<p class="mt-1 text-sm text-gray-700 italic">
 											{report.data.knownIssues || 'No known issues reported.'}
@@ -335,7 +335,7 @@
 									</div>
 									<div class="rounded-lg border border-blue-100 bg-blue-50 p-4">
 										<p class="text-xs font-bold tracking-wider text-blue-700 uppercase">
-											Scouter Comments
+											General Comments
 										</p>
 										<p class="mt-1 text-sm text-gray-700 italic">
 											{report.data.comments || 'No additional comments.'}

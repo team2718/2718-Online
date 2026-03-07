@@ -42,6 +42,27 @@
 		<p class="mt-1 text-sm text-gray-500">Select a match to view scouting data for all six robots.</p>
 	</div>
 
+	<!-- Our matches quick links -->
+	{#if data.ourMatches?.length > 0}
+		<div class="mb-6">
+			<p class="mb-2 text-xs font-bold tracking-wider text-gray-400 uppercase">Team 2718 Matches</p>
+			<div class="flex flex-wrap gap-2">
+				{#each data.ourMatches as m}
+					<a
+						href="/prematch?match={encodeURIComponent(m.id)}"
+						class="rounded-lg border px-3 py-1.5 text-sm font-bold transition-colors
+							{m.matchType === 'qualification' ? 'border-green-200 bg-green-50 text-green-700 hover:bg-green-100' :
+							 m.matchType === 'practice' ? 'border-yellow-200 bg-yellow-50 text-yellow-700 hover:bg-yellow-100' :
+							 'border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100'}
+							{data.matchId === m.id ? 'ring-2 ring-offset-1 ring-current' : ''}"
+					>
+						{m.id}
+					</a>
+				{/each}
+			</div>
+		</div>
+	{/if}
+
 	<!-- Match selector -->
 	<div class="mb-8">
 		<label for="match-select" class="mb-1.5 block text-sm font-semibold text-gray-700">Match</label>
@@ -154,12 +175,14 @@
 					</p>
 				</div>
 				<div class="px-3 py-2.5 text-center">
-					<p class="text-xs font-semibold tracking-wider text-gray-400 uppercase">Climb L1+</p>
-					<p class="text-xl font-black text-gray-900">{fmtPct(team.climbAtLeastL1Pct)}</p>
+					<p class="text-xs font-semibold tracking-wider text-gray-400 uppercase">Tele Acc</p>
+					<p class="text-xl font-black text-gray-900">
+						{fmt1(team.avgTeleAccScore)}<span class="text-xs font-normal text-gray-400">/5</span>
+					</p>
 				</div>
 			</div>
 
-			<div class="grid grid-cols-2 divide-x divide-gray-100 border-b border-gray-100">
+			<div class="grid grid-cols-3 divide-x divide-gray-100 border-b border-gray-100">
 				<div class="px-3 py-2.5">
 					<p class="text-xs font-semibold tracking-wider text-gray-400 uppercase">Defense</p>
 					{#if team.avgDefScore != null}
@@ -184,6 +207,17 @@
 						<p class="text-xs text-gray-400">Never passed</p>
 					{/if}
 				</div>
+				<div class="px-3 py-2.5">
+					<p class="text-xs font-semibold tracking-wider text-gray-400 uppercase">Ramp / Trench</p>
+					<div class="mt-1 flex flex-col gap-1">
+						<span class="inline-flex items-center gap-1 text-xs font-semibold {team.rampPct > 20 ? 'text-green-600' : 'text-gray-300'}">
+							<span>{team.rampPct > 20 ? '✓' : '✗'}</span> Ramp
+						</span>
+						<span class="inline-flex items-center gap-1 text-xs font-semibold {team.trenchPct > 20 ? 'text-green-600' : 'text-gray-300'}">
+							<span>{team.trenchPct > 20 ? '✓' : '✗'}</span> Trench
+						</span>
+					</div>
+				</div>
 			</div>
 		{/if}
 
@@ -200,14 +234,7 @@
 						<span class="text-gray-400">Shooter:</span>
 						<span class="ml-1 font-semibold text-gray-700">{team.pit.data?.shooterType ?? '—'}</span>
 					</div>
-					<div>
-						<span class="text-gray-400">Max Climb:</span>
-						<span class="ml-1 font-semibold text-gray-700">{team.pit.data?.climb ?? '—'}</span>
-					</div>
 				</div>
-				{#if team.pit.data?.knownIssues}
-					<p class="mt-2 text-xs text-red-600 italic">⚠ {team.pit.data.knownIssues}</p>
-				{/if}
 			</div>
 		{/if}
 

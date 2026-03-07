@@ -22,14 +22,10 @@
 	</div>
 
 	<!-- Coverage stat chips -->
-	<div class="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-5">
+	<div class="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
 		<div class="rounded-xl border border-gray-200 bg-white px-4 py-3 text-center shadow-sm">
 			<p class="text-2xl font-black text-gray-900">{cov.totalTeams}</p>
 			<p class="mt-0.5 text-xs font-semibold tracking-wider text-gray-400 uppercase">Teams</p>
-		</div>
-		<div class="rounded-xl border border-gray-200 bg-white px-4 py-3 text-center shadow-sm">
-			<p class="text-2xl font-black text-gray-900">{cov.totalMatchesScheduled}</p>
-			<p class="mt-0.5 text-xs font-semibold tracking-wider text-gray-400 uppercase">Scheduled</p>
 		</div>
 		<div class="rounded-xl border border-gray-200 bg-white px-4 py-3 text-center shadow-sm">
 			<p class="text-2xl font-black {cov.matchesWithReports < cov.totalMatchesScheduled ? 'text-orange-500' : 'text-green-600'}">{cov.matchesWithReports}</p>
