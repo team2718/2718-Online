@@ -28,12 +28,18 @@ export const actions = {
         }
         const data = await request.formData();
         const id = data.get('id');
-        
-        if (typeof id !== 'string') {
-            return fail(400, { error: 'Invalid ID' });
-        }
-        
+        if (typeof id !== 'string') return fail(400, { error: 'Invalid ID' });
         await deletePitReport(parseInt(id));
+        return { success: true };
+    },
+    deleteReport: async ({ request, locals }) => {
+        if (!locals.admin) {
+            return fail(401, { error: 'Unauthorized' });
+        }
+        const data = await request.formData();
+        const id = data.get('id');
+        if (typeof id !== 'string') return fail(400, { error: 'Invalid ID' });
+        await deleteScoutingReport(parseInt(id));
         return { success: true };
     }
 };

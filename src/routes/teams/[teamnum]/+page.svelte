@@ -76,6 +76,23 @@
 			.replace(/([A-Z])/g, ' $1') // Add space before capitals
 			.replace(/^./, (str) => str.toUpperCase()); // Capitalize first letter
 	};
+
+	const reportsSorted = $derived(
+		[...reports].sort((a, b) => a.matchId.localeCompare(b.matchId, undefined, { numeric: true }))
+	);
+
+	function climbLabel(v: number | undefined) {
+		return ['None', 'L1', 'L2', 'L3'][v ?? 0] ?? 'None';
+	}
+	function cardLabel(v: number | undefined) {
+		return ['None', 'Yellow', 'Red'][v ?? 0] ?? 'None';
+	}
+	function posLabel(v: number | undefined) {
+		return ['L Trench', 'L Bump', 'Center', 'R Bump', 'R Trench'][v ?? 2] ?? '—';
+	}
+	function yn(v: boolean | undefined) {
+		return v ? '✓' : '✗';
+	}
 </script>
 
 <div class="min-h-screen bg-gray-50">
@@ -227,6 +244,74 @@
 						</div>
 					{/if}
 				</div>
+
+				<div class="flex items-center justify-between">
+					<h2 class="text-xl font-bold text-gray-800">Match Reports</h2>
+					<Badge color="dark">{reports.length} Report{reports.length !== 1 ? 's' : ''}</Badge>
+				</div>
+
+				{#if reportsSorted.length > 0}
+					<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+						{#each reportsSorted as report}
+							<div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+								<div class="border-b border-gray-100 bg-gray-50 px-3 py-2 text-center">
+									<a href="/matches/{report.matchId}" class="block text-sm font-black text-gray-700 hover:underline">{report.matchId}</a>
+									<p class="truncate text-[10px] text-gray-400">{report.scouterName}</p>
+								</div>
+								<div class="space-y-2 p-2 text-[11px]">
+									<div class="text-gray-500">{posLabel(report.data?.startingPosition)}</div>
+
+									<div>
+										<p class="mb-0.5 text-[9px] font-semibold uppercase tracking-wide text-gray-600">Auto</p>
+										<div class="grid grid-cols-2 gap-x-1 gap-y-0.5 text-gray-700">
+											<span>Move</span><span class="font-semibold {report.data?.didLeave ? 'text-green-600' : 'text-gray-400'}">{yn(report.data?.didLeave)}</span>
+											<span>Climb</span><span class="font-semibold {report.data?.autoClimbed ? 'text-green-600' : 'text-gray-400'}">{yn(report.data?.autoClimbed)}</span>
+											<span>Scored</span><span class="font-semibold text-blue-600">{report.data?.autoFuel ?? 0}</span>
+											<span>Missed</span><span class="font-semibold text-red-400">{report.data?.autoFuelMissed ?? 0}</span>
+										</div>
+									</div>
+
+									<div>
+										<p class="mb-0.5 text-[9px] font-semibold uppercase tracking-wide text-gray-600">Teleop</p>
+										<div class="grid grid-cols-2 gap-x-1 gap-y-0.5 text-gray-700">
+											<span>Rate</span><span class="font-semibold">{report.data?.teleFuelRateScore}/5</span>
+											<span>Acc</span><span class="font-semibold">{report.data?.teleAccScore}/5</span>
+											<span>Pass</span><span class="font-semibold {report.data?.teleDidPass ? '' : 'text-gray-400'}">{report.data?.teleDidPass ? `${report.data?.telePassScore}/5` : '—'}</span>
+											<span>Def</span><span class="font-semibold {report.data?.teleDidDef ? '' : 'text-gray-400'}">{report.data?.teleDidDef ? `${report.data?.teleDefScore}/5` : '—'}</span>
+											{#if report.data?.teleUsesRamp}<span>Ramp</span><span class="font-semibold text-green-600">✓</span>{/if}
+											{#if report.data?.teleUsesTrench}<span>Trench</span><span class="font-semibold text-green-600">✓</span>{/if}
+										</div>
+									</div>
+
+									<div>
+										<p class="mb-0.5 text-[9px] font-semibold uppercase tracking-wide text-gray-600">Endgame</p>
+										<div class="grid grid-cols-2 gap-x-1 gap-y-0.5 text-gray-700">
+											<span>Climb</span><span class="font-semibold">{climbLabel(report.data?.climbType)}</span>
+											{#if (report.data?.cardReceived ?? 0) > 0}
+												<span>Card</span><span class="font-semibold text-yellow-600">{cardLabel(report.data?.cardReceived)}</span>
+											{/if}
+										</div>
+									</div>
+
+									{#if report.data?.notes}
+										<p class="italic leading-snug text-gray-500">{report.data.notes}</p>
+									{/if}
+
+									{#if data.isAdmin}
+										<form method="POST" action="?/deleteReport" use:enhance class="pt-1">
+											<input type="hidden" name="id" value={report.id} />
+											<button type="submit" class="w-full rounded bg-red-50 py-1 text-[10px] font-semibold text-red-500 hover:bg-red-100">Delete</button>
+										</form>
+									{/if}
+								</div>
+							</div>
+						{/each}
+					</div>
+				{:else}
+					<div class="rounded-xl border-2 border-dashed border-gray-200 bg-white p-8 text-center">
+						<p class="text-gray-400">No match reports recorded yet.</p>
+					</div>
+				{/if}
 
 				<div class="flex items-center justify-between">
 					<h2 class="text-xl font-bold text-gray-800">Pit Reports</h2>
