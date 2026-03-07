@@ -191,6 +191,17 @@
 			<Button color="yellow" onclick={() => (cleanupModalOpen = true)}>Clean Up Database</Button>
 		</div>
 
+		<!-- Report Fixer -->
+		<div class="rounded-xl border border-orange-200 bg-orange-50 p-6">
+			<h2 class="text-lg font-bold text-orange-700">Report Fixer</h2>
+			<p class="mb-4 text-sm text-orange-600">
+				Find and fix scouting reports with wrong team numbers. Also remove ghost teams created by bad scans.
+			</p>
+			<a href="/admin/reports" class="inline-flex items-center rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600">
+				Open Report Fixer
+			</a>
+		</div>
+
 		<!-- Danger Zone -->
 		<div class="rounded-xl border border-red-200 bg-red-50 p-6">
 			<h2 class="text-lg font-bold text-red-700">Danger Zone</h2>
