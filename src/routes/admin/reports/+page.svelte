@@ -132,7 +132,7 @@
 						{report.isGhost ? 'bg-orange-50' : ''}">
 
 						<!-- Match -->
-						<a href="/matches/{report.matchId}" class="font-mono text-xs font-bold text-blue-600 hover:underline">
+						<a href="/reports/{report.matchId}" class="font-mono text-xs font-bold text-blue-600 hover:underline">
 							{report.matchId}
 						</a>
 

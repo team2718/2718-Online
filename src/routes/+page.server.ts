@@ -1,12 +1,14 @@
 import { db } from '$lib/server/db';
+import { getEpop } from '$lib/server/epop';
 import { teams, scoutingReports, pitScoutingReports, matches } from '$lib/server/db/schema';
 
 export async function load() {
-	const [allReports, allTeams, pitCoverage, matchCount] = await Promise.all([
+	const [allReports, allTeams, pitCoverage, matchCount, epopMap] = await Promise.all([
 		db.select().from(scoutingReports).all(),
 		db.select({ number: teams.number, name: teams.name }).from(teams).all(),
 		db.select({ teamNumber: pitScoutingReports.teamNumber }).from(pitScoutingReports).all(),
-		db.select({ id: matches.id }).from(matches).all()
+		db.select({ id: matches.id }).from(matches).all(),
+		getEpop()
 	]);
 
 	// --- Coverage stats ---
@@ -105,6 +107,14 @@ export async function load() {
 			.slice(0, n)
 			.map((t) => ({ number: t.number, name: t.name, value: t[key] as number, count: t.count }));
 
+	// --- ePOP Leaderboard ---
+	const nameById = new Map(allTeams.map((t) => [t.number, t.name]));
+	const epopLeaderboard = [...epopMap.entries()]
+		.filter(([, v]) => v > 0)
+		.sort((a, b) => b[1] - a[1])
+		.slice(0, 10)
+		.map(([number, epop]) => ({ number, name: nameById.get(number) ?? `Team ${number}`, epop }));
+
 	return {
 		coverage: {
 			totalTeams,
@@ -119,6 +129,7 @@ export async function load() {
 			defense: top('avgDefScore', 8, (t) => t.defCount > 0),
 			passScore: top('avgPassScore', 8, (t) => t.passCount > 0),
 			climbing: top('climbPct')
-		}
+		},
+		epopLeaderboard
 	};
 }

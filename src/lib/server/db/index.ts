@@ -322,6 +322,9 @@ export async function importFromTBA(eventKey: string, apiKey: string, skipMatche
 				const [red1, red2, red3] = m.alliances.red.team_keys.map(tbaTeamKeyToNumber);
 				const [blue1, blue2, blue3] = m.alliances.blue.team_keys.map(tbaTeamKeyToNumber);
 
+				const redScore = m.alliances.red.score >= 0 ? m.alliances.red.score : null;
+				const blueScore = m.alliances.blue.score >= 0 ? m.alliances.blue.score : null;
+
 				await db
 					.insert(matches)
 					.values({
@@ -333,11 +336,13 @@ export async function importFromTBA(eventKey: string, apiKey: string, skipMatche
 						red3: red3 ?? null,
 						blue1: blue1 ?? null,
 						blue2: blue2 ?? null,
-						blue3: blue3 ?? null
+						blue3: blue3 ?? null,
+						redScore,
+						blueScore
 					})
 					.onConflictDoUpdate({
 						target: matches.id,
-						set: { matchType, red1: red1 ?? null, red2: red2 ?? null, red3: red3 ?? null, blue1: blue1 ?? null, blue2: blue2 ?? null, blue3: blue3 ?? null }
+						set: { matchType, red1: red1 ?? null, red2: red2 ?? null, red3: red3 ?? null, blue1: blue1 ?? null, blue2: blue2 ?? null, blue3: blue3 ?? null, redScore, blueScore }
 					})
 					.run();
 

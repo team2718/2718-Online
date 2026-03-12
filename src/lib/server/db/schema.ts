@@ -17,7 +17,9 @@ export const matches = sqliteTable('matches', {
 	red3: integer('red3'),
 	blue1: integer('blue1'),
 	blue2: integer('blue2'),
-	blue3: integer('blue3')
+	blue3: integer('blue3'),
+	redScore: integer('red_score'),
+	blueScore: integer('blue_score')
 });
 
 export const scoutingReports = sqliteTable('scouting_reports', {

@@ -1,6 +1,7 @@
 import { db } from '$lib/server/db';
 import { teams, scoutingReports, pitScoutingReports, matches } from '$lib/server/db/schema';
 import { eq, inArray, asc, or } from 'drizzle-orm';
+import { getEpopBeforeMatch } from '$lib/server/epop';
 
 const OUR_TEAM = 2718;
 
@@ -41,10 +42,11 @@ export async function load({ url }: { url: URL }) {
 		return { matchId, match, allMatches, ourMatches, matchTeams: { red: [], blue: [] }, error: null };
 	}
 
-	const [allReports, allPitReports, teamRows] = await Promise.all([
+	const [allReports, allPitReports, teamRows, epopMap] = await Promise.all([
 		db.select().from(scoutingReports).where(inArray(scoutingReports.teamNumber, teamNums)).all(),
 		db.select().from(pitScoutingReports).where(inArray(pitScoutingReports.teamNumber, teamNums)).all(),
-		db.select().from(teams).where(inArray(teams.number, teamNums)).all()
+		db.select().from(teams).where(inArray(teams.number, teamNums)).all(),
+		getEpopBeforeMatch(match.matchNumber)
 	]);
 
 	const teamMap = new Map(teamRows.map((t) => [t.number, t]));
@@ -69,16 +71,15 @@ export async function load({ url }: { url: URL }) {
 		const team = teamMap.get(teamNum);
 		const reports = reportsByTeam.get(teamNum) ?? [];
 		const pit = pitMap.get(teamNum) ?? null;
-		const meta = (team?.metadata ?? null) as Record<string, unknown> | null;
 
 		const count = reports.length;
-		const opr = typeof meta?.opr === 'number' ? meta.opr : null;
+		const epop = epopMap.get(teamNum) ?? null;
 
 		if (count === 0) {
 			return {
 				number: teamNum,
 				name: team?.name ?? `Team ${teamNum}`,
-				opr,
+				epop,
 				reportCount: 0,
 				avgAutoFuel: null as number | null,
 				avgTeleFuelRate: null as number | null,
@@ -113,7 +114,7 @@ export async function load({ url }: { url: URL }) {
 		return {
 			number: teamNum,
 			name: team?.name ?? `Team ${teamNum}`,
-			opr,
+			epop,
 			reportCount: count,
 			avgAutoFuel: autoFuelSum / count,
 			avgTeleFuelRate: teleFuelSum / count,

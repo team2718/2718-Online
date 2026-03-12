@@ -46,6 +46,26 @@
 		<h2 class="mb-3 text-lg font-bold text-gray-700">Rankings</h2>
 		<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
 
+			<!-- ePOP Leaderboard -->
+			{#if data.epopLeaderboard?.length > 0}
+				<div class="overflow-hidden rounded-xl border border-purple-200 bg-white shadow-sm">
+					<div class="border-b border-purple-100 bg-purple-50 px-4 py-2.5">
+						<h3 class="text-sm font-bold text-purple-800">ePOP Rankings</h3>
+						<p class="text-xs text-purple-400">Scouting-informed OPR (e'POssum Power)</p>
+					</div>
+					<div>
+						{#each data.epopLeaderboard as row, i}
+							<a href="/teams/{row.number}" class="flex items-center gap-2 px-4 py-2 hover:bg-purple-50 {i > 0 ? 'border-t border-gray-100' : ''}">
+								<span class="w-5 text-right text-xs font-bold text-gray-300">{i + 1}</span>
+								<span class="w-12 font-bold text-gray-800">{row.number}</span>
+								<span class="min-w-0 flex-1 truncate text-xs text-gray-500">{row.name}</span>
+								<span class="text-sm font-bold text-purple-600">{row.epop.toFixed(1)}</span>
+							</a>
+						{/each}
+					</div>
+				</div>
+			{/if}
+
 			<!-- Avg Auto Fuel -->
 			<div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
 				<div class="border-b border-gray-100 bg-gray-50 px-4 py-2.5">
@@ -156,16 +176,16 @@
 					<p class="text-xs text-gray-400">Jump to a section</p>
 				</div>
 				<div class="p-4 space-y-2">
-					<a href="/prematch" class="flex items-center justify-between rounded-lg border border-gray-100 px-3 py-2.5 hover:border-indigo-200 hover:bg-indigo-50">
-						<span class="text-sm font-semibold text-gray-700">Pre-Match Analysis</span>
+					<a href="/matches" class="flex items-center justify-between rounded-lg border border-gray-100 px-3 py-2.5 hover:border-indigo-200 hover:bg-indigo-50">
+						<span class="text-sm font-semibold text-gray-700">Match Analysis</span>
 						<span class="text-xs text-gray-400">→</span>
 					</a>
 					<a href="/teams" class="flex items-center justify-between rounded-lg border border-gray-100 px-3 py-2.5 hover:border-blue-200 hover:bg-blue-50">
 						<span class="text-sm font-semibold text-gray-700">All Teams</span>
 						<span class="text-xs text-gray-400">→</span>
 					</a>
-					<a href="/matches" class="flex items-center justify-between rounded-lg border border-gray-100 px-3 py-2.5 hover:border-blue-200 hover:bg-blue-50">
-						<span class="text-sm font-semibold text-gray-700">Match Schedule</span>
+					<a href="/reports" class="flex items-center justify-between rounded-lg border border-gray-100 px-3 py-2.5 hover:border-blue-200 hover:bg-blue-50">
+						<span class="text-sm font-semibold text-gray-700">Match Reports</span>
 						<span class="text-xs text-gray-400">→</span>
 					</a>
 					<a href="/pit-scout" class="flex items-center justify-between rounded-lg border border-gray-100 px-3 py-2.5 hover:border-blue-200 hover:bg-blue-50">

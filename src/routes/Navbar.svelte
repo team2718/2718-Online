@@ -12,15 +12,19 @@
 		if (path === '/') return '/';
 		if (path.startsWith('/teams')) return '/teams';
 		if (path.startsWith('/pit-scout')) return '/pit-scout';
-		if (path.startsWith('/prematch')) return '/prematch';
+		if (path.startsWith('/reports')) return '/reports';
+		if (path.startsWith('/matches')) return '/matches';
 		return path;
 	});
 
-	const navLinks = [
+	const navGroup1 = [
 		{ href: '/', label: 'Home' },
 		{ href: '/teams', label: 'Teams' },
-		{ href: '/matches', label: 'Matches' },
-		{ href: '/prematch', label: 'Pre-Match' },
+		{ href: '/matches', label: 'Matches' }
+	];
+
+	const navGroup2 = [
+		{ href: '/reports', label: 'Reports' },
 		{ href: '/scan', label: 'Scan QR' },
 		{ href: '/pit-scout', label: 'Pit Scout' }
 	];
@@ -85,9 +89,22 @@
 			2718 Online
 		</a>
 
-		<!-- Center: Nav links -->
+		<!-- Center: Nav links split into two groups -->
 		<div class="flex items-center gap-1">
-			{#each navLinks as link}
+			{#each navGroup1 as link}
+				<a
+					href={link.href}
+					class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors
+						{activePath === link.href
+							? 'text-blue-600'
+							: 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}"
+				>
+					{link.label}
+				</a>
+			{/each}
+			<!-- Group divider -->
+			<span class="mx-1 h-4 w-px bg-gray-300" aria-hidden="true"></span>
+			{#each navGroup2 as link}
 				<a
 					href={link.href}
 					class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors
@@ -160,21 +177,37 @@
 
 	<!-- Mobile menu -->
 	{#if mobileOpen}
-		<div class="mt-2 space-y-1 border-t border-gray-100 pt-3 md:hidden">
-			{#each navLinks as link}
-				<a
-					href={link.href}
-					class="block rounded-md px-3 py-2 text-sm font-medium
-						{activePath === link.href
-							? 'bg-blue-50 text-blue-600'
-							: 'text-gray-700 hover:bg-gray-100'}"
-				>
-					{link.label}
-				</a>
-			{/each}
+		<div class="mt-2 border-t border-gray-100 pt-3 md:hidden">
+			<div class="space-y-1">
+				{#each navGroup1 as link}
+					<a
+						href={link.href}
+						class="block rounded-md px-3 py-2 text-sm font-medium
+							{activePath === link.href
+								? 'bg-blue-50 text-blue-600'
+								: 'text-gray-700 hover:bg-gray-100'}"
+					>
+						{link.label}
+					</a>
+				{/each}
+			</div>
+			<hr class="my-2 border-gray-200" />
+			<div class="space-y-1">
+				{#each navGroup2 as link}
+					<a
+						href={link.href}
+						class="block rounded-md px-3 py-2 text-sm font-medium
+							{activePath === link.href
+								? 'bg-blue-50 text-blue-600'
+								: 'text-gray-700 hover:bg-gray-100'}"
+					>
+						{link.label}
+					</a>
+				{/each}
+			</div>
 
 			<!-- Mobile search -->
-			<div class="relative mt-2">
+			<div class="relative mt-3">
 				<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
 					<svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 						<path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"/>

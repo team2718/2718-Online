@@ -1,141 +1,398 @@
 <script lang="ts">
-	import { Heading } from 'flowbite-svelte';
-	import { ChevronRightOutline } from 'flowbite-svelte-icons';
-	import { enhance } from '$app/forms';
+	import { goto } from '$app/navigation';
+	import { matchShortLabel, matchFullLabel, matchTypeColor, playoffKey } from '$lib/matchUtils';
 
 	let { data } = $props();
 
-	const reports = $derived(data?.reports ?? []);
-	const matches = $derived(data?.matches ?? []);
+	let selectedMatchId = $state(data.matchId ?? '');
+	let pickerOpen = $state(false);
+	let filterText = $state('');
+	let pickerEl: HTMLElement | undefined;
+	let filterInputEl: HTMLInputElement | undefined;
 
-	const reportedTeamsForMatch = (matchId: string): Set<number> =>
-		new Set(reports.filter((r) => r.matchId === matchId).map((r) => r.teamNumber));
+	function selectMatch(id: string) {
+		selectedMatchId = id;
+		pickerOpen = false;
+		if (id) goto(`/matches?match=${encodeURIComponent(id)}`);
+		else goto('/matches');
+	}
 
-	const teamsByAllianceFromReports = (matchId: string, alliance: number): (number | null)[] =>
-		[...new Set(
-			reports
-				.filter((r) => r.matchId === matchId && r.data?.alliance === alliance)
-				.map((r) => r.teamNumber)
-		)];
+	const fmt1 = (v: number | null) => (v == null ? '—' : v.toFixed(1));
 
-	const hasRedSchedule = (match: (typeof matches)[number]): boolean =>
-		match.red1 != null || match.red2 != null || match.red3 != null;
+	const selectedMatch = $derived(data.allMatches.find((m) => m.id === selectedMatchId) ?? null);
 
-	const hasBlueSchedule = (match: (typeof matches)[number]): boolean =>
-		match.blue1 != null || match.blue2 != null || match.blue3 != null;
+	const sortedOurMatches = $derived.by(() => {
+		const qual = data.ourMatches
+			.filter((m) => m.matchType === 'qualification')
+			.sort((a, b) => a.matchNumber - b.matchNumber);
+		const playoff = data.ourMatches
+			.filter((m) => m.matchType === 'playoff')
+			.sort((a, b) => playoffKey(a.id) - playoffKey(b.id));
+		const other = data.ourMatches.filter(
+			(m) => m.matchType !== 'qualification' && m.matchType !== 'playoff'
+		);
+		return [...qual, ...playoff, ...other];
+	});
 
-	const matchLabel = (match: (typeof matches)[number]): string => {
-		if (match.matchType === 'qualification') return `Q${match.matchNumber}`;
-		if (match.matchType === 'practice') return `P${match.matchNumber}`;
-		if (match.matchType === 'playoff') return match.id.toUpperCase();
-		return `M${match.matchNumber}`;
-	};
+	const filteredMatchGroups = $derived.by(() => {
+		const q = filterText.trim().toLowerCase();
+		const filter = (ms: typeof data.allMatches) =>
+			q
+				? ms.filter(
+						(m) =>
+							m.id.toLowerCase().includes(q) ||
+							matchShortLabel(m).toLowerCase().includes(q) ||
+							matchFullLabel(m).toLowerCase().includes(q)
+					)
+				: ms;
+		const practice = filter(
+			data.allMatches
+				.filter((m) => m.matchType === 'practice')
+				.sort((a, b) => a.matchNumber - b.matchNumber)
+		);
+		const qual = filter(
+			data.allMatches
+				.filter((m) => m.matchType === 'qualification')
+				.sort((a, b) => a.matchNumber - b.matchNumber)
+		);
+		const playoff = filter(
+			data.allMatches
+				.filter((m) => m.matchType === 'playoff')
+				.sort((a, b) => playoffKey(a.id) - playoffKey(b.id))
+		);
+		return [
+			{ type: 'practice', label: 'Practice', matches: practice },
+			{ type: 'qualification', label: 'Qualification', matches: qual },
+			{ type: 'playoff', label: 'Playoff', matches: playoff }
+		];
+	});
 
-	const typeColor = (t: string | null) => {
-		if (t === 'qualification') return 'text-green-700 bg-green-50 border-green-200';
-		if (t === 'practice') return 'text-yellow-700 bg-yellow-50 border-yellow-200';
-		if (t === 'playoff') return 'text-purple-700 bg-purple-50 border-purple-200';
-		return 'text-gray-600 bg-gray-50 border-gray-200';
-	};
+	$effect(() => {
+		if (!pickerOpen) return;
+		function handleClick(e: MouseEvent) {
+			if (!pickerEl?.contains(e.target as Node)) pickerOpen = false;
+		}
+		document.addEventListener('mousedown', handleClick);
+		return () => document.removeEventListener('mousedown', handleClick);
+	});
 </script>
 
-<div class="mx-auto mt-px max-w-5xl px-4 py-4">
-	<Heading tag="h1" class="mb-4 text-3xl font-bold">Matches</Heading>
+<div class="mx-auto max-w-7xl px-4 py-6">
+	<!-- Header -->
+	<div class="mb-6">
+		<h1 class="text-3xl font-black tracking-tight text-gray-900">Match Analysis</h1>
+	</div>
 
-	{#if matches.length > 0}
-		<div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-			<!-- Header row -->
-			<div class="grid grid-cols-[3.5rem_1fr_auto_1fr_1.5rem] items-center border-b border-gray-200 bg-gray-50 px-3 py-1.5 text-[10px] font-bold tracking-widest text-gray-400 uppercase sm:grid-cols-[5rem_1fr_auto_1fr_2rem]">
-				<span>Match</span>
-				<span class="text-center text-red-400">Red Alliance</span>
-				<span></span>
-				<span class="text-center text-blue-400">Blue Alliance</span>
-				<span></span>
-			</div>
-
-			{#each matches as match, i}
-				{@const reported = reportedTeamsForMatch(match.id)}
-				{@const redScheduled = hasRedSchedule(match)}
-				{@const blueScheduled = hasBlueSchedule(match)}
-				{@const red = redScheduled
-					? [match.red1, match.red2, match.red3]
-					: teamsByAllianceFromReports(match.id, 0)}
-				{@const blue = blueScheduled
-					? [match.blue1, match.blue2, match.blue3]
-					: teamsByAllianceFromReports(match.id, 1)}
-
-				<div class="flex items-stretch {i > 0 ? 'border-t border-gray-100' : ''}">
+	<!-- Our matches quick links -->
+	{#if data.ourMatches?.length > 0}
+		<div class="mb-6">
+			<p class="mb-2 text-xs font-bold tracking-wider text-gray-400 uppercase">Team 2718 Matches</p>
+			<div class="flex flex-wrap gap-2">
+				{#each sortedOurMatches as m}
 					<a
-						href="/matches/{match.id}"
-						class="flex-1 grid grid-cols-[3.5rem_1fr_auto_1fr_1.5rem] items-center gap-x-1 px-3 py-2 transition-colors hover:bg-gray-50 sm:grid-cols-[5rem_1fr_auto_1fr_2rem] sm:gap-x-2"
+						href="/matches?match={encodeURIComponent(m.id)}"
+						class="rounded-lg border px-3 py-1.5 text-sm font-bold transition-colors
+							{m.matchType === 'qualification' ? 'border-green-200 bg-green-50 text-green-700 hover:bg-green-100' :
+							 m.matchType === 'practice' ? 'border-yellow-200 bg-yellow-50 text-yellow-700 hover:bg-yellow-100' :
+							 'border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100'}
+							{data.matchId === m.id ? 'ring-2 ring-offset-1 ring-current' : ''}"
 					>
-						<!-- Match label -->
-						<span class="inline-flex items-center justify-center rounded border px-1.5 py-0.5 text-xs font-bold {typeColor(match.matchType)}">
-							{matchLabel(match)}
-						</span>
-
-						<!-- Red alliance -->
-						<div class="flex flex-wrap justify-center gap-1">
-							{#each red as team}
-								{#if team != null}
-									{@const hasReport = reported.has(team)}
-									<span class="relative inline-flex items-center justify-center rounded px-1.5 py-0.5 text-xs font-bold
-										{hasReport ? 'bg-red-100 text-red-700' : redScheduled ? 'bg-orange-50 text-orange-600 ring-1 ring-orange-300' : 'bg-red-100 text-red-700'}">
-										{team}
-										{#if redScheduled && !hasReport}
-											<span class="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-orange-400"></span>
-										{/if}
-									</span>
-								{:else if redScheduled}
-									<span class="inline-flex items-center justify-center rounded border border-dashed border-gray-200 px-1.5 py-0.5 text-xs text-gray-300">—</span>
-								{/if}
-							{/each}
-							{#if red.length === 0}
-								<span class="text-xs text-gray-300 italic">No data</span>
-							{/if}
-						</div>
-
-						<!-- VS -->
-						<span class="text-[10px] font-black text-gray-300">VS</span>
-
-						<!-- Blue alliance -->
-						<div class="flex flex-wrap justify-center gap-1">
-							{#each blue as team}
-								{#if team != null}
-									{@const hasReport = reported.has(team)}
-									<span class="relative inline-flex items-center justify-center rounded px-1.5 py-0.5 text-xs font-bold
-										{hasReport ? 'bg-blue-100 text-blue-700' : blueScheduled ? 'bg-orange-50 text-orange-600 ring-1 ring-orange-300' : 'bg-blue-100 text-blue-700'}">
-										{team}
-										{#if blueScheduled && !hasReport}
-											<span class="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-orange-400"></span>
-										{/if}
-									</span>
-								{:else if blueScheduled}
-									<span class="inline-flex items-center justify-center rounded border border-dashed border-gray-200 px-1.5 py-0.5 text-xs text-gray-300">—</span>
-								{/if}
-							{/each}
-							{#if blue.length === 0}
-								<span class="text-xs text-gray-300 italic">No data</span>
-							{/if}
-						</div>
-
-						<!-- Chevron -->
-						<ChevronRightOutline class="h-3.5 w-3.5 text-gray-300" />
+						{matchFullLabel(m)}
 					</a>
+				{/each}
+			</div>
+		</div>
+	{/if}
 
-					{#if data.isAdmin}
-						<form method="POST" action="?/deleteMatch" use:enhance class="flex items-center border-l border-gray-100 px-2">
-							<input type="hidden" name="id" value={match.id} />
-							<button type="submit"
-								class="rounded bg-red-50 px-2 py-1 text-[10px] font-semibold text-red-500 hover:bg-red-100">
-								Delete
-							</button>
-						</form>
+	<!-- Match picker -->
+	<div class="relative mb-8" bind:this={pickerEl}>
+		<p class="mb-1.5 text-sm font-semibold text-gray-700">Match</p>
+		<button
+			type="button"
+			onclick={() => {
+				pickerOpen = !pickerOpen;
+				if (pickerOpen) {
+					filterText = '';
+					setTimeout(() => filterInputEl?.focus(), 30);
+				}
+			}}
+			class="flex w-56 items-center justify-between gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm hover:border-gray-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+		>
+			{#if selectedMatch}
+				<span class="font-bold text-gray-800">{matchFullLabel(selectedMatch)}</span>
+			{:else}
+				<span class="text-gray-400">Select a match…</span>
+			{/if}
+			<svg
+				class="h-4 w-4 shrink-0 text-gray-400 transition-transform {pickerOpen ? 'rotate-180' : ''}"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				viewBox="0 0 24 24"
+			>
+				<path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+			</svg>
+		</button>
+
+		{#if pickerOpen}
+			<div class="absolute left-0 top-full z-30 mt-1 w-64 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
+				<!-- Search -->
+				<div class="border-b border-gray-100 p-2">
+					<input
+						bind:this={filterInputEl}
+						bind:value={filterText}
+						type="text"
+						placeholder="Filter matches…"
+						class="w-full rounded-md border border-gray-200 px-2 py-1.5 text-sm focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100"
+					/>
+				</div>
+				<!-- Match list -->
+				<div class="max-h-72 overflow-y-auto py-1">
+					{#each filteredMatchGroups as group}
+						{#if group.matches.length > 0}
+							<p class="px-3 pb-0.5 pt-2 text-[10px] font-bold tracking-widest text-gray-400 uppercase">
+								{group.label}
+							</p>
+							{#each group.matches as m}
+								<button
+									type="button"
+									onclick={() => selectMatch(m.id)}
+									class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm hover:bg-gray-50 {selectedMatchId === m.id ? 'bg-blue-50' : ''}"
+								>
+									<span class="min-w-[2.5rem] rounded px-1.5 py-0.5 text-center text-xs font-bold {matchTypeColor(m.matchType)}">
+										{matchShortLabel(m)}
+									</span>
+									<span class="font-medium {selectedMatchId === m.id ? 'text-blue-700' : 'text-gray-700'}">
+										{matchFullLabel(m)}
+									</span>
+								</button>
+							{/each}
+						{/if}
+					{/each}
+					{#if filteredMatchGroups.every((g) => g.matches.length === 0)}
+						<p class="py-4 text-center text-sm text-gray-400 italic">No matches found</p>
 					{/if}
 				</div>
-			{/each}
+			</div>
+		{/if}
+	</div>
+
+	{#if data.error}
+		<div class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+			{data.error}
 		</div>
-	{:else}
-		<p class="text-gray-500">No matches in the schedule yet.</p>
+	{:else if data.matchTeams}
+		{@const redEpopPred = data.matchTeams.red.reduce((s, t) => s + (t.epop ?? 0), 0)}
+		{@const blueEpopPred = data.matchTeams.blue.reduce((s, t) => s + (t.epop ?? 0), 0)}
+		{@const redAutoPred = data.matchTeams.red.reduce((s, t) => s + (t.avgAutoFuel ?? 0), 0)}
+		{@const blueAutoPred = data.matchTeams.blue.reduce((s, t) => s + (t.avgAutoFuel ?? 0), 0)}
+		{@const hasEpopPred = redEpopPred > 0 || blueEpopPred > 0}
+		{#if hasEpopPred}
+			<div class="mb-6 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+				<div class="border-b border-gray-100 bg-gray-50 px-4 py-2">
+					<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Score Forecast</p>
+				</div>
+				<div class="grid grid-cols-2 divide-x divide-gray-100">
+					<!-- Red -->
+					<div class="px-4 py-3">
+						<p class="mb-2 text-xs font-bold tracking-wider text-red-400 uppercase">Red Alliance</p>
+						<div class="flex items-baseline gap-4">
+							<div>
+								<p class="text-2xl font-black text-red-600">{redEpopPred.toFixed(1)}</p>
+								<p class="text-xs text-gray-400">ePOP prediction</p>
+							</div>
+							{#if data.match?.redScore != null}
+								<div>
+									<p class="text-2xl font-black text-gray-700">{data.match.redScore}</p>
+									<p class="text-xs text-gray-400">actual score</p>
+								</div>
+							{/if}
+						</div>
+						{#if redAutoPred > 0}
+							<div class="mt-2 border-t border-gray-100 pt-2">
+								<p class="text-lg font-bold text-red-400">{redAutoPred.toFixed(1)}</p>
+								<p class="text-xs text-gray-400">auto fuel pred.</p>
+							</div>
+						{/if}
+					</div>
+					<!-- Blue -->
+					<div class="px-4 py-3">
+						<p class="mb-2 text-xs font-bold tracking-wider text-blue-400 uppercase">Blue Alliance</p>
+						<div class="flex items-baseline gap-4">
+							<div>
+								<p class="text-2xl font-black text-blue-600">{blueEpopPred.toFixed(1)}</p>
+								<p class="text-xs text-gray-400">ePOP prediction</p>
+							</div>
+							{#if data.match?.blueScore != null}
+								<div>
+									<p class="text-2xl font-black text-gray-700">{data.match.blueScore}</p>
+									<p class="text-xs text-gray-400">actual score</p>
+								</div>
+							{/if}
+						</div>
+						{#if blueAutoPred > 0}
+							<div class="mt-2 border-t border-gray-100 pt-2">
+								<p class="text-lg font-bold text-blue-400">{blueAutoPred.toFixed(1)}</p>
+								<p class="text-xs text-gray-400">auto fuel pred.</p>
+							</div>
+						{/if}
+					</div>
+				</div>
+			</div>
+		{/if}
+
+		<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+			<!-- Red Alliance -->
+			<div>
+				<div class="mb-3 flex items-center gap-2">
+					<div class="h-3 w-3 rounded-full bg-red-500"></div>
+					<h2 class="text-lg font-bold text-red-700">Red Alliance</h2>
+				</div>
+				<div class="space-y-4">
+					{#each data.matchTeams.red as team}
+						{@render teamCard(team, 'red')}
+					{/each}
+					{#if data.matchTeams.red.length === 0}
+						<p class="text-sm text-gray-400 italic">No teams assigned.</p>
+					{/if}
+				</div>
+			</div>
+
+			<!-- Blue Alliance -->
+			<div>
+				<div class="mb-3 flex items-center gap-2">
+					<div class="h-3 w-3 rounded-full bg-blue-500"></div>
+					<h2 class="text-lg font-bold text-blue-700">Blue Alliance</h2>
+				</div>
+				<div class="space-y-4">
+					{#each data.matchTeams.blue as team}
+						{@render teamCard(team, 'blue')}
+					{/each}
+					{#if data.matchTeams.blue.length === 0}
+						<p class="text-sm text-gray-400 italic">No teams assigned.</p>
+					{/if}
+				</div>
+			</div>
+		</div>
+	{:else if !data.matchId}
+		<div class="rounded-xl border-2 border-dashed border-gray-200 bg-white p-12 text-center">
+			<p class="text-lg font-bold text-gray-400">Select a match above to begin</p>
+			<p class="mt-1 text-sm text-gray-400">Scouting data and pit info for all six robots will appear here.</p>
+		</div>
 	{/if}
 </div>
+
+{#snippet teamCard(team: NonNullable<typeof data.matchTeams>['red'][number], alliance: 'red' | 'blue')}
+	{@const accentBorder = alliance === 'red' ? 'border-l-red-400' : 'border-l-blue-400'}
+	{@const accentText = alliance === 'red' ? 'text-red-600' : 'text-blue-600'}
+	<div class="overflow-hidden rounded-xl border border-gray-200 border-l-4 {accentBorder} bg-white shadow-sm">
+		<!-- Team header -->
+		<div class="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-100">
+			<div>
+				<a href="/teams/{team.number}" class="text-lg font-black {accentText} hover:underline">
+					{team.number}
+				</a>
+				<span class="ml-2 text-sm font-semibold text-gray-600 truncate">{team.name}</span>
+			</div>
+			<div class="flex items-center gap-2 shrink-0">
+				{#if team.epop != null}
+					<span class="rounded-full bg-purple-100 px-2 py-0.5 text-xs font-semibold text-purple-700">
+						ePOP {team.epop.toFixed(1)}
+					</span>
+				{/if}
+				{#if team.reportCount > 0}
+					<span class="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">
+						{team.reportCount} reports
+					</span>
+				{:else}
+					<span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-400">
+						No scouting data
+					</span>
+				{/if}
+			</div>
+		</div>
+
+		{#if team.reportCount > 0}
+			<!-- Scouting stats -->
+			<div class="grid grid-cols-3 divide-x divide-gray-100 border-b border-gray-100">
+				<div class="px-3 py-2.5 text-center">
+					<p class="text-xs font-semibold tracking-wider text-gray-400 uppercase">Auto Fuel</p>
+					<p class="text-xl font-black text-gray-900">{fmt1(team.avgAutoFuel)}</p>
+				</div>
+				<div class="px-3 py-2.5 text-center">
+					<p class="text-xs font-semibold tracking-wider text-gray-400 uppercase">Tele Rate</p>
+					<p class="text-xl font-black text-gray-900">
+						{fmt1(team.avgTeleFuelRate)}<span class="text-xs font-normal text-gray-400">/5</span>
+					</p>
+				</div>
+				<div class="px-3 py-2.5 text-center">
+					<p class="text-xs font-semibold tracking-wider text-gray-400 uppercase">Tele Acc</p>
+					<p class="text-xl font-black text-gray-900">
+						{fmt1(team.avgTeleAccScore)}<span class="text-xs font-normal text-gray-400">/5</span>
+					</p>
+				</div>
+			</div>
+
+			<div class="grid grid-cols-3 divide-x divide-gray-100 border-b border-gray-100">
+				<div class="px-3 py-2.5">
+					<p class="text-xs font-semibold tracking-wider text-gray-400 uppercase">Defense</p>
+					{#if team.avgDefScore != null}
+						<p class="text-lg font-black text-orange-600">
+							{team.avgDefScore.toFixed(1)}<span class="text-xs font-normal text-gray-400">/5</span>
+						</p>
+						<p class="text-xs text-gray-400">{team.defPercent}% of matches</p>
+					{:else}
+						<p class="text-lg font-black text-gray-300">—</p>
+						<p class="text-xs text-gray-400">Never played defense</p>
+					{/if}
+				</div>
+				<div class="px-3 py-2.5">
+					<p class="text-xs font-semibold tracking-wider text-gray-400 uppercase">Passing</p>
+					{#if team.avgPassScore != null}
+						<p class="text-lg font-black text-violet-600">
+							{team.avgPassScore.toFixed(1)}<span class="text-xs font-normal text-gray-400">/5</span>
+						</p>
+						<p class="text-xs text-gray-400">{team.passPercent}% of matches</p>
+					{:else}
+						<p class="text-lg font-black text-gray-300">—</p>
+						<p class="text-xs text-gray-400">Never passed</p>
+					{/if}
+				</div>
+				<div class="px-3 py-2.5">
+					<p class="text-xs font-semibold tracking-wider text-gray-400 uppercase">Ramp / Trench</p>
+					<div class="mt-1 flex flex-col gap-1">
+						<span class="inline-flex items-center gap-1 text-xs font-semibold {team.rampPct > 20 ? 'text-green-600' : 'text-gray-300'}">
+							<span>{team.rampPct > 20 ? '✓' : '✗'}</span> Ramp
+						</span>
+						<span class="inline-flex items-center gap-1 text-xs font-semibold {team.trenchPct > 20 ? 'text-green-600' : 'text-gray-300'}">
+							<span>{team.trenchPct > 20 ? '✓' : '✗'}</span> Trench
+						</span>
+					</div>
+				</div>
+			</div>
+		{/if}
+
+		{#if team.pit}
+			<!-- Pit info -->
+			<div class="px-4 py-3 bg-gray-50">
+				<p class="mb-2 text-xs font-bold tracking-wider text-gray-400 uppercase">Pit Scouting</p>
+				<div class="grid grid-cols-3 gap-2 text-xs">
+					<div>
+						<span class="text-gray-400">Drive:</span>
+						<span class="ml-1 font-semibold text-gray-700">{team.pit.data?.drivetrain ?? '—'}</span>
+					</div>
+					<div>
+						<span class="text-gray-400">Shooter:</span>
+						<span class="ml-1 font-semibold text-gray-700">{team.pit.data?.shooterType ?? '—'}</span>
+					</div>
+				</div>
+			</div>
+		{/if}
+
+		{#if team.reportCount === 0 && !team.pit}
+			<div class="px-4 py-4 text-center text-xs text-gray-400 italic">
+				No scouting or pit data available for this team yet.
+			</div>
+		{/if}
+	</div>
+{/snippet}

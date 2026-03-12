@@ -22,7 +22,7 @@
 				</p>
 			{/if}
 		</div>
-		<Button href="/pit-scout/new" color="blue">+ New Pit Report</Button>
+		<!-- <Button href="/pit-scout/new" color="blue">+ New Pit Report</Button> -->
 	</div>
 
 	{#if teams.length > 0}
@@ -41,17 +41,13 @@
 						</div>
 					</div>
 					<div class="flex items-center gap-3">
-						{#if team.pitScouted}
-							<Badge color="green" rounded>Scouted</Badge>
-						{:else}
-							<Badge color="yellow" rounded>Pending</Badge>
-						{/if}
-						<a
+						<Button
 							href="/pit-scout/new?team={team.number}"
-							class="text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline"
+							color={team.pitScouted ? 'gray' : 'blue'}
+							disabled={team.pitScouted}
 						>
 							Scout &rarr;
-						</a>
+						</Button>
 					</div>
 				</div>
 			{/each}

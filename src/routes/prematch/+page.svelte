@@ -90,6 +90,65 @@
 			{data.error}
 		</div>
 	{:else if data.matchTeams}
+		{@const redEpopPred = data.matchTeams.red.reduce((s, t) => s + (t.epop ?? 0), 0)}
+		{@const blueEpopPred = data.matchTeams.blue.reduce((s, t) => s + (t.epop ?? 0), 0)}
+		{@const redAutoPred = data.matchTeams.red.reduce((s, t) => s + (t.avgAutoFuel ?? 0), 0)}
+		{@const blueAutoPred = data.matchTeams.blue.reduce((s, t) => s + (t.avgAutoFuel ?? 0), 0)}
+		{@const hasEpopPred = redEpopPred > 0 || blueEpopPred > 0}
+		{#if hasEpopPred}
+			<div class="mb-6 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+				<div class="border-b border-gray-100 bg-gray-50 px-4 py-2">
+					<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Score Forecast</p>
+				</div>
+				<div class="grid grid-cols-2 divide-x divide-gray-100">
+					<!-- Red -->
+					<div class="px-4 py-3">
+						<p class="mb-2 text-xs font-bold tracking-wider text-red-400 uppercase">Red Alliance</p>
+						<div class="flex items-baseline gap-4">
+							<div>
+								<p class="text-2xl font-black text-red-600">{redEpopPred.toFixed(1)}</p>
+								<p class="text-xs text-gray-400">ePOP prediction</p>
+							</div>
+							{#if data.match?.redScore != null}
+								<div>
+									<p class="text-2xl font-black text-gray-700">{data.match.redScore}</p>
+									<p class="text-xs text-gray-400">actual score</p>
+								</div>
+							{/if}
+							{#if redAutoPred > 0}
+								<div>
+									<p class="text-2xl font-black text-red-400">{redAutoPred.toFixed(1)}</p>
+									<p class="text-xs text-gray-400">auto fuel</p>
+								</div>
+							{/if}
+						</div>
+					</div>
+					<!-- Blue -->
+					<div class="px-4 py-3">
+						<p class="mb-2 text-xs font-bold tracking-wider text-blue-400 uppercase">Blue Alliance</p>
+						<div class="flex items-baseline gap-4">
+							<div>
+								<p class="text-2xl font-black text-blue-600">{blueEpopPred.toFixed(1)}</p>
+								<p class="text-xs text-gray-400">ePOP prediction</p>
+							</div>
+							{#if data.match?.blueScore != null}
+								<div>
+									<p class="text-2xl font-black text-gray-700">{data.match.blueScore}</p>
+									<p class="text-xs text-gray-400">actual score</p>
+								</div>
+							{/if}
+							{#if blueAutoPred > 0}
+								<div>
+									<p class="text-2xl font-black text-blue-400">{blueAutoPred.toFixed(1)}</p>
+									<p class="text-xs text-gray-400">auto fuel</p>
+								</div>
+							{/if}
+						</div>
+					</div>
+				</div>
+			</div>
+		{/if}
+
 		<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
 			<!-- Red Alliance -->
 			<div>
@@ -144,9 +203,9 @@
 				<span class="ml-2 text-sm font-semibold text-gray-600 truncate">{team.name}</span>
 			</div>
 			<div class="flex items-center gap-2 shrink-0">
-				{#if team.opr != null}
-					<span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-600">
-						OPR {team.opr.toFixed(1)}
+				{#if team.epop != null}
+					<span class="rounded-full bg-purple-100 px-2 py-0.5 text-xs font-semibold text-purple-700">
+						ePOP {team.epop.toFixed(1)}
 					</span>
 				{/if}
 				{#if team.reportCount > 0}

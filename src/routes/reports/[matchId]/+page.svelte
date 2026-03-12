@@ -1,5 +1,6 @@
 <script lang="ts">
     import { enhance } from '$app/forms';
+    import { matchFullLabel } from '$lib/matchUtils';
 
     let { data } = $props();
 
@@ -23,13 +24,7 @@
         return reports.filter((r) => r.data?.alliance === 1).map((r) => r.teamNumber);
     });
 
-    const matchLabel = $derived.by(() => {
-        if (!m) return data.matchId;
-        if (m.matchType === 'qualification') return `Qual ${m.matchNumber}`;
-        if (m.matchType === 'practice') return `Practice ${m.matchNumber}`;
-        if (m.matchType === 'playoff') return `Playoff – ${m.id.toUpperCase()}`;
-        return `Match ${m.matchNumber}`;
-    });
+    const matchLabel = $derived(m ? matchFullLabel(m) : data.matchId);
 
     const reportCount = $derived(reports.length);
 
@@ -50,7 +45,7 @@
 <div class="mx-auto max-w-5xl px-3 py-5">
     <!-- Header -->
     <div class="mb-5">
-        <a href="/matches" class="text-sm text-blue-600 hover:underline">← All Matches</a>
+        <a href="/reports" class="text-sm text-blue-600 hover:underline">← All Reports</a>
         <div class="mt-1 flex flex-wrap items-baseline gap-3">
             <h1 class="text-2xl font-black text-gray-900">{matchLabel}</h1>
             {#if m?.matchType}

@@ -1,16 +1,14 @@
 <script lang="ts">
-	import { Badge, Listgroup, ListgroupItem, Button } from 'flowbite-svelte';
+	import { Badge, Button } from 'flowbite-svelte';
 	import { ArrowLeftOutline, ChevronRightOutline, TrashBinSolid } from 'flowbite-svelte-icons';
 	import { enhance } from '$app/forms';
+	import { playoffKey } from '$lib/matchUtils';
 
 	let { data } = $props();
 
 	// Use $derived to reactively track changes to data
 	const reports = $derived(data?.matchReports ?? []);
 	const pitReports = $derived(data?.pitReports ?? []);
-
-	// Derive unique match IDs from the match reports
-	const matchesPlayed = $derived([...new Set(reports.map((r) => r.matchId))].sort());
 
 	// Calculate average statistics for match reports
 	const avgStats = $derived.by(() => {
@@ -93,6 +91,14 @@
 	function yn(v: boolean | undefined) {
 		return v ? '✓' : '✗';
 	}
+
+	const sortedTeamMatches = $derived.by(() => {
+		const nonPlayoff = data.teamMatches.filter((m) => m.matchType !== 'playoff');
+		const playoff = data.teamMatches
+			.filter((m) => m.matchType === 'playoff')
+			.sort((a, b) => playoffKey(a.id) - playoffKey(b.id));
+		return [...nonPlayoff, ...playoff];
+	});
 </script>
 
 <div class="min-h-screen bg-gray-50">
@@ -114,38 +120,53 @@
 			</div>
 		</div>
 
-		{#if data.team}
-			{@const meta = data.team.metadata as Record<string, unknown> | null}
-			{#if meta?.opr != null || meta?.ranking_score != null || meta?.hub_total_fuel_count_copr != null}
-				<div class="mb-6">
-					<div class="mb-2 flex items-center gap-2">
-						<span class="text-xs font-semibold tracking-wider text-gray-400 uppercase">TBA Statistics</span>
-						<a
-							href="https://www.thebluealliance.com/team/{data.teamnum}"
-							target="_blank"
-							rel="noopener noreferrer"
-							class="text-xs text-blue-400 transition-colors hover:text-blue-600"
-						>thebluealliance.com ↗</a>
-					</div>
-					<div class="grid grid-cols-3 gap-3">
-						<div class="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-center">
-							<p class="text-lg font-bold text-gray-500">{typeof meta.opr === 'number' ? meta.opr.toFixed(1) : '—'}</p>
-							<p class="text-xs font-semibold tracking-wider text-gray-400 uppercase">OPR</p>
-						</div>
-						<div class="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-center">
-							<p class="text-lg font-bold text-gray-500">{typeof meta.ranking_score === 'number' ? meta.ranking_score.toFixed(2) : '—'}</p>
-							<p class="text-xs font-semibold tracking-wider text-gray-400 uppercase">Ranking Score</p>
-						</div>
-						<div class="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-center">
-							<p class="text-lg font-bold text-gray-500">{typeof meta.hub_total_fuel_count_copr === 'number' ? meta.hub_total_fuel_count_copr.toFixed(1) : '—'}</p>
-							<p class="text-xs font-semibold tracking-wider text-gray-400 uppercase">Hub Fuel COPR</p>
-						</div>
-					</div>
+		{#if data.epop != null}
+			<div class="mb-6">
+				<div class="mb-2 flex items-center gap-2">
+					<span class="text-xs font-semibold tracking-wider text-gray-400 uppercase">ePOP</span>
+					<a
+						href="https://www.thebluealliance.com/team/{data.teamnum}"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="text-xs text-blue-400 transition-colors hover:text-blue-600"
+					>thebluealliance.com ↗</a>
 				</div>
-			{/if}
+				<div class="grid grid-cols-2 gap-3">
+					<div class="rounded-lg border border-purple-100 bg-purple-50 px-3 py-2 text-center">
+						<p class="text-2xl font-black text-purple-700">{data.epop.toFixed(1)}</p>
+						<p class="text-xs font-semibold tracking-wider text-purple-400 uppercase">ePOP</p>
+					</div>
+					{#if data.epopHistory && data.epopHistory.length >= 2}
+						{@const pts = data.epopHistory}
+						{@const W = 300}
+						{@const H = 48}
+						{@const PAD = {t:4,b:4,l:4,r:4}}
+						{@const cW = W - PAD.l - PAD.r}
+						{@const cH = H - PAD.t - PAD.b}
+						{@const minM = pts[0].matchNumber}
+						{@const maxM = pts[pts.length - 1].matchNumber}
+						{@const rawMin = Math.min(...pts.map(p => p.epop))}
+						{@const rawMax = Math.max(...pts.map(p => p.epop))}
+						{@const vPad = Math.max((rawMax - rawMin) * 0.15, 2)}
+						{@const xp = (m) => PAD.l + ((m - minM) / Math.max(maxM - minM, 1)) * cW}
+						{@const yp = (v) => PAD.t + (1 - (v - (rawMin - vPad)) / Math.max(rawMax - rawMin + 2 * vPad, 1)) * cH}
+						{@const polyPts = pts.map(p => `${xp(p.matchNumber).toFixed(1)},${yp(p.epop).toFixed(1)}`).join(' ')}
+						<div class="rounded-lg border border-purple-100 bg-white px-2 py-2">
+							<svg viewBox="0 0 {W} {H}" class="w-full" style="height:40px">
+								<polyline points={polyPts} fill="none" stroke="#7c3aed" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" />
+								{#each pts as p}
+									<circle cx={xp(p.matchNumber).toFixed(1)} cy={yp(p.epop).toFixed(1)} r="2" fill="#7c3aed" />
+								{/each}
+							</svg>
+							<p class="mt-0.5 text-center text-xs font-semibold tracking-wider text-purple-300 uppercase">ePOP Trend</p>
+						</div>
+					{/if}
+				</div>
+			</div>
 		{/if}
 
-		<div class="grid grid-cols-1 gap-8 lg:grid-cols-12">
+
+			<div class="grid grid-cols-1 gap-8 lg:grid-cols-12">
 			<div class="space-y-6 lg:col-span-8">
 				<div>
 					<div class="mb-4 flex items-center justify-between">
@@ -255,7 +276,7 @@
 						{#each reportsSorted as report}
 							<div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
 								<div class="border-b border-gray-100 bg-gray-50 px-3 py-2 text-center">
-									<a href="/matches/{report.matchId}" class="block text-sm font-black text-gray-700 hover:underline">{report.matchId}</a>
+									<a href="/matches?match={report.matchId}" class="block text-sm font-black text-gray-700 hover:underline">{report.matchId}</a>
 									<p class="truncate text-[10px] text-gray-400">{report.scouterName}</p>
 								</div>
 								<div class="space-y-2 p-2 text-[11px]">
@@ -441,24 +462,36 @@
 				<div class="sticky top-8">
 					<h2 class="mb-4 text-xl font-bold text-gray-800">Match History</h2>
 					<div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-						<Listgroup class="border-0">
-							{#each matchesPlayed as matchId}
-								<ListgroupItem
-									href="/matches/{matchId}"
-									class="group transition-colors hover:bg-blue-50"
-								>
-									<div class="flex w-full items-center justify-between">
-										<span class="font-medium text-gray-700 group-hover:text-blue-700"
-											>Match {matchId}</span
-										>
-										<ChevronRightOutline class="h-4 w-4 text-gray-400 group-hover:text-blue-400" />
-									</div>
-								</ListgroupItem>
-							{/each}
-						</Listgroup>
-						{#if matchesPlayed.length === 0}
-							<div class="p-8 text-center text-sm text-gray-400 italic">
-								No match reports recorded.
+						{#each sortedTeamMatches as match}
+							{@const onRed = [match.red1, match.red2, match.red3].includes(data.teamnum)}
+							{@const myScore = onRed ? match.redScore : match.blueScore}
+							{@const theirScore = onRed ? match.blueScore : match.redScore}
+							{@const isWin = myScore != null && theirScore != null && myScore > theirScore}
+							{@const isLoss = myScore != null && theirScore != null && myScore < theirScore}
+							<a
+								href="/matches?match={match.id}"
+								class="group flex items-center gap-2 border-b border-gray-100 px-3 py-2.5 last:border-0 transition-colors hover:bg-blue-50"
+							>
+								<span class="w-16 shrink-0 font-mono text-xs font-semibold text-gray-600">{match.id}</span>
+								{#if myScore != null && theirScore != null}
+									<span class="flex-1 text-center font-mono text-sm">
+										<span class="{onRed ? 'text-red-700' : 'text-blue-700'} font-black">{myScore}</span>
+										<span class="mx-1 text-gray-300">–</span>
+										<span class="{!onRed ? 'text-red-700' : 'text-blue-700'} font-normal">{theirScore}</span>
+									</span>
+									<span class="w-5 shrink-0 text-center text-xs font-bold {isWin ? 'text-green-600' : isLoss ? 'text-red-500' : 'text-gray-400'}">
+										{isWin ? 'W' : isLoss ? 'L' : 'T'}
+									</span>
+								{:else}
+									<span class="flex-1 text-center text-xs italic text-gray-400">unscored</span>
+									<span class="w-5 shrink-0"></span>
+								{/if}
+								<ChevronRightOutline class="h-3.5 w-3.5 shrink-0 text-gray-300 group-hover:text-blue-400" />
+							</a>
+						{/each}
+						{#if data.teamMatches.length === 0}
+							<div class="p-8 text-center text-sm italic text-gray-400">
+								No matches in schedule for this team.
 							</div>
 						{/if}
 					</div>
