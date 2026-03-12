@@ -166,337 +166,355 @@
 		{/if}
 
 
-			<div class="grid grid-cols-1 gap-8 lg:grid-cols-12">
-			<div class="space-y-6 lg:col-span-8">
-				<div>
-					<div class="mb-4 flex items-center justify-between">
-						<h2 class="text-xl font-bold text-gray-800">Average Match Statistics</h2>
-						{#if avgStats}
-							<Badge color="green">{avgStats.reportCount} Matches</Badge>
-						{/if}
-					</div>
-
+		<div class="grid grid-cols-1 gap-8 lg:grid-cols-12">
+		<div class="space-y-6 lg:col-span-8">
+			<div>
+				<div class="mb-4 flex items-center justify-between">
+					<h2 class="text-xl font-bold text-gray-800">Average Match Statistics</h2>
 					{#if avgStats}
-						<div
-							class="mb-8 grid grid-cols-2 gap-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm md:grid-cols-4"
-						>
-							<div>
-								<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">
-									Auto Fuel Scored
-								</p>
-								<p class="text-2xl font-bold text-gray-900">{avgStats.autoFuel}</p>
-							</div>
-							<div>
-								<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">
-									Auto Fuel Missed
-								</p>
-								<p class="text-2xl font-bold text-gray-900">{avgStats.autoFuelMissed}</p>
-							</div>
-							<div>
-								<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">
-									Moved in Auto
-								</p>
-								<p class="text-2xl font-bold text-gray-900">{avgStats.didLeavePercent}%</p>
-							</div>
-							<div>
-								<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Auto Climb</p>
-								<p class="text-2xl font-bold text-gray-900">{avgStats.autoClimbedPercent}%</p>
-							</div>
-							<div>
-								<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">
-									Teleop Fuel Rate
-								</p>
-								<p class="text-2xl font-bold text-gray-900">
-									{avgStats.teleFuelRateScore}<span class="text-sm font-normal text-gray-500">
-										/ 5</span
-									>
-								</p>
-							</div>
-							<div>
-								<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">
-									Teleop Accuracy
-								</p>
-								<p class="text-2xl font-bold text-gray-900">
-									{avgStats.teleAccScore}<span class="text-sm font-normal text-gray-500"> / 5</span>
-								</p>
-							</div>
-							<div>
-								<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">
-									Teleop Passing
-								</p>
-								{#if avgStats.telePassScore !== null}
-									<p class="text-2xl font-bold text-gray-900">
-										{avgStats.telePassScore}<span class="text-sm font-normal text-gray-500"> / 5</span>
-									</p>
-									<p class="text-xs text-gray-400">{avgStats.passPercent}% of matches</p>
-								{:else}
-									<p class="text-2xl font-bold text-gray-400">—</p>
-									<p class="text-xs text-gray-400">Never passed</p>
-								{/if}
-							</div>
-							<div>
-								<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">
-									Defense Rating
-								</p>
-								{#if avgStats.teleDefScore !== null}
-									<p class="text-2xl font-bold text-gray-900">
-										{avgStats.teleDefScore}<span class="text-sm font-normal text-gray-500"> / 5</span>
-									</p>
-									<p class="text-xs text-gray-400">{avgStats.defPercent}% of matches</p>
-								{:else}
-									<p class="text-2xl font-bold text-gray-400">—</p>
-									<p class="text-xs text-gray-400">Never defended</p>
-								{/if}
-							</div>
-							<div>
-								<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Uses Ramp</p>
-								<p class="text-2xl font-bold text-gray-900">{avgStats.rampPercent}%</p>
-							</div>
-							<div>
-								<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Uses Trench</p>
-								<p class="text-2xl font-bold text-gray-900">{avgStats.trenchPercent}%</p>
-							</div>
-						</div>
-					{:else}
-						<div
-							class="mb-8 rounded-xl border-2 border-dashed border-gray-200 bg-white p-8 text-center"
-						>
-							<p class="text-gray-400">No match data available to calculate averages.</p>
-						</div>
+						<Badge color="green">{avgStats.reportCount} Matches</Badge>
 					{/if}
 				</div>
 
-				<div class="flex items-center justify-between">
-					<h2 class="text-xl font-bold text-gray-800">Match Reports</h2>
-					<Badge color="dark">{reports.length} Report{reports.length !== 1 ? 's' : ''}</Badge>
-				</div>
-
-				{#if reportsSorted.length > 0}
-					<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-						{#each reportsSorted as report}
-							<div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-								<div class="border-b border-gray-100 bg-gray-50 px-3 py-2 text-center">
-									<a href="/matches?match={report.matchId}" class="block text-sm font-black text-gray-700 hover:underline">{report.matchId}</a>
-									<p class="truncate text-[10px] text-gray-400">{report.scouterName}</p>
-								</div>
-								<div class="space-y-2 p-2 text-[11px]">
-									<div class="text-gray-500">{posLabel(report.data?.startingPosition)}</div>
-
-									<div>
-										<p class="mb-0.5 text-[9px] font-semibold uppercase tracking-wide text-gray-600">Auto</p>
-										<div class="grid grid-cols-2 gap-x-1 gap-y-0.5 text-gray-700">
-											<span>Move</span><span class="font-semibold {report.data?.didLeave ? 'text-green-600' : 'text-gray-400'}">{yn(report.data?.didLeave)}</span>
-											<span>Climb</span><span class="font-semibold {report.data?.autoClimbed ? 'text-green-600' : 'text-gray-400'}">{yn(report.data?.autoClimbed)}</span>
-											<span>Scored</span><span class="font-semibold text-blue-600">{report.data?.autoFuel ?? 0}</span>
-											<span>Missed</span><span class="font-semibold text-red-400">{report.data?.autoFuelMissed ?? 0}</span>
-										</div>
-									</div>
-
-									<div>
-										<p class="mb-0.5 text-[9px] font-semibold uppercase tracking-wide text-gray-600">Teleop</p>
-										<div class="grid grid-cols-2 gap-x-1 gap-y-0.5 text-gray-700">
-											<span>Rate</span><span class="font-semibold">{report.data?.teleFuelRateScore}/5</span>
-											<span>Acc</span><span class="font-semibold">{report.data?.teleAccScore}/5</span>
-											<span>Pass</span><span class="font-semibold {report.data?.teleDidPass ? '' : 'text-gray-400'}">{report.data?.teleDidPass ? `${report.data?.telePassScore}/5` : '—'}</span>
-											<span>Def</span><span class="font-semibold {report.data?.teleDidDef ? '' : 'text-gray-400'}">{report.data?.teleDidDef ? `${report.data?.teleDefScore}/5` : '—'}</span>
-											{#if report.data?.teleUsesRamp}<span>Ramp</span><span class="font-semibold text-green-600">✓</span>{/if}
-											{#if report.data?.teleUsesTrench}<span>Trench</span><span class="font-semibold text-green-600">✓</span>{/if}
-										</div>
-									</div>
-
-									<div>
-										<p class="mb-0.5 text-[9px] font-semibold uppercase tracking-wide text-gray-600">Endgame</p>
-										<div class="grid grid-cols-2 gap-x-1 gap-y-0.5 text-gray-700">
-											<span>Climb</span><span class="font-semibold">{climbLabel(report.data?.climbType)}</span>
-											{#if (report.data?.cardReceived ?? 0) > 0}
-												<span>Card</span><span class="font-semibold text-yellow-600">{cardLabel(report.data?.cardReceived)}</span>
-											{/if}
-										</div>
-									</div>
-
-									{#if report.data?.notes}
-										<p class="italic leading-snug text-gray-500">{report.data.notes}</p>
-									{/if}
-
-									{#if data.isAdmin}
-										<form method="POST" action="?/deleteReport" use:enhance class="pt-1">
-											<input type="hidden" name="id" value={report.id} />
-											<button type="submit" class="w-full rounded bg-red-50 py-1 text-[10px] font-semibold text-red-500 hover:bg-red-100">Delete</button>
-										</form>
-									{/if}
-								</div>
-							</div>
-						{/each}
+				{#if avgStats}
+					<div
+						class="mb-8 grid grid-cols-2 gap-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm md:grid-cols-4"
+					>
+						<div>
+							<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">
+								Auto Fuel Scored
+							</p>
+							<p class="text-2xl font-bold text-gray-900">{avgStats.autoFuel}</p>
+						</div>
+						<div>
+							<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">
+								Auto Fuel Missed
+							</p>
+							<p class="text-2xl font-bold text-gray-900">{avgStats.autoFuelMissed}</p>
+						</div>
+						<div>
+							<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">
+								Moved in Auto
+							</p>
+							<p class="text-2xl font-bold text-gray-900">{avgStats.didLeavePercent}%</p>
+						</div>
+						<div>
+							<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Auto Climb</p>
+							<p class="text-2xl font-bold text-gray-900">{avgStats.autoClimbedPercent}%</p>
+						</div>
+						<div>
+							<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">
+								Teleop Fuel Rate
+							</p>
+							<p class="text-2xl font-bold text-gray-900">
+								{avgStats.teleFuelRateScore}<span class="text-sm font-normal text-gray-500">
+									/ 5</span
+								>
+							</p>
+						</div>
+						<div>
+							<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">
+								Teleop Accuracy
+							</p>
+							<p class="text-2xl font-bold text-gray-900">
+								{avgStats.teleAccScore}<span class="text-sm font-normal text-gray-500"> / 5</span>
+							</p>
+						</div>
+						<div>
+							<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">
+								Teleop Passing
+							</p>
+							{#if avgStats.telePassScore !== null}
+								<p class="text-2xl font-bold text-gray-900">
+									{avgStats.telePassScore}<span class="text-sm font-normal text-gray-500"> / 5</span>
+								</p>
+								<p class="text-xs text-gray-400">{avgStats.passPercent}% of matches</p>
+							{:else}
+								<p class="text-2xl font-bold text-gray-400">—</p>
+								<p class="text-xs text-gray-400">Never passed</p>
+							{/if}
+						</div>
+						<div>
+							<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">
+								Defense Rating
+							</p>
+							{#if avgStats.teleDefScore !== null}
+								<p class="text-2xl font-bold text-gray-900">
+									{avgStats.teleDefScore}<span class="text-sm font-normal text-gray-500"> / 5</span>
+								</p>
+								<p class="text-xs text-gray-400">{avgStats.defPercent}% of matches</p>
+							{:else}
+								<p class="text-2xl font-bold text-gray-400">—</p>
+								<p class="text-xs text-gray-400">Never defended</p>
+							{/if}
+						</div>
+						<div>
+							<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Uses Ramp</p>
+							<p class="text-2xl font-bold text-gray-900">{avgStats.rampPercent}%</p>
+						</div>
+						<div>
+							<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Uses Trench</p>
+							<p class="text-2xl font-bold text-gray-900">{avgStats.trenchPercent}%</p>
+						</div>
 					</div>
 				{:else}
-					<div class="rounded-xl border-2 border-dashed border-gray-200 bg-white p-8 text-center">
-						<p class="text-gray-400">No match reports recorded yet.</p>
+					<div
+						class="mb-8 rounded-xl border-2 border-dashed border-gray-200 bg-white p-8 text-center"
+					>
+						<p class="text-gray-400">No match data available to calculate averages.</p>
 					</div>
 				{/if}
+			</div>
 
-				<div class="flex items-center justify-between">
-					<h2 class="text-xl font-bold text-gray-800">Pit Reports</h2>
-					<Badge color="blue">{pitReports.length} Reports</Badge>
-				</div>
+			<div class="flex items-center justify-between">
+				<h2 class="text-xl font-bold text-gray-800">Match Reports</h2>
+				<Badge color="dark">{reports.length} Report{reports.length !== 1 ? 's' : ''}</Badge>
+			</div>
 
-				{#if pitReports.length > 0}
-					{#each pitReports as report}
-						<div class="mb-6 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-							<div class="flex items-center justify-between border-b bg-gray-50 px-6 py-3 text-sm">
+			{#if reportsSorted.length > 0}
+				<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+					{#each reportsSorted as report}
+						<div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+							<div class="border-b border-gray-100 bg-gray-50 px-3 py-2 text-center">
+								<a href="/matches?match={report.matchId}" class="block text-sm font-black text-gray-700 hover:underline">{report.matchId}</a>
+								<p class="truncate text-[10px] text-gray-400">{report.scouterName}</p>
+							</div>
+							<div class="space-y-2 p-2 text-[11px]">
+								<div class="text-gray-500">{posLabel(report.data?.startingPosition)}</div>
+
 								<div>
-									<span class="font-semibold text-blue-600">
-										Scouted by {report.data.scoutName || 'Unknown'}
-									</span>
-									<span class="ml-2 text-gray-500">
-										{report.data.timestamp
-											? new Date(report.data.timestamp).toLocaleString()
-											: 'No Date'}
-									</span>
+									<p class="mb-0.5 text-[9px] font-semibold uppercase tracking-wide text-gray-600">Auto</p>
+									<div class="grid grid-cols-2 gap-x-1 gap-y-0.5 text-gray-700">
+										<span>Move</span><span class="font-semibold {report.data?.didLeave ? 'text-green-600' : 'text-gray-400'}">{yn(report.data?.didLeave)}</span>
+										<span>Climb</span><span class="font-semibold {report.data?.autoClimbed ? 'text-green-600' : 'text-gray-400'}">{yn(report.data?.autoClimbed)}</span>
+										<span>Scored</span><span class="font-semibold text-blue-600">{report.data?.autoFuel ?? 0}</span>
+										<span>Missed</span><span class="font-semibold text-red-400">{report.data?.autoFuelMissed ?? 0}</span>
+									</div>
 								</div>
 
+								<div>
+									<p class="mb-0.5 text-[9px] font-semibold uppercase tracking-wide text-gray-600">Teleop</p>
+									<div class="grid grid-cols-2 gap-x-1 gap-y-0.5 text-gray-700">
+										<span>Rate</span><span class="font-semibold">{report.data?.teleFuelRateScore}/5</span>
+										<span>Acc</span><span class="font-semibold">{report.data?.teleAccScore}/5</span>
+										<span>Pass</span><span class="font-semibold {report.data?.teleDidPass ? '' : 'text-gray-400'}">{report.data?.teleDidPass ? `${report.data?.telePassScore}/5` : '—'}</span>
+										<span>Def</span><span class="font-semibold {report.data?.teleDidDef ? '' : 'text-gray-400'}">{report.data?.teleDidDef ? `${report.data?.teleDefScore}/5` : '—'}</span>
+										{#if report.data?.teleUsesRamp}<span>Ramp</span><span class="font-semibold text-green-600">✓</span>{/if}
+										{#if report.data?.teleUsesTrench}<span>Trench</span><span class="font-semibold text-green-600">✓</span>{/if}
+									</div>
+								</div>
+
+								<div>
+									<p class="mb-0.5 text-[9px] font-semibold uppercase tracking-wide text-gray-600">Endgame</p>
+									<div class="grid grid-cols-2 gap-x-1 gap-y-0.5 text-gray-700">
+										<span>Climb</span><span class="font-semibold">{climbLabel(report.data?.climbType)}</span>
+										{#if (report.data?.cardReceived ?? 0) > 0}
+											<span>Card</span><span class="font-semibold text-yellow-600">{cardLabel(report.data?.cardReceived)}</span>
+										{/if}
+									</div>
+								</div>
+
+								{#if report.data?.notes}
+									<p class="italic leading-snug text-gray-500">{report.data.notes}</p>
+								{/if}
+
 								{#if data.isAdmin}
-									<form method="POST" action="?/deletePitReport" use:enhance>
+									<form method="POST" action="?/deleteReport" use:enhance class="pt-1">
 										<input type="hidden" name="id" value={report.id} />
-										<Button
-											type="submit"
-											color="red"
-											size="xs"
-											class="!p-1.5"
-											title="Delete Pit Report"
-										>
-											<TrashBinSolid class="h-4 w-4" />
-										</Button>
+										<button type="submit" class="w-full rounded bg-red-50 py-1 text-[10px] font-semibold text-red-500 hover:bg-red-100">Delete</button>
 									</form>
 								{/if}
 							</div>
+						</div>
+					{/each}
+				</div>
+			{:else}
+				<div class="rounded-xl border-2 border-dashed border-gray-200 bg-white p-8 text-center">
+					<p class="text-gray-400">No match reports recorded yet.</p>
+				</div>
+			{/if}
 
-							<div class="grid grid-cols-2 gap-6 p-6 md:grid-cols-4">
-								<div>
-									<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Drivetrain</p>
-									<p class="font-medium text-gray-900">{report.data.drivetrain}</p>
-								</div>
-								<div>
-									<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Shooter</p>
-									<p class="font-medium text-gray-900">{report.data.shooterType}</p>
-								</div>
-								<div>
-									<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Intake</p>
-									<p class="font-medium text-gray-900">{report.data.intakeType}</p>
-								</div>
-								<div>
-									<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Max Climb</p>
-									<p class="font-medium text-gray-900">{report.data.climb}</p>
-								</div>
+			<div class="flex items-center justify-between">
+				<h2 class="text-xl font-bold text-gray-800">Pit Reports</h2>
+				<Badge color="blue">{pitReports.length} Reports</Badge>
+			</div>
 
-								<div>
-									<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Weight</p>
-									<p class="font-medium text-gray-900">{report.data.weightLbs || '??'} lbs</p>
-								</div>
-								<div>
-									<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Fuel / Sec</p>
-									<p class="font-medium text-gray-900">{report.data.fuelPerSecond || 'N/A'}</p>
-								</div>
-								<div>
-									<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Hopper</p>
-									<p class="font-medium text-gray-900">{report.data.hopperCapacity}</p>
-								</div>
-								<div>
-									<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Driver Exp</p>
-									<p class="font-medium text-gray-900">{report.data.driverYOE}</p>
-								</div>
+			{#if pitReports.length > 0}
+				{#each pitReports as report}
+					<div class="mb-6 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+						<div class="flex items-center justify-between border-b bg-gray-50 px-6 py-3 text-sm">
+							<div>
+								<span class="font-semibold text-blue-600">
+									Scouted by {report.data.scoutName || 'Unknown'}
+								</span>
+								<span class="ml-2 text-gray-500">
+									{report.data.timestamp
+										? new Date(report.data.timestamp).toLocaleString()
+										: 'No Date'}
+								</span>
+							</div>
 
-								<div class="col-span-2 border-t border-gray-100 pt-4 md:col-span-4">
-									<p class="mb-3 text-xs font-bold tracking-wider text-gray-400 uppercase">
-										Autonomous Capabilities
+							{#if data.isAdmin}
+								<form method="POST" action="?/deletePitReport" use:enhance>
+									<input type="hidden" name="id" value={report.id} />
+									<Button
+										type="submit"
+										color="red"
+										size="xs"
+										class="!p-1.5"
+										title="Delete Pit Report"
+									>
+										<TrashBinSolid class="h-4 w-4" />
+									</Button>
+								</form>
+							{/if}
+						</div>
+
+						<div class="grid grid-cols-2 gap-6 p-6 md:grid-cols-4">
+							<div>
+								<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Drivetrain</p>
+								<p class="font-medium text-gray-900">{report.data.drivetrain}</p>
+							</div>
+							<div>
+								<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Shooter</p>
+								<p class="font-medium text-gray-900">{report.data.shooterType}</p>
+							</div>
+							<div>
+								<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Intake</p>
+								<p class="font-medium text-gray-900">{report.data.intakeType}</p>
+							</div>
+							<div>
+								<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Max Climb</p>
+								<p class="font-medium text-gray-900">{report.data.climb}</p>
+							</div>
+
+							<div>
+								<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Weight</p>
+								<p class="font-medium text-gray-900">{report.data.weightLbs || '??'} lbs</p>
+							</div>
+							<div>
+								<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Fuel / Sec</p>
+								<p class="font-medium text-gray-900">{report.data.fuelPerSecond || 'N/A'}</p>
+							</div>
+							<div>
+								<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Hopper</p>
+								<p class="font-medium text-gray-900">{report.data.hopperCapacity}</p>
+							</div>
+							<div>
+								<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Driver Exp</p>
+								<p class="font-medium text-gray-900">{report.data.driverYOE}</p>
+							</div>
+
+							<div class="col-span-2 border-t border-gray-100 pt-4 md:col-span-4">
+								<p class="mb-3 text-xs font-bold tracking-wider text-gray-400 uppercase">
+									Autonomous Capabilities
+								</p>
+								<div class="space-y-3">
+									<div class="text-sm">
+										<span class="text-gray-500 italic">Preferred Start:</span>
+										<span class="ml-2 font-semibold text-gray-800">{report.data.autoStart}</span>
+									</div>
+									<div class="flex flex-wrap gap-2">
+										{#if report.data.autoFeatures?.length > 0}
+											{#each report.data.autoFeatures as feature}
+												<Badge color="green" rounded class="px-3 py-1">
+													{formatFeature(feature)}
+												</Badge>
+											{/each}
+										{:else}
+											<span class="text-sm text-gray-400 italic">No auto features reported.</span>
+										{/if}
+									</div>
+								</div>
+							</div>
+
+							<div
+								class="col-span-2 grid gap-4 border-t border-gray-100 pt-4 md:col-span-4 md:grid-cols-2"
+							>
+								<div class="rounded-lg border border-red-100 bg-red-50 p-4">
+									<p class="text-xs font-bold tracking-wider text-red-700 uppercase">
+										Known Issues
 									</p>
-									<div class="space-y-3">
-										<div class="text-sm">
-											<span class="text-gray-500 italic">Preferred Start:</span>
-											<span class="ml-2 font-semibold text-gray-800">{report.data.autoStart}</span>
-										</div>
-										<div class="flex flex-wrap gap-2">
-											{#if report.data.autoFeatures?.length > 0}
-												{#each report.data.autoFeatures as feature}
-													<Badge color="green" rounded class="px-3 py-1">
-														{formatFeature(feature)}
-													</Badge>
-												{/each}
-											{:else}
-												<span class="text-sm text-gray-400 italic">No auto features reported.</span>
-											{/if}
-										</div>
-									</div>
+									<p class="mt-1 text-sm text-gray-700 italic">
+										{report.data.knownIssues || 'No known issues reported.'}
+									</p>
 								</div>
-
-								<div
-									class="col-span-2 grid gap-4 border-t border-gray-100 pt-4 md:col-span-4 md:grid-cols-2"
-								>
-									<div class="rounded-lg border border-red-100 bg-red-50 p-4">
-										<p class="text-xs font-bold tracking-wider text-red-700 uppercase">
-											Known Issues
-										</p>
-										<p class="mt-1 text-sm text-gray-700 italic">
-											{report.data.knownIssues || 'No known issues reported.'}
-										</p>
-									</div>
-									<div class="rounded-lg border border-blue-100 bg-blue-50 p-4">
-										<p class="text-xs font-bold tracking-wider text-blue-700 uppercase">
-											General Comments
-										</p>
-										<p class="mt-1 text-sm text-gray-700 italic">
-											{report.data.comments || 'No additional comments.'}
-										</p>
-									</div>
+								<div class="rounded-lg border border-blue-100 bg-blue-50 p-4">
+									<p class="text-xs font-bold tracking-wider text-blue-700 uppercase">
+										General Comments
+									</p>
+									<p class="mt-1 text-sm text-gray-700 italic">
+										{report.data.comments || 'No additional comments.'}
+									</p>
 								</div>
 							</div>
 						</div>
-					{/each}
-				{:else}
-					<div class="rounded-xl border-2 border-dashed border-gray-200 bg-white p-12 text-center">
-						<p class="mb-4 text-gray-400">No pit data available for this team yet.</p>
 					</div>
-				{/if}
-			</div>
+				{/each}
+			{:else}
+				<div class="rounded-xl border-2 border-dashed border-gray-200 bg-white p-12 text-center">
+					<p class="mb-4 text-gray-400">No pit data available for this team yet.</p>
+				</div>
+			{/if}
+		</div>
 
-			<div class="lg:col-span-4">
-				<div class="sticky top-8">
-					<h2 class="mb-4 text-xl font-bold text-gray-800">Match History</h2>
-					<div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-						{#each sortedTeamMatches as match}
-							{@const onRed = [match.red1, match.red2, match.red3].includes(data.teamnum)}
-							{@const myScore = onRed ? match.redScore : match.blueScore}
-							{@const theirScore = onRed ? match.blueScore : match.redScore}
-							{@const isWin = myScore != null && theirScore != null && myScore > theirScore}
-							{@const isLoss = myScore != null && theirScore != null && myScore < theirScore}
-							<a
-								href="/matches?match={match.id}"
-								class="group flex items-center gap-2 border-b border-gray-100 px-3 py-2.5 last:border-0 transition-colors hover:bg-blue-50"
-							>
-								<span class="w-16 shrink-0 font-mono text-xs font-semibold text-gray-600">{match.id}</span>
-								{#if myScore != null && theirScore != null}
-									<span class="flex-1 text-center font-mono text-sm">
-										<span class="{onRed ? 'text-red-700' : 'text-blue-700'} font-black">{myScore}</span>
-										<span class="mx-1 text-gray-300">–</span>
-										<span class="{!onRed ? 'text-red-700' : 'text-blue-700'} font-normal">{theirScore}</span>
-									</span>
-									<span class="w-5 shrink-0 text-center text-xs font-bold {isWin ? 'text-green-600' : isLoss ? 'text-red-500' : 'text-gray-400'}">
-										{isWin ? 'W' : isLoss ? 'L' : 'T'}
-									</span>
-								{:else}
-									<span class="flex-1 text-center text-xs italic text-gray-400">unscored</span>
-									<span class="w-5 shrink-0"></span>
-								{/if}
-								<ChevronRightOutline class="h-3.5 w-3.5 shrink-0 text-gray-300 group-hover:text-blue-400" />
-							</a>
-						{/each}
-						{#if data.teamMatches.length === 0}
-							<div class="p-8 text-center text-sm italic text-gray-400">
-								No matches in schedule for this team.
-							</div>
+		<div class="lg:col-span-4">
+			<div class="top-8">
+				<h2 class="mb-4 text-xl font-bold text-gray-800">Match History</h2>
+				<div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+					<!-- Header row -->
+					<div class="flex items-center gap-2 border-b border-gray-200 bg-gray-50 px-3 py-1.5">
+						<span class="w-16 shrink-0 text-[10px] font-bold tracking-wider text-gray-400 uppercase">Match</span>
+						<span class="flex-1 text-center text-[10px] font-bold tracking-wider text-gray-400 uppercase">Score</span>
+						<span class="w-10 shrink-0 text-center text-[10px] font-bold tracking-wider text-gray-400 uppercase">Actual</span>
+						{#if data.hasEpopData}
+							<span class="w-10 shrink-0 text-center text-[10px] font-bold tracking-wider text-purple-400 uppercase">Pred</span>
 						{/if}
+						<span class="w-3.5 shrink-0"></span>
 					</div>
+					{#each sortedTeamMatches as match}
+						{@const onRed = [match.red1, match.red2, match.red3].includes(data.teamnum)}
+						{@const myScore = onRed ? match.redScore : match.blueScore}
+						{@const theirScore = onRed ? match.blueScore : match.redScore}
+						{@const isWin = myScore != null && theirScore != null && myScore > theirScore}
+						{@const isLoss = myScore != null && theirScore != null && myScore < theirScore}
+						{@const predProb = data.matchPredictions[match.id] ?? 0.5}
+						{@const isPredWin = predProb > 0.51}
+						{@const isPredLoss = predProb < 0.49}
+						<a
+							href="/matches?match={match.id}"
+							class="group flex items-center gap-2 border-b border-gray-100 px-3 py-2.5 last:border-0 transition-colors hover:bg-blue-50"
+						>
+							<span class="w-16 shrink-0 font-mono text-xs font-semibold text-gray-600">{match.id}</span>
+							{#if myScore != null && theirScore != null}
+								<span class="flex-1 text-center font-mono text-sm">
+									<span class="{onRed ? 'text-red-700' : 'text-blue-700'} font-black">{myScore}</span>
+									<span class="mx-1 text-gray-300">–</span>
+									<span class="{!onRed ? 'text-red-700' : 'text-blue-700'} font-normal">{theirScore}</span>
+								</span>
+								<span class="w-10 shrink-0 text-center text-xs font-bold {isWin ? 'text-green-600' : isLoss ? 'text-red-500' : 'text-gray-400'}">
+									{isWin ? 'W' : isLoss ? 'L' : 'T'}
+								</span>
+							{:else}
+								<span class="flex-1 text-center text-xs italic text-gray-400">unscored</span>
+								<span class="w-10 shrink-0"></span>
+							{/if}
+							{#if data.hasEpopData}
+								<span class="w-10 shrink-0 text-center text-xs font-bold {isPredWin ? 'text-green-500' : isPredLoss ? 'text-red-400' : 'text-gray-400'}">
+									{isPredWin ? 'W' : isPredLoss ? 'L' : 'T'}
+								</span>
+							{/if}
+							<ChevronRightOutline class="h-3.5 w-3.5 shrink-0 text-gray-300 group-hover:text-blue-400" />
+						</a>
+					{/each}
+					{#if data.teamMatches.length === 0}
+						<div class="p-8 text-center text-sm italic text-gray-400">
+							No matches in schedule for this team.
+						</div>
+					{/if}
 				</div>
 			</div>
 		</div>
+	</div>
 	</div>
 </div>

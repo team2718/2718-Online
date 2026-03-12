@@ -2,7 +2,8 @@ import { getScoutingReports, getPitReports, deletePitReport, deleteScoutingRepor
 import { teams, matches } from '$lib/server/db/schema';
 import { eq, or, asc } from 'drizzle-orm';
 import { fail } from '@sveltejs/kit';
-import { getEpopHistory } from '$lib/server/epop';
+import { getEpopHistory, getEpop, getEpopBeforeMatch } from '$lib/server/epop';
+import { winProbability } from '$lib/winProb';
 
 export async function load({ params, locals }) {
 	const teamnum = Number(params.teamnum);
@@ -33,6 +34,32 @@ export async function load({ params, locals }) {
 			.all()
 	]);
 
+	// Compute per-match win probability using historically accurate ePOP snapshots.
+	// Mirrors the /matches page: use getEpopBeforeMatch for qual/practice, getEpop for playoff.
+	const epopSnapshots = await Promise.all(
+		teamMatches.map((m) => m.matchType === 'playoff' ? getEpop() : getEpopBeforeMatch(m.matchNumber))
+	);
+
+	let hasEpopData = false;
+	const matchPredictions: Record<string, number> = {};
+
+	for (let i = 0; i < teamMatches.length; i++) {
+		const match = teamMatches[i];
+		const epopMap = epopSnapshots[i];
+		if (epopMap.size > 0) hasEpopData = true;
+
+		const getE = (t: number | null) => (t != null ? epopMap.get(t) ?? 0 : 0);
+		const onRed = [match.red1, match.red2, match.red3].includes(teamnum);
+		const myEpop = onRed
+			? getE(match.red1) + getE(match.red2) + getE(match.red3)
+			: getE(match.blue1) + getE(match.blue2) + getE(match.blue3);
+		const theirEpop = onRed
+			? getE(match.blue1) + getE(match.blue2) + getE(match.blue3)
+			: getE(match.red1) + getE(match.red2) + getE(match.red3);
+
+		matchPredictions[match.id] = winProbability(myEpop, theirEpop);
+	}
+
 	const epop = epopHistory.length > 0 ? epopHistory[epopHistory.length - 1].epop : null;
 
 	return {
@@ -43,6 +70,8 @@ export async function load({ params, locals }) {
 		teamMatches: teamMatches ?? [],
 		epop,
 		epopHistory,
+		matchPredictions,
+		hasEpopData,
 		isAdmin: locals.admin
 	};
 }

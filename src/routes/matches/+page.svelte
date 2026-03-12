@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { matchShortLabel, matchFullLabel, matchTypeColor, playoffKey } from '$lib/matchUtils';
+	import { winProbability } from '$lib/winProb';
 
 	let { data } = $props();
 
@@ -9,6 +10,11 @@
 	let filterText = $state('');
 	let pickerEl: HTMLElement | undefined;
 	let filterInputEl: HTMLInputElement | undefined;
+
+	// Keep selectedMatchId in sync with the URL when navigating via quick-links.
+	$effect(() => {
+		selectedMatchId = data.matchId ?? '';
+	});
 
 	function selectMatch(id: string) {
 		selectedMatchId = id;
@@ -77,7 +83,7 @@
 	});
 </script>
 
-<div class="mx-auto max-w-7xl px-4 py-6">
+<div class="mx-auto max-w-7xl py-6">
 	<!-- Header -->
 	<div class="mb-6">
 		<h1 class="text-3xl font-black tracking-tight text-gray-900">Match Analysis</h1>
@@ -107,32 +113,42 @@
 	<!-- Match picker -->
 	<div class="relative mb-8" bind:this={pickerEl}>
 		<p class="mb-1.5 text-sm font-semibold text-gray-700">Match</p>
-		<button
-			type="button"
-			onclick={() => {
-				pickerOpen = !pickerOpen;
-				if (pickerOpen) {
-					filterText = '';
-					setTimeout(() => filterInputEl?.focus(), 30);
-				}
-			}}
-			class="flex w-56 items-center justify-between gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm hover:border-gray-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
-		>
-			{#if selectedMatch}
-				<span class="font-bold text-gray-800">{matchFullLabel(selectedMatch)}</span>
-			{:else}
-				<span class="text-gray-400">Select a match…</span>
-			{/if}
-			<svg
-				class="h-4 w-4 shrink-0 text-gray-400 transition-transform {pickerOpen ? 'rotate-180' : ''}"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2"
-				viewBox="0 0 24 24"
+		<div class="flex items-center gap-3">
+			<button
+				type="button"
+				onclick={() => {
+					pickerOpen = !pickerOpen;
+					if (pickerOpen) {
+						filterText = '';
+						setTimeout(() => filterInputEl?.focus(), 30);
+					}
+				}}
+				class="flex w-56 items-center justify-between gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm hover:border-gray-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
 			>
-				<path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-			</svg>
-		</button>
+				{#if selectedMatch}
+					<span class="font-bold text-gray-800">{matchFullLabel(selectedMatch)}</span>
+				{:else}
+					<span class="text-gray-400">Select a match…</span>
+				{/if}
+				<svg
+					class="h-4 w-4 shrink-0 text-gray-400 transition-transform {pickerOpen ? 'rotate-180' : ''}"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					viewBox="0 0 24 24"
+				>
+					<path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+				</svg>
+			</button>
+			{#if selectedMatch}
+				<a
+					href="/reports/{selectedMatch.id}"
+					class="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 transition-colors hover:bg-blue-100"
+				>
+					Reports <span class="text-blue-400">↗</span>
+				</a>
+			{/if}
+		</div>
 
 		{#if pickerOpen}
 			<div class="absolute left-0 top-full z-30 mt-1 w-64 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
@@ -187,10 +203,12 @@
 		{@const redAutoPred = data.matchTeams.red.reduce((s, t) => s + (t.avgAutoFuel ?? 0), 0)}
 		{@const blueAutoPred = data.matchTeams.blue.reduce((s, t) => s + (t.avgAutoFuel ?? 0), 0)}
 		{@const hasEpopPred = redEpopPred > 0 || blueEpopPred > 0}
+		{@const winProbRed = winProbability(redEpopPred, blueEpopPred)}
+		{@const winProbBlue = 1 - winProbRed}
 		{#if hasEpopPred}
 			<div class="mb-6 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
 				<div class="border-b border-gray-100 bg-gray-50 px-4 py-2">
-					<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Score Forecast</p>
+					<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Predictions</p>
 				</div>
 				<div class="grid grid-cols-2 divide-x divide-gray-100">
 					<!-- Red -->
@@ -236,6 +254,24 @@
 								<p class="text-xs text-gray-400">Auto Fuel Prediction</p>
 							</div>
 						{/if}
+					</div>
+				</div>
+				<!-- Win probability bar -->
+				<div class="border-t border-gray-100 px-4 py-3">
+					<p class="mb-2 text-xs font-bold tracking-wider text-gray-400 uppercase">Win Probability</p>
+					<div class="flex items-center gap-3">
+						<span class="w-12 text-right text-sm font-black text-red-600">{(winProbRed * 100).toFixed(0)}%</span>
+						<div class="relative h-4 flex-1 overflow-hidden rounded-full bg-gray-100">
+							<div
+								class="absolute inset-y-0 left-0 rounded-l-full bg-red-400 transition-all"
+								style="width: {(winProbRed * 100).toFixed(1)}%"
+							></div>
+							<div
+								class="absolute inset-y-0 right-0 rounded-r-full bg-blue-400 transition-all"
+								style="width: {(winProbBlue * 100).toFixed(1)}%"
+							></div>
+						</div>
+						<span class="w-12 text-sm font-black text-blue-600">{(winProbBlue * 100).toFixed(0)}%</span>
 					</div>
 				</div>
 			</div>
