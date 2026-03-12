@@ -60,14 +60,31 @@
 		if (pct < 90) return 'text-green-700 font-bold';
 		return 'text-blue-700 font-bold';
 	}
+
+	let scrollEl: HTMLDivElement | undefined;
+	let canScrollRight = $state(false);
+
+	function checkScroll() {
+		if (!scrollEl) return;
+		canScrollRight = Math.round(scrollEl.scrollLeft + scrollEl.clientWidth) < scrollEl.scrollWidth;
+	}
+
+	$effect(() => {
+		if (!scrollEl) return;
+		checkScroll();
+		const ro = new ResizeObserver(checkScroll);
+		ro.observe(scrollEl);
+		return () => ro.disconnect();
+	});
 </script>
 
 <div class="mx-auto max-w-5xl px-4 py-6">
 	<h1 class="mb-6 text-3xl font-black tracking-tight text-gray-900">Teams</h1>
 
 	{#if data.teams.length > 0}
-		<div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-			<table class="w-full text-sm">
+		<div class="relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+		<div class="overflow-x-auto" bind:this={scrollEl} onscroll={checkScroll}>
+			<table class="w-full min-w-[36rem] text-sm">
 				<thead>
 					<tr class="border-b border-gray-200 bg-gray-50 text-left">
 						<th class="w-24">
@@ -150,6 +167,10 @@
 					{/each}
 				</tbody>
 			</table>
+		</div>
+		{#if canScrollRight}
+			<div class="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-white to-transparent"></div>
+		{/if}
 		</div>
 	{:else}
 		<p class="text-gray-500">No teams found.</p>

@@ -288,11 +288,11 @@
 	<div class="overflow-hidden rounded-xl border border-gray-200 border-l-4 {accentBorder} bg-white shadow-sm">
 		<!-- Team header -->
 		<div class="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-100">
-			<div>
-				<a href="/teams/{team.number}" class="text-lg font-black {accentText} hover:underline">
+			<div class="min-w-0 flex-1 mr-3 flex items-center gap-x-1.5">
+				<a href="/teams/{team.number}" class="shrink-0 text-lg font-black {accentText} hover:underline">
 					{team.number}
 				</a>
-				<span class="ml-2 text-sm font-semibold text-gray-600 truncate">{team.name}</span>
+				<span class="min-w-0 truncate text-sm font-semibold text-gray-600">{team.name}</span>
 			</div>
 			<div class="flex items-center gap-2 shrink-0">
 				{#if team.epop != null}

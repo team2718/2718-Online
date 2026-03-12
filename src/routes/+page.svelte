@@ -22,7 +22,7 @@
 	</div>
 
 	<!-- Coverage stat chips -->
-	<div class="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3">
+	<div class="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
 		<div class="rounded-xl border border-gray-200 bg-white px-4 py-3 text-center shadow-sm">
 			<p class="text-2xl font-black text-gray-900">{cov.pitScoutedTeams} / {cov.totalTeams}</p>
 			<p class="mt-0.5 text-xs font-semibold tracking-wider text-gray-400 uppercase">Teams Pit Scouted</p>
@@ -75,24 +75,6 @@
 							<span class="w-12 font-bold text-gray-800">{row.number}</span>
 							<span class="min-w-0 flex-1 truncate text-xs text-gray-500">{row.name}</span>
 							<span class="text-sm font-bold text-blue-600">{fmt1(row.value)}</span>
-						</a>
-					{/each}
-				</div>
-			</div>
-
-			<!-- Avg Tele Fuel Rate -->
-			<div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-				<div class="border-b border-gray-100 bg-gray-50 px-4 py-2.5">
-					<h3 class="text-sm font-bold text-gray-700">Avg Tele Fuel Rate</h3>
-					<p class="text-xs text-gray-400">Avg teleop scoring rate (1–5)</p>
-				</div>
-				<div>
-					{#each rankings.teleopRate as row, i}
-						<a href="/teams/{row.number}" class="flex items-center gap-2 px-4 py-2 hover:bg-gray-50 {i > 0 ? 'border-t border-gray-100' : ''}">
-							<span class="w-5 text-right text-xs font-bold text-gray-300">{i + 1}</span>
-							<span class="w-12 font-bold text-gray-800">{row.number}</span>
-							<span class="min-w-0 flex-1 truncate text-xs text-gray-500">{row.name}</span>
-							<span class="text-sm font-bold text-green-600">{fmt1(row.value)}<span class="text-xs font-normal text-gray-400">/5</span></span>
 						</a>
 					{/each}
 				</div>
