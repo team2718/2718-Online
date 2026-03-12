@@ -199,19 +199,19 @@
 						<div class="flex items-baseline gap-4">
 							<div>
 								<p class="text-2xl font-black text-red-600">{redEpopPred.toFixed(1)}</p>
-								<p class="text-xs text-gray-400">ePOP prediction</p>
+								<p class="text-xs text-gray-400">ePOP Prediction</p>
 							</div>
 							{#if data.match?.redScore != null}
 								<div>
 									<p class="text-2xl font-black text-gray-700">{data.match.redScore}</p>
-									<p class="text-xs text-gray-400">actual score</p>
+									<p class="text-xs text-gray-400">Actual Score</p>
 								</div>
 							{/if}
 						</div>
 						{#if redAutoPred > 0}
 							<div class="mt-2 border-t border-gray-100 pt-2">
-								<p class="text-lg font-bold text-red-400">{redAutoPred.toFixed(1)}</p>
-								<p class="text-xs text-gray-400">auto fuel pred.</p>
+								<p class="text-lg font-bold text-red-600">{redAutoPred.toFixed(1)}</p>
+								<p class="text-xs text-gray-400">Auto Fuel Prediction</p>
 							</div>
 						{/if}
 					</div>
@@ -221,19 +221,19 @@
 						<div class="flex items-baseline gap-4">
 							<div>
 								<p class="text-2xl font-black text-blue-600">{blueEpopPred.toFixed(1)}</p>
-								<p class="text-xs text-gray-400">ePOP prediction</p>
+								<p class="text-xs text-gray-400">ePOP Prediction</p>
 							</div>
 							{#if data.match?.blueScore != null}
 								<div>
 									<p class="text-2xl font-black text-gray-700">{data.match.blueScore}</p>
-									<p class="text-xs text-gray-400">actual score</p>
+									<p class="text-xs text-gray-400">Actual Score</p>
 								</div>
 							{/if}
 						</div>
 						{#if blueAutoPred > 0}
 							<div class="mt-2 border-t border-gray-100 pt-2">
-								<p class="text-lg font-bold text-blue-400">{blueAutoPred.toFixed(1)}</p>
-								<p class="text-xs text-gray-400">auto fuel pred.</p>
+								<p class="text-lg font-bold text-blue-600">{blueAutoPred.toFixed(1)}</p>
+								<p class="text-xs text-gray-400">Auto Fuel Prediction</p>
 							</div>
 						{/if}
 					</div>
