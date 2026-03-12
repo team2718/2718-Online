@@ -1,7 +1,7 @@
 import { db } from '$lib/server/db';
 import { teams, scoutingReports, pitScoutingReports, matches } from '$lib/server/db/schema';
 import { eq, inArray, asc, or } from 'drizzle-orm';
-import { getEpopBeforeMatch } from '$lib/server/epop';
+import { getEpopBeforeMatch, getEpop } from '$lib/server/epop';
 
 const OUR_TEAM = 2718;
 
@@ -46,7 +46,7 @@ export async function load({ url }: { url: URL }) {
 		db.select().from(scoutingReports).where(inArray(scoutingReports.teamNumber, teamNums)).all(),
 		db.select().from(pitScoutingReports).where(inArray(pitScoutingReports.teamNumber, teamNums)).all(),
 		db.select().from(teams).where(inArray(teams.number, teamNums)).all(),
-		getEpopBeforeMatch(match.matchNumber)
+		match.matchType === 'playoff' ? getEpop() : getEpopBeforeMatch(match.matchNumber)
 	]);
 
 	const teamMap = new Map(teamRows.map((t) => [t.number, t]));

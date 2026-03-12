@@ -15,8 +15,8 @@ import { matches, teams, scoutingReports } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 
 // --- Hyperparameters ---
-const LAMBDA = 2.5; // Regularization strength (0 = raw OPR)
-const GAMMA = 1.3; // Power law exponent for scouting prior scaling
+const LAMBDA = 1.5; // Regularization strength (0 = raw OPR)
+const GAMMA = 1.5; // Power law exponent for scouting prior scaling
 const DECAY = 0.98; // Per-match time-decay factor (1.0 = no decay)
 
 // --- Linear Algebra ---
