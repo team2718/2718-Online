@@ -26,7 +26,8 @@
 	const navGroup2 = [
 		{ href: '/reports', label: 'Reports' },
 		{ href: '/scan', label: 'Scan QR' },
-		{ href: '/pit-scout', label: 'Pit Scout' }
+		{ href: '/pit-scout', label: 'Pit Scout' },
+		{ href: '/StrategyBoard.html', label: 'Strategy Board' }
 	];
 
 	// --- Mobile menu ---
