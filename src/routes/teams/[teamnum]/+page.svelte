@@ -91,6 +91,12 @@
 	function yn(v: boolean | undefined) {
 		return v ? '✓' : '✗';
 	}
+	function sparkX(m: number, minM: number, maxM: number, leftPad: number, chartWidth: number) {
+		return leftPad + ((m - minM) / Math.max(maxM - minM, 1)) * chartWidth;
+	}
+	function sparkY(v: number, rawMin: number, rawMax: number, vPad: number, topPad: number, chartHeight: number) {
+		return topPad + (1 - (v - (rawMin - vPad)) / Math.max(rawMax - rawMin + 2 * vPad, 1)) * chartHeight;
+	}
 
 	const sortedTeamMatches = $derived.by(() => {
 		const nonPlayoff = data.teamMatches.filter((m) => m.matchType !== 'playoff');
@@ -148,8 +154,8 @@
 						{@const rawMin = Math.min(...pts.map(p => p.epop))}
 						{@const rawMax = Math.max(...pts.map(p => p.epop))}
 						{@const vPad = Math.max((rawMax - rawMin) * 0.15, 2)}
-						{@const xp = (m) => PAD.l + ((m - minM) / Math.max(maxM - minM, 1)) * cW}
-						{@const yp = (v) => PAD.t + (1 - (v - (rawMin - vPad)) / Math.max(rawMax - rawMin + 2 * vPad, 1)) * cH}
+						{@const xp = (m: number) => sparkX(m, minM, maxM, PAD.l, cW)}
+						{@const yp = (v: number) => sparkY(v, rawMin, rawMax, vPad, PAD.t, cH)}
 						{@const polyPts = pts.map(p => `${xp(p.matchNumber).toFixed(1)},${yp(p.epop).toFixed(1)}`).join(' ')}
 						<div class="rounded-lg border border-purple-100 bg-white px-2 py-2">
 							<svg viewBox="0 0 {W} {H}" class="w-full" style="height:40px">
@@ -268,7 +274,7 @@
 
 			<div class="flex items-center justify-between">
 				<h2 class="text-xl font-bold text-gray-800">Match Reports</h2>
-				<Badge color="dark">{reports.length} Report{reports.length !== 1 ? 's' : ''}</Badge>
+				<Badge color="gray">{reports.length} Report{reports.length !== 1 ? 's' : ''}</Badge>
 			</div>
 
 			{#if reportsSorted.length > 0}
@@ -344,14 +350,23 @@
 					<div class="mb-6 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
 						<div class="flex items-center justify-between border-b bg-gray-50 px-6 py-3 text-sm">
 							<div>
-								<span class="font-semibold text-blue-600">
-									Scouted by {report.data.scoutName || 'Unknown'}
-								</span>
-								<span class="ml-2 text-gray-500">
-									{report.data.timestamp
-										? new Date(report.data.timestamp).toLocaleString()
-										: 'No Date'}
-								</span>
+								{#if report.data}
+									{@const pitData = report.data}
+									<span class="font-semibold text-blue-600">
+										Scouted by {pitData.scoutName || 'Unknown'}
+									</span>
+									<span class="ml-2 text-gray-500">
+										Team {pitData.teamNumber || data.teamnum}
+									</span>
+									<span class="ml-2 text-gray-500">
+										{pitData.timestamp
+											? new Date(pitData.timestamp).toLocaleString()
+											: 'No Date'}
+									</span>
+								{:else}
+									<span class="font-semibold text-blue-600">Pit report</span>
+									<span class="ml-2 text-gray-500">No structured data</span>
+								{/if}
 							</div>
 
 							{#if data.isAdmin}
@@ -361,7 +376,7 @@
 										type="submit"
 										color="red"
 										size="xs"
-										class="!p-1.5"
+										class="p-1.5!"
 										title="Delete Pit Report"
 									>
 										<TrashBinSolid class="h-4 w-4" />
@@ -370,85 +385,90 @@
 							{/if}
 						</div>
 
-						<div class="grid grid-cols-2 gap-6 p-6 md:grid-cols-4">
-							<div>
-								<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Drivetrain</p>
-								<p class="font-medium text-gray-900">{report.data.drivetrain}</p>
-							</div>
-							<div>
-								<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Shooter</p>
-								<p class="font-medium text-gray-900">{report.data.shooterType}</p>
-							</div>
-							<div>
-								<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Intake</p>
-								<p class="font-medium text-gray-900">{report.data.intakeType}</p>
-							</div>
-							<div>
-								<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Max Climb</p>
-								<p class="font-medium text-gray-900">{report.data.climb}</p>
-							</div>
+						{#if report.data}
+							{@const pitData = report.data}
+							<div class="grid grid-cols-2 gap-6 p-6 md:grid-cols-4">
+								<div>
+									<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Drivetrain</p>
+									<p class="font-medium text-gray-900">{pitData.drivetrain}</p>
+								</div>
+								<div>
+									<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Shooter</p>
+									<p class="font-medium text-gray-900">{pitData.shooterType}</p>
+								</div>
+								<div>
+									<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Intake</p>
+									<p class="font-medium text-gray-900">{pitData.intakeType}</p>
+								</div>
+								<div>
+									<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Max Climb</p>
+									<p class="font-medium text-gray-900">{pitData.climb}</p>
+								</div>
 
-							<div>
-								<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Weight</p>
-								<p class="font-medium text-gray-900">{report.data.weightLbs || '??'} lbs</p>
-							</div>
-							<div>
-								<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Fuel / Sec</p>
-								<p class="font-medium text-gray-900">{report.data.fuelPerSecond || 'N/A'}</p>
-							</div>
-							<div>
-								<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Hopper</p>
-								<p class="font-medium text-gray-900">{report.data.hopperCapacity}</p>
-							</div>
-							<div>
-								<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Driver Exp</p>
-								<p class="font-medium text-gray-900">{report.data.driverYOE}</p>
-							</div>
+								<div>
+									<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Weight</p>
+									<p class="font-medium text-gray-900">{pitData.weightLbs || '??'} lbs</p>
+								</div>
+								<div>
+									<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Fuel / Sec</p>
+									<p class="font-medium text-gray-900">{pitData.fuelPerSecond || 'N/A'}</p>
+								</div>
+								<div>
+									<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Hopper</p>
+									<p class="font-medium text-gray-900">{pitData.hopperCapacity}</p>
+								</div>
+								<div>
+									<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Driver Exp</p>
+									<p class="font-medium text-gray-900">{pitData.driverYOE}</p>
+								</div>
 
-							<div class="col-span-2 border-t border-gray-100 pt-4 md:col-span-4">
-								<p class="mb-3 text-xs font-bold tracking-wider text-gray-400 uppercase">
-									Autonomous Capabilities
-								</p>
-								<div class="space-y-3">
-									<div class="text-sm">
-										<span class="text-gray-500 italic">Preferred Start:</span>
-										<span class="ml-2 font-semibold text-gray-800">{report.data.autoStart}</span>
+								<div class="col-span-2 border-t border-gray-100 pt-4 md:col-span-4">
+									<p class="mb-3 text-xs font-bold tracking-wider text-gray-400 uppercase">
+										Autonomous Capabilities
+									</p>
+									<div class="space-y-3">
+										<div class="text-sm">
+											<span class="text-gray-500 italic">Preferred Start:</span>
+											<span class="ml-2 font-semibold text-gray-800">{pitData.autoStart}</span>
+										</div>
+										<div class="flex flex-wrap gap-2">
+											{#if pitData.autoFeatures?.length > 0}
+												{#each pitData.autoFeatures as feature}
+													<Badge color="green" rounded class="px-3 py-1">
+														{formatFeature(feature)}
+													</Badge>
+												{/each}
+											{:else}
+												<span class="text-sm text-gray-400 italic">No auto features reported.</span>
+											{/if}
+										</div>
 									</div>
-									<div class="flex flex-wrap gap-2">
-										{#if report.data.autoFeatures?.length > 0}
-											{#each report.data.autoFeatures as feature}
-												<Badge color="green" rounded class="px-3 py-1">
-													{formatFeature(feature)}
-												</Badge>
-											{/each}
-										{:else}
-											<span class="text-sm text-gray-400 italic">No auto features reported.</span>
-										{/if}
+								</div>
+
+								<div
+									class="col-span-2 grid gap-4 border-t border-gray-100 pt-4 md:col-span-4 md:grid-cols-2"
+								>
+									<div class="rounded-lg border border-red-100 bg-red-50 p-4">
+										<p class="text-xs font-bold tracking-wider text-red-700 uppercase">
+											Known Issues
+										</p>
+										<p class="mt-1 text-sm text-gray-700 italic">
+											{pitData.knownIssues || 'No known issues reported.'}
+										</p>
+									</div>
+									<div class="rounded-lg border border-blue-100 bg-blue-50 p-4">
+										<p class="text-xs font-bold tracking-wider text-blue-700 uppercase">
+											General Comments
+										</p>
+										<p class="mt-1 text-sm text-gray-700 italic">
+											{pitData.comments || 'No additional comments.'}
+										</p>
 									</div>
 								</div>
 							</div>
-
-							<div
-								class="col-span-2 grid gap-4 border-t border-gray-100 pt-4 md:col-span-4 md:grid-cols-2"
-							>
-								<div class="rounded-lg border border-red-100 bg-red-50 p-4">
-									<p class="text-xs font-bold tracking-wider text-red-700 uppercase">
-										Known Issues
-									</p>
-									<p class="mt-1 text-sm text-gray-700 italic">
-										{report.data.knownIssues || 'No known issues reported.'}
-									</p>
-								</div>
-								<div class="rounded-lg border border-blue-100 bg-blue-50 p-4">
-									<p class="text-xs font-bold tracking-wider text-blue-700 uppercase">
-										General Comments
-									</p>
-									<p class="mt-1 text-sm text-gray-700 italic">
-										{report.data.comments || 'No additional comments.'}
-									</p>
-								</div>
-							</div>
-						</div>
+						{:else}
+							<div class="p-6 text-sm text-gray-500">This pit report does not contain structured pit data.</div>
+						{/if}
 					</div>
 				{/each}
 			{:else}

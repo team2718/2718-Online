@@ -49,7 +49,7 @@
         <div class="mt-1 flex flex-wrap items-baseline gap-3">
             <h1 class="text-2xl font-black text-gray-900">{matchLabel}</h1>
             <a
-                href="/matches?match={m.id}"
+                href="/matches?match={m?.id ?? data.matchId}"
                 class="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 transition-colors hover:bg-blue-100"
             >
                 Match Analysis <span class="text-blue-400">↗</span>

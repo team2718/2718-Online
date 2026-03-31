@@ -29,10 +29,18 @@ export interface ScoutingReportData {
     teleFuelRateScore: number;
     /** Teleop accuracy (1-5 scale) */
     teleAccScore: number;
+    /** Whether the robot actively passed game pieces in Teleop */
+    teleDidPass?: boolean;
     /** Teleop passing efficiency (1-5 scale) */
     telePassScore: number;
+    /** Whether the robot played defense in Teleop */
+    teleDidDef?: boolean;
     /** Teleop defensive capability (1-5 scale) */
     teleDefScore: number;
+    /** Whether the robot used the ramp side lane in Teleop */
+    teleUsesRamp?: boolean;
+    /** Whether the robot used the trench side lane in Teleop */
+    teleUsesTrench?: boolean;
     /** 0: None, 1: L1, 2: L2, 3: L3 */
     climbType: number;
     /** 0: None, 1: Yellow, 2: Red */
