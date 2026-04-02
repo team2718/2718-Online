@@ -27,8 +27,12 @@
 			else if (sortKey === 'epop') v = (a.epop ?? -1) - (b.epop ?? -1);
 			else if (sortKey === 'record') v = recordSortVal(a.record) - recordSortVal(b.record);
 			else if (sortKey === 'rankingPoints') v = (a.rankingPoints ?? -1) - (b.rankingPoints ?? -1);
-			if (v === 0) v = a.number - b.number;
-			return sortDir === 'asc' ? v : -v;
+
+			const primary = sortDir === 'asc' ? v : -v;
+			if (primary !== 0) return primary;
+
+			// Keep tie-breaking deterministic and aligned with team list expectations.
+			return a.number - b.number;
 		});
 	});
 
