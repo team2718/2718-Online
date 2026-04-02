@@ -109,7 +109,7 @@ export async function load({ url }: { url: URL }) {
 			if (!d) continue;
 			autoFuelSum += Number(d.autoFuel) || 0;
 			teleFuelSum += Number(d.teleFuelScore) || 0;
-			if ((d.teleDidScore ?? Number(d.teleFuelScore) > 0) === true) fuelCount++;
+			if ((d.teleFuelScoredAny ?? Number(d.teleFuelScore) > 0) === true) fuelCount++;
 			if (d.teleDidDef) { defSum += Number(d.teleDefScore) || 0; defCount++; }
 			if (d.teleDidPass) { passSum += Number(d.telePassScore) || 0; passCount++; }
 			const climbType = d.climbType ?? 0;

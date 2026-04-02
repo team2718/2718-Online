@@ -25,8 +25,8 @@ export interface ScoutingReportData {
     autoFuelMissed: number;
     /** Whether the robot successfully climbed in Auto */
     autoClimbed: boolean;
-    /** Whether the robot scored fuel in Teleop */
-    teleDidScore?: boolean;
+    /** Whether the robot scored any fuel in Teleop */
+    teleFuelScoredAny?: boolean;
     /** Teleop fuel quality (1-5 scale) */
     teleFuelScore: number;
     /** Whether the robot actively passed game pieces in Teleop */

@@ -290,7 +290,7 @@
 								<div>
 									<p class="mb-0.5 text-[9px] font-semibold uppercase tracking-wide text-gray-600">Teleop</p>
 									<div class="grid grid-cols-2 gap-x-1 gap-y-0.5 text-gray-700">
-										<span>Fuel</span><span class="font-semibold {report.data?.teleDidScore ? '' : 'text-gray-400'}">{report.data?.teleDidScore ? `${report.data?.teleFuelScore}/5` : '—'}</span>
+										<span>Fuel</span><span class="font-semibold {report.data?.teleFuelScoredAny ? '' : 'text-gray-400'}">{report.data?.teleFuelScoredAny ? `${report.data?.teleFuelScore}/5` : '—'}</span>
 										<span>Pass</span><span class="font-semibold {report.data?.teleDidPass ? '' : 'text-gray-400'}">{report.data?.teleDidPass ? `${report.data?.telePassScore}/5` : '—'}</span>
 										<span>Def</span><span class="font-semibold {report.data?.teleDidDef ? '' : 'text-gray-400'}">{report.data?.teleDidDef ? `${report.data?.teleDefScore}/5` : '—'}</span>
 										{#if report.data?.teleUsesRamp}<span>Ramp</span><span class="font-semibold text-green-600">✓</span>{/if}
