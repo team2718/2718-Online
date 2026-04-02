@@ -61,7 +61,7 @@
 		return 'text-blue-700 font-bold';
 	}
 
-	let scrollEl: HTMLDivElement | undefined;
+	let scrollEl: HTMLDivElement | undefined = $state();
 	let canScrollRight = $state(false);
 
 	function checkScroll() {

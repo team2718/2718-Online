@@ -108,10 +108,9 @@ async function computeEpopFull(): Promise<EpopResult> {
 	for (const r of allReports) {
 		const idx = matchIdxById.get(r.matchId);
 		if (idx === undefined || !r.data) continue;
-		const rate = Number(r.data.teleFuelRateScore);
-		const acc = Number(r.data.teleAccScore);
-		if (!rate || !acc) continue;
-		rptScores.push({ teamNumber: r.teamNumber, matchIdx: idx, score: Math.sqrt(rate * acc) });
+		const fuel = Number(r.data.teleFuelScore);
+		if (!fuel) continue;
+		rptScores.push({ teamNumber: r.teamNumber, matchIdx: idx, score: fuel });
 	}
 
 	const K = scoredMatches.length;

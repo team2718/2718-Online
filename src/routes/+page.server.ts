@@ -24,7 +24,7 @@ export async function load() {
 		name: string;
 		count: number;
 		autoFuelSum: number;
-		teleFuelRateSum: number;
+		teleFuelSum: number;
 		defScoreSum: number;
 		defCount: number;
 		passScoreSum: number;
@@ -39,7 +39,7 @@ export async function load() {
 			name: t.name,
 			count: 0,
 			autoFuelSum: 0,
-			teleFuelRateSum: 0,
+			teleFuelSum: 0,
 			defScoreSum: 0,
 			defCount: 0,
 			passScoreSum: 0,
@@ -58,7 +58,7 @@ export async function load() {
 				name: `Team ${r.teamNumber}`,
 				count: 0,
 				autoFuelSum: 0,
-				teleFuelRateSum: 0,
+				teleFuelSum: 0,
 				defScoreSum: 0,
 				defCount: 0,
 				passScoreSum: 0,
@@ -69,7 +69,7 @@ export async function load() {
 		}
 		agg.count++;
 		agg.autoFuelSum += Number(d.autoFuel) || 0;
-		agg.teleFuelRateSum += Number(d.teleFuelRateScore) || 0;
+		agg.teleFuelSum += Number(d.teleFuelScore) || 0;
 		if (d.teleDidDef) {
 			agg.defScoreSum += Number(d.teleDefScore) || 0;
 			agg.defCount++;
@@ -88,7 +88,7 @@ export async function load() {
 			name: t.name,
 			count: t.count,
 			avgAutoFuel: t.autoFuelSum / t.count,
-			avgTeleFuelRate: t.teleFuelRateSum / t.count,
+			avgTeleFuelScore: t.teleFuelSum / t.count,
 			avgDefScore: t.defCount > 0 ? t.defScoreSum / t.defCount : 0,
 			defCount: t.defCount,
 			avgPassScore: t.passCount > 0 ? t.passScoreSum / t.passCount : 0,
@@ -125,7 +125,7 @@ export async function load() {
 		},
 		rankings: {
 			autoScoring: top('avgAutoFuel'),
-			teleopRate: top('avgTeleFuelRate'),
+			teleopRate: top('avgTeleFuelScore'),
 			defense: top('avgDefScore', 8, (t) => t.defCount > 0),
 			passScore: top('avgPassScore', 8, (t) => t.passCount > 0),
 			climbing: top('climbPct')
