@@ -23,8 +23,7 @@
 				return {
 					autoFuel: acc.autoFuel + (Number(d?.autoFuel) || 0),
 					autoFuelMissed: acc.autoFuelMissed + (Number(d?.autoFuelMissed) || 0),
-					teleFuelRateScore: acc.teleFuelRateScore + (Number(d?.teleFuelRateScore) || 0),
-					teleAccScore: acc.teleAccScore + (Number(d?.teleAccScore) || 0),
+				teleFuelScore: acc.teleFuelScore + (Number(d?.teleFuelScore) || 0),
 					passCount: acc.passCount + (didPass ? 1 : 0),
 					telePassScore: acc.telePassScore + (didPass ? (Number(d?.telePassScore) || 0) : 0),
 					defCount: acc.defCount + (didDef ? 1 : 0),
@@ -38,8 +37,7 @@
 			{
 				autoFuel: 0,
 				autoFuelMissed: 0,
-				teleFuelRateScore: 0,
-				teleAccScore: 0,
+				teleFuelScore: 0,
 				passCount: 0,
 				telePassScore: 0,
 				defCount: 0,
@@ -54,8 +52,7 @@
 		return {
 			autoFuel: (sum.autoFuel / count).toFixed(1),
 			autoFuelMissed: (sum.autoFuelMissed / count).toFixed(1),
-			teleFuelRateScore: (sum.teleFuelRateScore / count).toFixed(1),
-			teleAccScore: (sum.teleAccScore / count).toFixed(1),
+			teleFuelScore: (sum.teleFuelScore / count).toFixed(1),
 			telePassScore: sum.passCount > 0 ? (sum.telePassScore / sum.passCount).toFixed(1) : null,
 			passPercent: Math.round((sum.passCount / count) * 100),
 			teleDefScore: sum.defCount > 0 ? (sum.teleDefScore / sum.defCount).toFixed(1) : null,
@@ -210,20 +207,12 @@
 						</div>
 						<div>
 							<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">
-								Teleop Fuel Rate
+								Teleop Fuel
 							</p>
 							<p class="text-2xl font-bold text-gray-900">
-								{avgStats.teleFuelRateScore}<span class="text-sm font-normal text-gray-500">
+								{avgStats.teleFuelScore}<span class="text-sm font-normal text-gray-500">
 									/ 5</span
 								>
-							</p>
-						</div>
-						<div>
-							<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">
-								Teleop Accuracy
-							</p>
-							<p class="text-2xl font-bold text-gray-900">
-								{avgStats.teleAccScore}<span class="text-sm font-normal text-gray-500"> / 5</span>
 							</p>
 						</div>
 						<div>
@@ -301,8 +290,7 @@
 								<div>
 									<p class="mb-0.5 text-[9px] font-semibold uppercase tracking-wide text-gray-600">Teleop</p>
 									<div class="grid grid-cols-2 gap-x-1 gap-y-0.5 text-gray-700">
-										<span>Rate</span><span class="font-semibold">{report.data?.teleFuelRateScore}/5</span>
-										<span>Acc</span><span class="font-semibold">{report.data?.teleAccScore}/5</span>
+										<span>Fuel</span><span class="font-semibold {report.data?.teleFuelScoredAny ? '' : 'text-gray-400'}">{report.data?.teleFuelScoredAny ? `${report.data?.teleFuelScore}/5` : '—'}</span>
 										<span>Pass</span><span class="font-semibold {report.data?.teleDidPass ? '' : 'text-gray-400'}">{report.data?.teleDidPass ? `${report.data?.telePassScore}/5` : '—'}</span>
 										<span>Def</span><span class="font-semibold {report.data?.teleDidDef ? '' : 'text-gray-400'}">{report.data?.teleDidDef ? `${report.data?.teleDefScore}/5` : '—'}</span>
 										{#if report.data?.teleUsesRamp}<span>Ramp</span><span class="font-semibold text-green-600">✓</span>{/if}
@@ -354,9 +342,6 @@
 									{@const pitData = report.data}
 									<span class="font-semibold text-blue-600">
 										Scouted by {pitData.scoutName || 'Unknown'}
-									</span>
-									<span class="ml-2 text-gray-500">
-										Team {pitData.teamNumber || data.teamnum}
 									</span>
 									<span class="ml-2 text-gray-500">
 										{pitData.timestamp

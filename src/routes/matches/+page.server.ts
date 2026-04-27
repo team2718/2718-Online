@@ -82,31 +82,40 @@ export async function load({ url }: { url: URL }) {
 				epop,
 				reportCount: 0,
 				avgAutoFuel: null as number | null,
-				avgTeleFuelRate: null as number | null,
-				avgTeleAccScore: null as number | null,
+				avgTeleFuelScore: null as number | null,
+				fuelPercent: 0,
 				avgDefScore: null as number | null,
 				defPercent: 0,
 				avgPassScore: null as number | null,
 				passPercent: 0,
+				climbL1Pct: 0,
+				climbL2Pct: 0,
+				climbL3Pct: 0,
 				rampPct: 0,
 				trenchPct: 0,
 				pit
 			};
 		}
 
-		let autoFuelSum = 0, teleFuelSum = 0, teleAccSum = 0;
+		let autoFuelSum = 0, teleFuelSum = 0;
+		let fuelCount = 0;
 		let defSum = 0, defCount = 0;
 		let passSum = 0, passCount = 0;
 		let rampCount = 0, trenchCount = 0;
+		let climbL1Count = 0, climbL2Count = 0, climbL3Count = 0;
 
 		for (const r of reports) {
 			const d = r.data;
 			if (!d) continue;
 			autoFuelSum += Number(d.autoFuel) || 0;
-			teleFuelSum += Number(d.teleFuelRateScore) || 0;
-			teleAccSum += Number(d.teleAccScore) || 0;
+			teleFuelSum += Number(d.teleFuelScore) || 0;
+			if ((d.teleFuelScoredAny ?? Number(d.teleFuelScore) > 0) === true) fuelCount++;
 			if (d.teleDidDef) { defSum += Number(d.teleDefScore) || 0; defCount++; }
 			if (d.teleDidPass) { passSum += Number(d.telePassScore) || 0; passCount++; }
+			const climbType = d.climbType ?? 0;
+			if (climbType == 1) climbL1Count++;
+			if (climbType == 2) climbL2Count++;
+			if (climbType == 3) climbL3Count++;
 			if ((d as any).teleUsesRamp) rampCount++;
 			if ((d as any).teleUsesTrench) trenchCount++;
 		}
@@ -117,12 +126,15 @@ export async function load({ url }: { url: URL }) {
 			epop,
 			reportCount: count,
 			avgAutoFuel: autoFuelSum / count,
-			avgTeleFuelRate: teleFuelSum / count,
-			avgTeleAccScore: teleAccSum / count,
+			avgTeleFuelScore: teleFuelSum / count,
+			fuelPercent: Math.round((fuelCount / count) * 100),
 			avgDefScore: defCount > 0 ? defSum / defCount : null,
 			defPercent: Math.round((defCount / count) * 100),
 			avgPassScore: passCount > 0 ? passSum / passCount : null,
 			passPercent: Math.round((passCount / count) * 100),
+			climbL1Pct: Math.round((climbL1Count / count) * 100),
+			climbL2Pct: Math.round((climbL2Count / count) * 100),
+			climbL3Pct: Math.round((climbL3Count / count) * 100),
 			rampPct: Math.round((rampCount / count) * 100),
 			trenchPct: Math.round((trenchCount / count) * 100),
 			pit

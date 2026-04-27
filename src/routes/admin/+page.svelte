@@ -16,6 +16,7 @@
 	// Local state for the match type selector (initialised from server load data)
 	let selectedMatchType = $state(data.defaultMatchType ?? 'qualification');
 	let autoTbaPull = $state(data.autoTbaPull ?? false);
+	$effect(() => { selectedMatchType = data.defaultMatchType ?? 'qualification'; });
 
 	const tbaMatchesSkipped = $derived((form as Record<string, unknown> | null)?.matchesSkipped === true);
 </script>

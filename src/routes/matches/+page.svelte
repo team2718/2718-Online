@@ -5,7 +5,7 @@
 
 	let { data } = $props();
 
-	let selectedMatchId = $state(data.matchId ?? '');
+	let selectedMatchId = $state('');
 	let pickerOpen = $state(false);
 	let filterText = $state('');
 	let pickerEl: HTMLElement | undefined;
@@ -352,25 +352,18 @@
 			<!-- Scouting stats -->
 			<div class="grid grid-cols-3 divide-x divide-gray-100 border-b border-gray-100">
 				<div class="px-3 py-2.5 text-center">
-					<p class="text-xs font-semibold tracking-wider text-gray-400 uppercase">Auto Fuel</p>
-					<p class="text-xl font-black text-gray-900">{fmt1(team.avgAutoFuel)}</p>
+					<p class="text-xs font-semibold tracking-wider text-gray-400 uppercase">Fuel</p>
+					{#if team.fuelPercent > 0}
+						<p class="text-lg font-black text-cyan-600">
+							{fmt1(team.avgTeleFuelScore)}<span class="text-xs font-normal text-gray-400">/5</span>
+						</p>
+						<p class="text-xs text-gray-400">{team.fuelPercent}% of matches</p>
+					{:else}
+						<p class="text-lg font-black text-gray-300">—</p>
+						<p class="text-xs text-gray-400">Never scored fuel</p>
+					{/if}
 				</div>
 				<div class="px-3 py-2.5 text-center">
-					<p class="text-xs font-semibold tracking-wider text-gray-400 uppercase">Tele Rate</p>
-					<p class="text-xl font-black text-gray-900">
-						{fmt1(team.avgTeleFuelRate)}<span class="text-xs font-normal text-gray-400">/5</span>
-					</p>
-				</div>
-				<div class="px-3 py-2.5 text-center">
-					<p class="text-xs font-semibold tracking-wider text-gray-400 uppercase">Tele Acc</p>
-					<p class="text-xl font-black text-gray-900">
-						{fmt1(team.avgTeleAccScore)}<span class="text-xs font-normal text-gray-400">/5</span>
-					</p>
-				</div>
-			</div>
-
-			<div class="grid grid-cols-3 divide-x divide-gray-100 border-b border-gray-100">
-				<div class="px-3 py-2.5">
 					<p class="text-xs font-semibold tracking-wider text-gray-400 uppercase">Defense</p>
 					{#if team.avgDefScore != null}
 						<p class="text-lg font-black text-orange-600">
@@ -382,7 +375,7 @@
 						<p class="text-xs text-gray-400">Never played defense</p>
 					{/if}
 				</div>
-				<div class="px-3 py-2.5">
+				<div class="px-3 py-2.5 text-center">
 					<p class="text-xs font-semibold tracking-wider text-gray-400 uppercase">Passing</p>
 					{#if team.avgPassScore != null}
 						<p class="text-lg font-black text-violet-600">
@@ -394,15 +387,30 @@
 						<p class="text-xs text-gray-400">Never passed</p>
 					{/if}
 				</div>
-				<div class="px-3 py-2.5">
+			</div>
+
+			<div class="grid grid-cols-3 divide-x divide-gray-100 border-b border-gray-100">
+				<div class="px-3 py-2.5 text-center">
+					<p class="text-xs font-semibold tracking-wider text-gray-400 uppercase">Auto Fuel</p>
+					<p class="text-xl font-black text-gray-900">{fmt1(team.avgAutoFuel)}</p>
+				</div>
+				<div class="px-3 py-2.5 text-center">
 					<p class="text-xs font-semibold tracking-wider text-gray-400 uppercase">Ramp / Trench</p>
-					<div class="mt-1 flex flex-col gap-1">
+					<div class="mt-1 flex flex-col items-center gap-1">
 						<span class="inline-flex items-center gap-1 text-xs font-semibold {team.rampPct > 20 ? 'text-green-600' : 'text-gray-300'}">
 							<span>{team.rampPct > 20 ? '✓' : '✗'}</span> Ramp
 						</span>
 						<span class="inline-flex items-center gap-1 text-xs font-semibold {team.trenchPct > 20 ? 'text-green-600' : 'text-gray-300'}">
 							<span>{team.trenchPct > 20 ? '✓' : '✗'}</span> Trench
 						</span>
+					</div>
+				</div>
+				<div class="px-3 py-2.5 text-center">
+					<p class="text-xs font-semibold tracking-wider text-gray-400 uppercase">Climb Ability</p>
+					<div class="mt-1 flex flex-col items-center gap-1 text-xs">
+						<p class="font-semibold {team.climbL1Pct > 0 ? 'text-gray-700' : 'text-gray-300'}">L1: {team.climbL1Pct}%</p>
+						<p class="font-semibold {team.climbL2Pct > 0 ? 'text-gray-700' : 'text-gray-300'}">L2: {team.climbL2Pct}%</p>
+						<p class="font-semibold {team.climbL3Pct > 0 ? 'text-gray-700' : 'text-gray-300'}">L3: {team.climbL3Pct}%</p>
 					</div>
 				</div>
 			</div>
