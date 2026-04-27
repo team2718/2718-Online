@@ -29,6 +29,13 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	if (!locals.privileged) return json({ error: 'Unauthorized' }, { status: 401 });
 
 	const body = await request.json();
+
+	if (body.reset) {
+		const newVersion = (await loadState()).version + 1;
+		await setEventSetting('allianceSelection', JSON.stringify({ alliances: EMPTY_ALLIANCES, version: newVersion }));
+		return json({ version: newVersion });
+	}
+
 	const alliances: (number | null)[][] = body.alliances;
 
 	if (!Array.isArray(alliances) || alliances.length !== 8) {
@@ -38,12 +45,5 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const current = await loadState();
 	const newVersion = current.version + 1;
 	await setEventSetting('allianceSelection', JSON.stringify({ alliances, version: newVersion }));
-	return json({ version: newVersion });
-};
-
-export const DELETE: RequestHandler = async ({ locals }) => {
-	if (!locals.privileged) return json({ error: 'Unauthorized' }, { status: 401 });
-	const newVersion = (await loadState()).version + 1;
-	await setEventSetting('allianceSelection', JSON.stringify({ alliances: EMPTY_ALLIANCES, version: newVersion }));
 	return json({ version: newVersion });
 };

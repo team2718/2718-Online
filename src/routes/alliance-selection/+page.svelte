@@ -159,7 +159,7 @@
 		confirmResetOpen = false;
 		saving = true;
 		try {
-			const res = await fetch('/api/alliance-selection', { method: 'DELETE' });
+			const res = await fetch('/api/alliance-selection', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reset: true }) });
 			if (res.ok) {
 				const d = await res.json();
 				version = d.version;
@@ -447,7 +447,7 @@
 												href="/teams/{t.number}?from=alliance-selection"
 												class="font-bold text-blue-600 hover:underline"
 											>{t.number}</a>
-											<span class="ml-1 text-gray-500 truncate">{t.name}</span>
+											<!-- <span class="ml-1 text-gray-500 truncate">{t.name}</span> -->
 										</td>
 										<td class="py-1 font-semibold {epopColorClass(t.epop)}">{fmt1(t.epop)}</td>
 										<td class="py-1 {metric === 'def' ? 'font-bold text-gray-800' : 'text-gray-500'}">{fmt1(t.defScore)}</td>
