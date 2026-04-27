@@ -16,6 +16,7 @@
 		if (path.startsWith('/pit-scout')) return '/pit-scout';
 		if (path.startsWith('/reports')) return '/reports';
 		if (path.startsWith('/matches')) return '/matches';
+		if (path.startsWith('/alliance-selection')) return '/alliance-selection';
 		return path;
 	});
 
@@ -180,6 +181,18 @@
 							: 'text-red-500 hover:bg-red-50 hover:text-red-700'}"
 				>
 					Admin
+				</a>
+			{/if}
+			{#if isPrivileged}
+				<span class="mx-1 h-4 w-px bg-gray-300" aria-hidden="true"></span>
+				<a
+					href="/alliance-selection"
+					class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors
+						{activePath === '/alliance-selection'
+							? 'text-green-700'
+							: 'text-green-600 hover:bg-green-50 hover:text-green-800'}"
+				>
+					Alliance Selection
 				</a>
 			{/if}
 		</div>
@@ -375,6 +388,20 @@
 								: 'text-red-500 hover:bg-red-50 hover:text-red-700'}"
 					>
 						Admin
+					</a>
+				</div>
+			{/if}
+			{#if isPrivileged}
+				<hr class="my-2 border-gray-200" />
+				<div class="space-y-1">
+					<a
+						href="/alliance-selection"
+						class="block rounded-md px-3 py-2 text-sm font-medium
+							{activePath === '/alliance-selection'
+								? 'bg-green-50 text-green-700'
+								: 'text-green-600 hover:bg-green-50 hover:text-green-800'}"
+					>
+						Alliance Selection
 					</a>
 				</div>
 			{/if}

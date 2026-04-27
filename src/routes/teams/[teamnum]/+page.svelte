@@ -3,8 +3,11 @@
 	import { ArrowLeftOutline, ChevronRightOutline, TrashBinSolid } from 'flowbite-svelte-icons';
 	import { enhance } from '$app/forms';
 	import { playoffKey } from '$lib/matchUtils';
+	import { page } from '$app/state';
 
 	let { data } = $props();
+
+	const fromAllianceSelection = $derived(page.url.searchParams.get('from') === 'alliance-selection');
 
 	// Use $derived to reactively track changes to data
 	const reports = $derived(data?.matchReports ?? []);
@@ -107,9 +110,15 @@
 <div class="min-h-screen bg-gray-50">
 	<div class="mx-auto max-w-7xl px-4 py-8">
 		<div class="mb-8 flex items-start gap-4">
-			<Button href="/teams" color="light" pill size="sm" class="mt-1 shrink-0">
-				<ArrowLeftOutline class="mr-2 h-4 w-4" /> Teams
-			</Button>
+			{#if fromAllianceSelection}
+				<Button href="/alliance-selection" color="green" pill size="sm" class="mt-1 shrink-0">
+					<ArrowLeftOutline class="mr-2 h-4 w-4" /> Alliance Selection
+				</Button>
+			{:else}
+				<Button href="/teams" color="light" pill size="sm" class="mt-1 shrink-0">
+					<ArrowLeftOutline class="mr-2 h-4 w-4" /> Teams
+				</Button>
+			{/if}
 			<div>
 				<h1 class="text-4xl font-black tracking-tight text-gray-900">Team {data.teamnum}</h1>
 				{#if data.team}
