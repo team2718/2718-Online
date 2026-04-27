@@ -89,6 +89,18 @@
 	let authPassword = $state('');
 	let authError = $state('');
 	let authLoading = $state(false);
+	let authContainerRef: HTMLElement | null = $state(null);
+
+	$effect(() => {
+		if (!authOpen) return;
+		function handleClickOutside(e: MouseEvent) {
+			if (authContainerRef && !authContainerRef.contains(e.target as Node)) {
+				authOpen = false;
+			}
+		}
+		document.addEventListener('click', handleClickOutside);
+		return () => document.removeEventListener('click', handleClickOutside);
+	});
 
 	function toggleAuth() {
 		authOpen = !authOpen;
@@ -234,7 +246,7 @@
 			</div>
 
 			<!-- Auth button -->
-			<div class="relative">
+			<div class="relative" bind:this={authContainerRef}>
 				<button
 					onclick={toggleAuth}
 					class="rounded-lg p-1.5 transition-colors {lockColorClass}"
@@ -298,7 +310,7 @@
 				</svg>
 			</button>
 			<button
-				onclick={() => (mobileOpen = !mobileOpen)}
+				onclick={() => { mobileOpen = !mobileOpen; authOpen = false; }}
 				class="rounded-lg p-2 text-gray-500 hover:bg-gray-100 focus:outline-none"
 				aria-label="Toggle menu"
 			>
