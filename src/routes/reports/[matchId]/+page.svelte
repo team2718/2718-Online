@@ -7,10 +7,15 @@
     const m = $derived(data.match);
     const reports = $derived(data.reports ?? []);
 
-    // Build a map of teamNumber → report for quick lookup
-    const reportByTeam = $derived(
-        new Map(reports.map((r) => [r.teamNumber, r]))
-    );
+    // Build a map of teamNumber → reports[] for quick lookup
+    const reportsByTeam = $derived.by(() => {
+        const map = new Map<number, typeof reports>();
+        for (const r of reports) {
+            if (!map.has(r.teamNumber)) map.set(r.teamNumber, []);
+            map.get(r.teamNumber)!.push(r);
+        }
+        return map;
+    });
 
     // Resolve alliance slots from schedule or from report data
     const redSlots = $derived.by((): (number | null)[] => {
@@ -62,20 +67,22 @@
         <p class="mb-2 text-xs font-bold tracking-widest text-red-500 uppercase">Red Alliance</p>
         <div class="grid grid-cols-3 gap-2">
             {#each [redSlots[0], redSlots[1], redSlots[2]] as teamNum}
-                {@const report = teamNum != null ? reportByTeam.get(teamNum) : undefined}
+                {@const teamReports = teamNum != null ? (reportsByTeam.get(teamNum) ?? []) : []}
                 <div class="overflow-hidden rounded-xl border bg-white shadow-sm
-                    {report ? 'border-red-200' : 'border-gray-200'}">
+                    {teamReports.length > 0 ? 'border-red-200' : 'border-gray-200'}">
                     <!-- Team header -->
                     <div class="border-b px-2 py-2 text-center
-                        {report ? 'border-red-100 bg-red-50' : 'border-gray-100 bg-gray-50'}">
+                        {teamReports.length > 0 ? 'border-red-100 bg-red-50' : 'border-gray-100 bg-gray-50'}">
                         {#if teamNum != null}
                             <a href="/teams/{teamNum}"
                                class="block text-base font-black leading-tight hover:underline
-                                   {report ? 'text-red-700' : 'text-gray-400'}">
+                                   {teamReports.length > 0 ? 'text-red-700' : 'text-gray-400'}">
                                 {teamNum}
                             </a>
-                            {#if report}
-                                <p class="truncate text-[10px] text-gray-400">{report.scouterName}</p>
+                            {#if teamReports.length === 1}
+                                <p class="truncate text-[10px] text-gray-400">{teamReports[0].scouterName}</p>
+                            {:else if teamReports.length > 1}
+                                <p class="text-[10px] font-semibold text-orange-400">{teamReports.length} reports</p>
                             {:else}
                                 <p class="text-[10px] text-gray-400 italic">No report</p>
                             {/if}
@@ -84,7 +91,12 @@
                         {/if}
                     </div>
 
-                    {#if report}
+                    {#each teamReports as report, i}
+                        {#if teamReports.length > 1}
+                            <div class="{i > 0 ? 'border-t border-orange-100' : ''} px-2 pt-1">
+                                <p class="text-[9px] font-semibold uppercase tracking-wide text-orange-400">{i > 0 ? 'Duplicate' : 'Report 1'} · {report.scouterName}</p>
+                            </div>
+                        {/if}
                         <div class="space-y-2 p-2 text-[11px]">
                             <!-- Alliance/position -->
                             <div class="text-gray-500">{posLabel(report.data?.startingPosition)}</div>
@@ -139,7 +151,7 @@
                                 </form>
                             {/if}
                         </div>
-                    {/if}
+                    {/each}
                 </div>
             {/each}
         </div>
@@ -150,19 +162,21 @@
         <p class="mb-2 text-xs font-bold tracking-widest text-blue-500 uppercase">Blue Alliance</p>
         <div class="grid grid-cols-3 gap-2">
             {#each [blueSlots[0], blueSlots[1], blueSlots[2]] as teamNum}
-                {@const report = teamNum != null ? reportByTeam.get(teamNum) : undefined}
+                {@const teamReports = teamNum != null ? (reportsByTeam.get(teamNum) ?? []) : []}
                 <div class="overflow-hidden rounded-xl border bg-white shadow-sm
-                    {report ? 'border-blue-200' : 'border-gray-200'}">
+                    {teamReports.length > 0 ? 'border-blue-200' : 'border-gray-200'}">
                     <div class="border-b px-2 py-2 text-center
-                        {report ? 'border-blue-100 bg-blue-50' : 'border-gray-100 bg-gray-50'}">
+                        {teamReports.length > 0 ? 'border-blue-100 bg-blue-50' : 'border-gray-100 bg-gray-50'}">
                         {#if teamNum != null}
                             <a href="/teams/{teamNum}"
                                class="block text-base font-black leading-tight hover:underline
-                                   {report ? 'text-blue-700' : 'text-gray-400'}">
+                                   {teamReports.length > 0 ? 'text-blue-700' : 'text-gray-400'}">
                                 {teamNum}
                             </a>
-                            {#if report}
-                                <p class="truncate text-[10px] text-gray-400">{report.scouterName}</p>
+                            {#if teamReports.length === 1}
+                                <p class="truncate text-[10px] text-gray-400">{teamReports[0].scouterName}</p>
+                            {:else if teamReports.length > 1}
+                                <p class="text-[10px] font-semibold text-orange-400">{teamReports.length} reports</p>
                             {:else}
                                 <p class="text-[10px] text-gray-400 italic">No report</p>
                             {/if}
@@ -171,7 +185,12 @@
                         {/if}
                     </div>
 
-                    {#if report}
+                    {#each teamReports as report, i}
+                        {#if teamReports.length > 1}
+                            <div class="{i > 0 ? 'border-t border-orange-100' : ''} px-2 pt-1">
+                                <p class="text-[9px] font-semibold uppercase tracking-wide text-orange-400">{i > 0 ? 'Duplicate' : 'Report 1'} · {report.scouterName}</p>
+                            </div>
+                        {/if}
                         <div class="space-y-2 p-2 text-[11px]">
                             <div class="text-gray-500">{posLabel(report.data?.startingPosition)}</div>
 
@@ -221,7 +240,7 @@
                                 </form>
                             {/if}
                         </div>
-                    {/if}
+                    {/each}
                 </div>
             {/each}
         </div>

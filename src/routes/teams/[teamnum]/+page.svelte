@@ -17,8 +17,42 @@
 	const avgStats = $derived.by(() => {
 		if (!reports || reports.length === 0) return null;
 
-		const count = reports.length;
-		const sum = reports.reduce(
+		// Deduplicate by matchId: for each match with multiple reports, produce one
+		// effective report by averaging numeric fields and majority-voting booleans.
+		const byMatch = new Map<string, typeof reports>();
+		for (const r of reports) {
+			if (!byMatch.has(r.matchId)) byMatch.set(r.matchId, []);
+			byMatch.get(r.matchId)!.push(r);
+		}
+		const deduped = [...byMatch.values()].map((group) => {
+			if (group.length === 1) return group[0];
+			const n = group.length;
+			const avg = (fn: (d: typeof group[0]['data']) => number) =>
+				group.reduce((s, r) => s + fn(r.data), 0) / n;
+			const majority = (fn: (d: typeof group[0]['data']) => boolean) =>
+				group.filter((r) => fn(r.data)).length >= n / 2;
+			const d0 = group[0].data;
+			return {
+				...group[0],
+				data: {
+					...d0,
+					autoFuel: avg((d) => Number(d?.autoFuel) || 0),
+					autoFuelMissed: avg((d) => Number(d?.autoFuelMissed) || 0),
+					teleFuelScore: avg((d) => Number(d?.teleFuelScore) || 0),
+					telePassScore: avg((d) => Number(d?.telePassScore) || 0),
+					teleDefScore: avg((d) => Number(d?.teleDefScore) || 0),
+					didLeave: majority((d) => !!d?.didLeave),
+					autoClimbed: majority((d) => !!d?.autoClimbed),
+					teleDidPass: majority((d) => !!d?.teleDidPass),
+					teleDidDef: majority((d) => !!d?.teleDidDef),
+					teleUsesRamp: majority((d) => !!d?.teleUsesRamp),
+					teleUsesTrench: majority((d) => !!d?.teleUsesTrench),
+				}
+			};
+		});
+
+		const count = deduped.length;
+		const sum = deduped.reduce(
 			(acc, curr) => {
 				const d = curr.data;
 				const didPass = !!d?.teleDidPass;

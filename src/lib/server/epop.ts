@@ -109,15 +109,23 @@ async function computeEpopFull(): Promise<EpopResult> {
 	// matchId → chronological index among scored matches (for report gating)
 	const matchIdxById = new Map<string, number>(scoredMatches.map((m, i) => [m.id, i]));
 
-	// Pre-extract scouting scores from reports that belong to scored qual matches
-	const rptScores: { teamNumber: number; matchIdx: number; score: number }[] = [];
+	// Pre-extract scouting scores, deduplicating by (teamNumber, matchIdx) to prevent
+	// duplicate reports for the same team/match from adding extra weight to the prior.
+	const rptScoreMap = new Map<string, { teamNumber: number; matchIdx: number; scores: number[] }>();
 	for (const r of allReports) {
 		const idx = matchIdxById.get(r.matchId);
 		if (idx === undefined || !r.data) continue;
 		const fuel = Number(r.data.teleFuelScore);
 		if (!fuel) continue;
-		rptScores.push({ teamNumber: r.teamNumber, matchIdx: idx, score: fuel });
+		const key = `${r.teamNumber}:${idx}`;
+		if (!rptScoreMap.has(key)) rptScoreMap.set(key, { teamNumber: r.teamNumber, matchIdx: idx, scores: [] });
+		rptScoreMap.get(key)!.scores.push(fuel);
 	}
+	const rptScores = [...rptScoreMap.values()].map(({ teamNumber, matchIdx, scores }) => ({
+		teamNumber,
+		matchIdx,
+		score: scores.reduce((a, b) => a + b, 0) / scores.length
+	}));
 
 	const K = scoredMatches.length;
 	// Design matrix rows and score vector — grown incrementally
