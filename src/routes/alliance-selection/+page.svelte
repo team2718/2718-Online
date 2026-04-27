@@ -89,7 +89,7 @@
 		saving = true;
 		try {
 			const res = await fetch('/api/alliance-selection', {
-				method: 'PUT',
+				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ alliances: next })
 			});

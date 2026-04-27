@@ -25,7 +25,7 @@ export const GET: RequestHandler = async ({ locals }) => {
 	return json(state);
 };
 
-export const PUT: RequestHandler = async ({ request, locals }) => {
+export const POST: RequestHandler = async ({ request, locals }) => {
 	if (!locals.privileged) return json({ error: 'Unauthorized' }, { status: 401 });
 
 	const body = await request.json();
