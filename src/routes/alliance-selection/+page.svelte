@@ -13,13 +13,30 @@
 	let metric = $state<Metric>('def');
 	let hoverTeam = $state<number | null>(null);
 
+	// ── Search ────────────────────────────────────────────────────
+	let searchQuery = $state('');
+
 	// ── Derived: set of all chosen team numbers ───────────────────
 	const chosenSet = $derived(new Set(alliances.flat().filter((n): n is number => n != null)));
 
 	// ── Derived: unchosen teams sorted by rank ────────────────────
 	const unchosenTeams = $derived(data.teams.filter((t) => !chosenSet.has(t.number)));
 
+	// ── Filtered teams (search) ───────────────────────────────────
+	const filteredTeams = $derived.by(() => {
+		const q = searchQuery.trim().toLowerCase();
+		if (!q) return unchosenTeams;
+		return unchosenTeams.filter(
+			(t) => String(t.number).includes(q) || t.name.toLowerCase().includes(q)
+		);
+	});
+
 	// ── Pareto front computation ──────────────────────────────────
+	// T is excluded only if some U beats it by > epsilon in BOTH axes,
+	// so teams with small measurement-error gaps still appear on the front.
+	const PARETO_EPOP_EPS = 10;    // ePOP units
+	const PARETO_SCORE_EPS = 0.3; // 1–5 scale
+
 	function computePareto(teams: typeof data.teams, m: Metric) {
 		const eligible = teams.filter(
 			(t) => t.epop != null && (m === 'def' ? t.defScore : t.passScore) != null
@@ -31,7 +48,7 @@
 				if (u === t) return false;
 				const ux = u.epop!;
 				const uy = m === 'def' ? u.defScore! : u.passScore!;
-				return ux >= tx && uy >= ty && (ux > tx || uy > ty);
+				return ux > tx + PARETO_EPOP_EPS && uy > ty + PARETO_SCORE_EPS;
 			});
 		});
 	}
@@ -58,9 +75,23 @@
 		const vals = data.teams.map((t) => t.epop ?? 0);
 		return Math.max(...vals, 1) * 1.1;
 	});
+	const epopMin = $derived.by(() => {
+		const vals = data.teams.filter((t) => t.epop != null && t.epop > 0).map((t) => t.epop!);
+		return vals.length > 0 ? Math.min(...vals) * 0.9 : 1;
+	});
+	// 5 log-spaced tick values across the x range
+	const xTicks = $derived.by(() => {
+		const logMin = Math.log(epopMin);
+		const logMax = Math.log(epopMax);
+		return [0, 1, 2, 3, 4].map((i) => Math.exp(logMin + (i / 4) * (logMax - logMin)));
+	});
 	const yMax = 5.2;
 
-	function xScale(v: number) { return (v / epopMax) * chartW; }
+	function xScale(v: number) {
+		const logMin = Math.log(epopMin);
+		const logMax = Math.log(epopMax);
+		return (Math.log(Math.max(v, epopMin)) - logMin) / (logMax - logMin) * chartW;
+	}
 	function yScale(v: number) { return chartH - (v / yMax) * chartH; }
 
 	function teamPoint(t: (typeof data.teams)[0]) {
@@ -69,20 +100,6 @@
 			y: yScale(metric === 'def' ? (t.defScore ?? 0) : (t.passScore ?? 0))
 		};
 	}
-
-	// Step-line path through Pareto front (sorted by x asc for the path)
-	const paretoPath = $derived.by(() => {
-		const pts = [...paretoSorted]
-			.sort((a, b) => (a.epop ?? 0) - (b.epop ?? 0))
-			.map((t) => ({ x: xScale(t.epop ?? 0), y: yScale(metric === 'def' ? (t.defScore ?? 0) : (t.passScore ?? 0)) }));
-		if (pts.length === 0) return '';
-		let d = `M ${pts[0].x} ${pts[0].y}`;
-		for (let i = 1; i < pts.length; i++) {
-			// Step: go right first, then up
-			d += ` H ${pts[i].x} V ${pts[i].y}`;
-		}
-		return d;
-	});
 
 	// ── Interaction: place/select teams ──────────────────────────
 	async function saveAlliances(next: (number | null)[][]) {
@@ -179,6 +196,51 @@
 
 	function fmt1(v: number | null) { return v != null ? v.toFixed(1) : '—'; }
 	function fmtPct(v: number) { return Math.round(v * 100) + '%'; }
+
+	// ── ePOP coloring (percentile-based, same as /teams) ──────────
+	const epopSorted = $derived(
+		data.teams.filter((t) => t.epop != null).map((t) => t.epop!).sort((a, b) => a - b)
+	);
+	function epopPct(epop: number | null): number | null {
+		if (epop == null || epopSorted.length === 0) return null;
+		const below = epopSorted.filter((v) => v < epop).length;
+		return (below / epopSorted.length) * 100;
+	}
+	function epopColorClass(epop: number | null): string {
+		const pct = epopPct(epop);
+		if (pct == null) return 'text-gray-300';
+		if (pct < 33.33) return 'text-red-600 font-bold';
+		if (pct < 66.67) return 'text-gray-700 font-bold';
+		if (pct < 90) return 'text-green-700 font-bold';
+		return 'text-blue-700 font-bold';
+	}
+
+	// ── Snake draft order: fill slots 0+1 per alliance (1→8), then slot 2 (8→1), slot 3 (1→8) ──
+	const SNAKE_ORDER: [number, number][] = [
+		...[0,1,2,3,4,5,6,7].flatMap((ai): [number, number][] => [[ai, 0], [ai, 1]]),
+		...[7,6,5,4,3,2,1,0].map((ai): [number, number] => [ai, 2]),
+		...[0,1,2,3,4,5,6,7].map((ai): [number, number] => [ai, 3]),
+	];
+
+	function nextSnakeSlot(): [number, number] | null {
+		for (const [ai, si] of SNAKE_ORDER) {
+			if (alliances[ai][si] == null) return [ai, si];
+		}
+		return null;
+	}
+
+	function quickAddTeam(teamNum: number) {
+		const slot = nextSnakeSlot();
+		if (slot == null) return;
+		const [ai, si] = slot;
+		const next = alliances.map((a) => [...a]);
+		for (let a = 0; a < 8; a++)
+			for (let s = 0; s < 4; s++)
+				if (next[a][s] === teamNum) next[a][s] = null;
+		next[ai][si] = teamNum;
+		selectedTeam = null;
+		saveAlliances(next);
+	}
 </script>
 
 <div class="mx-auto max-w-screen-xl px-4 py-6">
@@ -198,15 +260,6 @@
 				{chosenSet.size} of {data.teams.length} teams placed
 				{#if saving}<span class="ml-2 text-blue-500">Saving…</span>{/if}
 			</p>
-		</div>
-		<div class="flex items-center gap-3">
-			{#if selectedTeam != null}
-				{@const t = teamInfo(selectedTeam)}
-				<div class="flex items-center gap-2 rounded-lg border-2 border-blue-400 bg-blue-50 px-3 py-1.5">
-					<span class="text-sm font-bold text-blue-700">Selected: #{selectedTeam}{t ? ` – ${t.name}` : ''}</span>
-					<button onclick={() => (selectedTeam = null)} class="text-blue-400 hover:text-blue-700">✕</button>
-				</div>
-			{/if}
 		</div>
 	</div>
 
@@ -298,8 +351,7 @@
 							/>
 							<text x="-6" y={yScale(y) + 4} text-anchor="end" font-size="10" fill="#9ca3af">{y}</text>
 						{/each}
-						{#each [0, 0.25, 0.5, 0.75, 1] as frac}
-							{@const xv = frac * epopMax}
+						{#each xTicks as xv}
 							<line
 								x1={xScale(xv)} y1="0" x2={xScale(xv)} y2={chartH}
 								stroke="#f3f4f6" stroke-width="1"
@@ -323,11 +375,6 @@
 							font-size="11"
 							fill="#6b7280"
 						>{metric === 'def' ? 'Defense' : 'Passing'} (1–5)</text>
-
-						<!-- Pareto step line -->
-						{#if paretoPath}
-							<path d={paretoPath} fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4 2" opacity="0.7"/>
-						{/if}
 
 						<!-- Data points: all unchosen, pareto front on top -->
 						{#each unchosenTeams as t}
@@ -402,7 +449,7 @@
 											>{t.number}</a>
 											<span class="ml-1 text-gray-500 truncate">{t.name}</span>
 										</td>
-										<td class="py-1 font-semibold text-purple-700">{fmt1(t.epop)}</td>
+										<td class="py-1 font-semibold {epopColorClass(t.epop)}">{fmt1(t.epop)}</td>
 										<td class="py-1 {metric === 'def' ? 'font-bold text-gray-800' : 'text-gray-500'}">{fmt1(t.defScore)}</td>
 										<td class="py-1 {metric === 'pass' ? 'font-bold text-gray-800' : 'text-gray-500'}">{fmt1(t.passScore)}</td>
 									</tr>
@@ -422,20 +469,29 @@
 					Click a team to select it, then click an alliance slot to place them.
 				</p>
 			</div>
+			<!-- Search bar -->
+			<div class="border-b border-gray-100 px-3 py-2">
+				<input
+					type="search"
+					bind:value={searchQuery}
+					placeholder="Search by # or name…"
+					class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+				/>
+			</div>
 			<div class="overflow-x-auto">
 				<table class="w-full text-sm">
 					<thead>
 						<tr class="border-b border-gray-100 bg-gray-50 text-left text-xs font-bold tracking-wider text-gray-400 uppercase">
-							<th class="px-3 py-2">Rank</th>
-							<th class="px-3 py-2">Team</th>
-							<th class="px-3 py-2">Name</th>
-							<th class="px-3 py-2">ePOP</th>
-							<th class="px-3 py-2" title="Defense: avg score / rate">Def</th>
-							<th class="px-3 py-2" title="Passing: avg score / rate">Pass</th>
+							<th class="px-2 py-2"></th>
+							<th class="px-2 py-2">Rank</th>
+							<th class="px-2 py-2">Team</th>
+							<th class="px-2 py-2">ePOP</th>
+							<th class="px-2 py-2" title="Defense: avg score / rate">Def</th>
+							<th class="px-2 py-2" title="Passing: avg score / rate">Pass</th>
 						</tr>
 					</thead>
 					<tbody>
-						{#each unchosenTeams as t, i}
+						{#each filteredTeams as t, i}
 							{@const onFront = paretoFront.includes(t)}
 							{@const isSelected = t.number === selectedTeam}
 							<tr
@@ -443,36 +499,45 @@
 									{isSelected ? 'bg-blue-50' : onFront ? 'bg-amber-50 hover:bg-amber-100' : i % 2 === 1 ? 'bg-gray-50/40 hover:bg-blue-50' : 'hover:bg-blue-50'}"
 								onclick={() => clickAvailableTeam(t.number)}
 							>
-								<td class="px-3 py-2 font-bold text-gray-400">{t.rank != null ? `#${t.rank}` : '—'}</td>
-								<td class="px-3 py-2">
+								<td class="px-2 py-1.5">
+									<button
+										onclick={(e) => { e.stopPropagation(); quickAddTeam(t.number); }}
+										class="flex items-center justify-center rounded w-6 h-6 text-sm font-bold bg-blue-600 text-white hover:bg-blue-700"
+										title="Quick add to next snake slot"
+									>+</button>
+								</td>
+								<td class="px-2 py-1.5 font-bold text-gray-400 text-xs whitespace-nowrap">{t.rank != null ? `#${t.rank}` : '—'}</td>
+								<td class="px-2 py-1.5">
 									<a
 										href="/teams/{t.number}?from=alliance-selection"
 										onclick={(e) => e.stopPropagation()}
-										class="font-black text-blue-600 hover:underline"
+										class="font-black text-blue-600 hover:underline leading-tight"
 									>{t.number}</a>
+									<div class="text-[11px] text-gray-500 leading-tight truncate max-w-[110px]">{t.name}</div>
 								</td>
-								<td class="px-3 py-2 text-gray-700 truncate max-w-[160px]">{t.name}</td>
-								<td class="px-3 py-2 font-semibold text-purple-700">{fmt1(t.epop)}</td>
-								<td class="px-3 py-2 text-gray-600">
+								<td class="px-2 py-1.5 text-xs whitespace-nowrap {epopColorClass(t.epop)}">{fmt1(t.epop)}</td>
+								<td class="px-2 py-1.5 text-gray-600 text-xs whitespace-nowrap">
 									{#if t.defScore != null}
 										<span class="font-semibold">{fmt1(t.defScore)}</span>
-										<span class="text-gray-400 text-xs ml-0.5">{fmtPct(t.defRate)}</span>
+										<span class="text-gray-400 text-[10px]"> {fmtPct(t.defRate)}</span>
 									{:else}
 										<span class="text-gray-300">—</span>
 									{/if}
 								</td>
-								<td class="px-3 py-2 text-gray-600">
+								<td class="px-2 py-1.5 text-gray-600 text-xs whitespace-nowrap">
 									{#if t.passScore != null}
 										<span class="font-semibold">{fmt1(t.passScore)}</span>
-										<span class="text-gray-400 text-xs ml-0.5">{fmtPct(t.passRate)}</span>
+										<span class="text-gray-400 text-[10px]"> {fmtPct(t.passRate)}</span>
 									{:else}
 										<span class="text-gray-300">—</span>
 									{/if}
 								</td>
 							</tr>
 						{/each}
-						{#if unchosenTeams.length === 0}
-							<tr><td colspan="6" class="px-4 py-8 text-center text-gray-400">All teams have been placed.</td></tr>
+						{#if filteredTeams.length === 0}
+							<tr><td colspan="6" class="px-4 py-8 text-center text-gray-400">
+								{searchQuery ? 'No teams match your search.' : 'All teams have been placed.'}
+							</td></tr>
 						{/if}
 					</tbody>
 				</table>
