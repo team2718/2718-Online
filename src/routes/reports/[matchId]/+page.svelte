@@ -94,7 +94,7 @@
                     {#each teamReports as report, i}
                         {#if teamReports.length > 1}
                             <div class="{i > 0 ? 'border-t border-orange-100' : ''} px-2 pt-1">
-                                <p class="text-[9px] font-semibold uppercase tracking-wide text-orange-400">{i > 0 ? 'Duplicate' : 'Report 1'} · {report.scouterName}</p>
+                                <p class="text-[9px] font-semibold uppercase tracking-wide text-orange-400">{'Report '}{i + 1} · {report.scouterName}</p>
                             </div>
                         {/if}
                         <div class="space-y-2 p-2 text-[11px]">
@@ -188,7 +188,7 @@
                     {#each teamReports as report, i}
                         {#if teamReports.length > 1}
                             <div class="{i > 0 ? 'border-t border-orange-100' : ''} px-2 pt-1">
-                                <p class="text-[9px] font-semibold uppercase tracking-wide text-orange-400">{i > 0 ? 'Duplicate' : 'Report 1'} · {report.scouterName}</p>
+                                <p class="text-[9px] font-semibold uppercase tracking-wide text-orange-400">{'Report '}{i + 1} · {report.scouterName}</p>
                             </div>
                         {/if}
                         <div class="space-y-2 p-2 text-[11px]">
