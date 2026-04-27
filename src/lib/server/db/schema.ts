@@ -47,6 +47,7 @@ export const pitScoutingReports = sqliteTable('pit_scouting_reports', {
 
 export const admin_sessions = sqliteTable('admin_sessions', {
 	cookieId: text('cookie_id').primaryKey(),
+	level: text('level').notNull().default('admin'),
 	createdAt: integer('created_at').default(sql`(strftime('%s', 'now'))`)
 });
 

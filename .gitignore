@@ -31,3 +31,7 @@ vite.config.ts.timestamp-*
 
 # Drizzle
 /drizzle
+
+# MATLAB Tests
+*.m
+*.mat

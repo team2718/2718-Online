@@ -44,6 +44,12 @@ export async function load() {
 			name: t.name,
 			epop: epopMap.get(t.number) ?? null,
 			record: recordMap.get(t.number) ?? { wins: 0, losses: 0, ties: 0 },
+			rank:
+				t.metadata != null &&
+				'rank' in t.metadata &&
+				typeof t.metadata.rank === 'number'
+					? (t.metadata.rank as number)
+					: null,
 			rankingPoints:
 				t.metadata != null &&
 				'ranking_score' in t.metadata &&

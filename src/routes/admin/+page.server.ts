@@ -7,9 +7,13 @@ import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
     const defaultMatchType = await getEventSetting('defaultMatchType');
+    const eventCode = await getEventSetting('eventCode');
+    const autoTbaPull = await getEventSetting('autoTbaPull');
     return {
         defaultMatchType: defaultMatchType ?? 'qualification',
-        tbaApiKeyConfigured: TBA_API_KEY.length > 0
+        tbaApiKeyConfigured: TBA_API_KEY.length > 0,
+        eventCode: eventCode ?? '',
+        autoTbaPull: autoTbaPull === 'true'
     };
 };
 
@@ -51,6 +55,7 @@ export const actions: Actions = {
         }
 
         try {
+            await setEventSetting('eventCode', eventKey);
             const matchType = await getEventSetting('defaultMatchType');
             const skipMatches = matchType === 'practice';
             const result = await importFromTBA(eventKey, apiKey, skipMatches);
@@ -66,6 +71,13 @@ export const actions: Actions = {
             console.error('TBA import error:', e);
             return fail(500, { message: `TBA import failed: ${String(e)}` });
         }
+    },
+
+    setAutoTbaPull: async ({ request }) => {
+        const formData = await request.formData();
+        const enabled = formData.get('autoTbaPull') === 'true';
+        await setEventSetting('autoTbaPull', enabled ? 'true' : 'false');
+        return { success: true, action: 'setAutoTbaPull', autoTbaPull: enabled };
     },
 
     wipeDatabase: async () => {

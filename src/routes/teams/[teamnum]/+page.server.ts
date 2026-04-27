@@ -72,7 +72,8 @@ export async function load({ params, locals }) {
 		epopHistory,
 		matchPredictions,
 		hasEpopData,
-		isAdmin: locals.admin
+		isAdmin: locals.admin,
+		isPrivileged: locals.privileged
 	};
 }
 

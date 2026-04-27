@@ -76,7 +76,7 @@ interface EpopResult {
  */
 async function computeEpopFull(): Promise<EpopResult> {
 	const [allTeams, qualMatches, allReports] = await Promise.all([
-		db.select({ number: teams.number }).from(teams).all(),
+		db.select({ number: teams.number, metadata: teams.metadata }).from(teams).all(),
 		db.select().from(matches).where(eq(matches.matchType, 'qualification')).all(),
 		db
 			.select({
@@ -99,6 +99,12 @@ async function computeEpopFull(): Promise<EpopResult> {
 	const teamNums = allTeams.map((t) => t.number).sort((a, b) => a - b);
 	const n = teamNums.length;
 	const teamIdx = new Map<number, number>(teamNums.map((t, i) => [t, i]));
+
+	const statboticsEpaMap = new Map<number, number>();
+	for (const t of allTeams) {
+		const epa = (t.metadata as Record<string, unknown> | null)?.statboticsEpa;
+		if (typeof epa === 'number') statboticsEpaMap.set(t.number, epa);
+	}
 
 	// matchId → chronological index among scored matches (for report gating)
 	const matchIdxById = new Map<string, number>(scoredMatches.map((m, i) => [m.id, i]));
@@ -161,9 +167,14 @@ async function computeEpopFull(): Promise<EpopResult> {
 		const avgY = yVec.slice(0, numRows).reduce((s, v) => s + v, 0) / numRows;
 		const avgOprEst = avgY / 3;
 		const avgRaw = rawPriors.reduce((s, v) => s + v, 0) / n;
-		const priors = rawPriors.map((p) =>
-			avgRaw > 0 ? avgOprEst * Math.pow(p / avgRaw, GAMMA) : avgOprEst
-		);
+		const priors = rawPriors.map((p, i) => {
+			const num = teamNums[i];
+			if (!teamScores.has(num)) {
+				const sbEpa = statboticsEpaMap.get(num);
+				if (sbEpa != null) return sbEpa;
+			}
+			return avgRaw > 0 ? avgOprEst * Math.pow(p / avgRaw, GAMMA) : avgOprEst;
+		});
 
 		// --- Build A = M'WM + λI and b = M'Wy + λ·priors ---
 		const A: number[][] = Array.from({ length: n }, () => new Array(n).fill(0));

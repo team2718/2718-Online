@@ -15,6 +15,7 @@
 
 	// Local state for the match type selector (initialised from server load data)
 	let selectedMatchType = $state(data.defaultMatchType ?? 'qualification');
+	let autoTbaPull = $state(data.autoTbaPull ?? false);
 
 	const tbaMatchesSkipped = $derived((form as Record<string, unknown> | null)?.matchesSkipped === true);
 </script>
@@ -106,6 +107,24 @@
 		{/if}
 	{/if}
 
+	{#if form?.action === 'setAutoTbaPull'}
+		{#if form.success}
+			<Alert color="green" class="mb-6 border border-green-200">
+				<div class="flex items-center gap-2 font-semibold text-green-800">
+					<CheckCircleSolid class="h-5 w-5" />
+					Auto-pull {form.autoTbaPull ? 'enabled' : 'disabled'}.
+				</div>
+			</Alert>
+		{:else}
+			<Alert color="red" class="mb-6 border border-red-200">
+				<div class="flex items-center gap-2 font-semibold text-red-800">
+					<CloseCircleSolid class="h-5 w-5" />
+					{form?.message ?? 'Failed to update auto-pull setting.'}
+				</div>
+			</Alert>
+		{/if}
+	{/if}
+
 	<!-- ── Main Grid ─────────────────────────────────────────────────── -->
 
 	<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -145,6 +164,11 @@
 					<span class="font-medium">(TBA_API_KEY is configured in the environment.)</span>
 				{/if}
 			</p>
+			{#if data.eventCode}
+				<p class="mb-3 text-sm text-indigo-700">
+					Stored event code: <code class="rounded bg-indigo-100 px-1 font-mono">{data.eventCode}</code>
+				</p>
+			{/if}
 			<form method="POST" action="?/fetchTBA" use:enhance class="space-y-3">
 				<div>
 					<Label for="eventKey" class="mb-1 block text-sm font-medium text-indigo-800">
@@ -154,6 +178,7 @@
 						id="eventKey"
 						name="eventKey"
 						placeholder="e.g. 2026okok"
+						value={data.eventCode}
 						required
 						class="bg-white"
 					/>
@@ -179,6 +204,27 @@
 					{selectedMatchType === 'practice' ? 'Download Teams' : 'Download Schedule & Teams'}
 				</Button>
 			</form>
+			<div class="mt-4 border-t border-indigo-200 pt-4">
+				<form method="POST" action="?/setAutoTbaPull" use:enhance>
+					<input type="hidden" name="autoTbaPull" value={autoTbaPull ? 'false' : 'true'} />
+					<label class="flex cursor-pointer items-center gap-3">
+						<div
+							class="relative h-6 w-11 rounded-full transition-colors {autoTbaPull ? 'bg-indigo-600' : 'bg-gray-300'}"
+						>
+							<div
+								class="absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform {autoTbaPull ? 'translate-x-5' : 'translate-x-0.5'}"
+							></div>
+						</div>
+						<button
+							type="submit"
+							onclick={() => (autoTbaPull = !autoTbaPull)}
+							class="text-sm font-medium text-indigo-800 hover:underline"
+						>
+							Auto-pull every 15 minutes
+						</button>
+					</label>
+				</form>
+			</div>
 		</div>
 
 		<!-- Database Cleanup -->

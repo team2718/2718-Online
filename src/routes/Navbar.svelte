@@ -4,8 +4,10 @@
 
 	interface Props {
 		teams?: { number: number; name: string }[];
+		isAdmin?: boolean;
+		isPrivileged?: boolean;
 	}
-	let { teams = [] }: Props = $props();
+	let { teams = [], isAdmin = false, isPrivileged = false }: Props = $props();
 
 	const activePath = $derived.by(() => {
 		const path = page.url.pathname;
@@ -80,6 +82,58 @@
 	}
 
 	$effect(() => { query; selectedIndex = -1; });
+
+	// --- Auth popover ---
+	let authOpen = $state(false);
+	let authPassword = $state('');
+	let authError = $state('');
+	let authLoading = $state(false);
+
+	function toggleAuth() {
+		authOpen = !authOpen;
+		if (authOpen) {
+			authPassword = '';
+			authError = '';
+		}
+	}
+
+	async function submitAuth() {
+		if (!authPassword) return;
+		authLoading = true;
+		authError = '';
+		try {
+			const res = await fetch('/api/auth', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ password: authPassword })
+			});
+			if (res.ok) {
+				window.location.reload();
+			} else {
+				authError = 'Incorrect password';
+				authPassword = '';
+			}
+		} catch {
+			authError = 'Network error';
+		} finally {
+			authLoading = false;
+		}
+	}
+
+	async function logout() {
+		await fetch('/api/auth', { method: 'DELETE' });
+		window.location.reload();
+	}
+
+	function onAuthKeydown(e: KeyboardEvent) {
+		if (e.key === 'Enter') submitAuth();
+		if (e.key === 'Escape') authOpen = false;
+	}
+
+	// Lock icon color class
+	const lockColorClass = $derived(
+		isAdmin ? 'text-red-500' : isPrivileged ? 'text-amber-500' : 'text-gray-400 hover:text-gray-600'
+	);
 </script>
 
 <!-- Desktop: 3-column grid keeps links truly centered -->
@@ -116,10 +170,22 @@
 					{link.label}
 				</a>
 			{/each}
+			{#if isAdmin}
+				<span class="mx-1 h-4 w-px bg-gray-300" aria-hidden="true"></span>
+				<a
+					href="/admin"
+					class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors
+						{activePath === '/admin'
+							? 'text-red-600'
+							: 'text-red-500 hover:bg-red-50 hover:text-red-700'}"
+				>
+					Admin
+				</a>
+			{/if}
 		</div>
 
-		<!-- Right: Search -->
-		<div class="flex justify-end">
+		<!-- Right: Search + Auth -->
+		<div class="flex items-center justify-end gap-2">
 			<div class="relative">
 				<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
 					<svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -153,28 +219,120 @@
 					</div>
 				{/if}
 			</div>
+
+			<!-- Auth button -->
+			<div class="relative">
+				<button
+					onclick={toggleAuth}
+					class="rounded-lg p-1.5 transition-colors {lockColorClass}"
+					aria-label="Authenticate"
+					title={isAdmin ? 'Admin' : isPrivileged ? 'Privileged' : 'Authenticate'}
+				>
+					<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+					</svg>
+				</button>
+
+				{#if authOpen}
+					<div class="absolute top-full right-0 z-50 mt-2 w-64 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
+						<div class="p-3">
+							<p class="mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">Authenticate</p>
+							<input
+								type="password"
+								bind:value={authPassword}
+								onkeydown={onAuthKeydown}
+								placeholder="Password"
+								class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+							/>
+							{#if authError}
+								<p class="mt-1 text-xs text-red-500">{authError}</p>
+							{/if}
+							<button
+								onclick={submitAuth}
+								disabled={authLoading || !authPassword}
+								class="mt-2 w-full rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+							>
+								{authLoading ? 'Authenticating…' : 'Authenticate'}
+							</button>
+							{#if isPrivileged}
+								<button
+									onclick={logout}
+									class="mt-1 w-full rounded-lg px-3 py-1.5 text-sm font-semibold text-gray-500 transition-colors hover:bg-gray-100"
+								>
+									Logout
+								</button>
+							{/if}
+						</div>
+					</div>
+				{/if}
+			</div>
 		</div>
 	</div>
 
 	<!-- Mobile: brand + hamburger -->
 	<div class="flex items-center justify-between md:hidden">
 		<a href="/" class="text-xl font-semibold text-gray-900 dark:text-white">2718 Online</a>
-		<button
-			onclick={() => (mobileOpen = !mobileOpen)}
-			class="rounded-lg p-2 text-gray-500 hover:bg-gray-100 focus:outline-none"
-			aria-label="Toggle menu"
-		>
-			{#if mobileOpen}
+		<div class="flex items-center gap-1">
+			<!-- Mobile auth button -->
+			<button
+				onclick={toggleAuth}
+				class="rounded-lg p-2 transition-colors {lockColorClass}"
+				aria-label="Authenticate"
+				title={isAdmin ? 'Admin' : isPrivileged ? 'Privileged' : 'Authenticate'}
+			>
 				<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-					<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+					<path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
 				</svg>
-			{:else}
-				<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-					<path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
-				</svg>
-			{/if}
-		</button>
+			</button>
+			<button
+				onclick={() => (mobileOpen = !mobileOpen)}
+				class="rounded-lg p-2 text-gray-500 hover:bg-gray-100 focus:outline-none"
+				aria-label="Toggle menu"
+			>
+				{#if mobileOpen}
+					<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+					</svg>
+				{:else}
+					<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+					</svg>
+				{/if}
+			</button>
+		</div>
 	</div>
+
+	<!-- Mobile auth popover (shown below the top bar when open) -->
+	{#if authOpen && mobileOpen === false}
+		<div class="mt-2 border-t border-gray-100 pt-3 md:hidden">
+			<p class="mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">Authenticate</p>
+			<input
+				type="password"
+				bind:value={authPassword}
+				onkeydown={onAuthKeydown}
+				placeholder="Password"
+				class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+			/>
+			{#if authError}
+				<p class="mt-1 text-xs text-red-500">{authError}</p>
+			{/if}
+			<button
+				onclick={submitAuth}
+				disabled={authLoading || !authPassword}
+				class="mt-2 w-full rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+			>
+				{authLoading ? 'Authenticating…' : 'Authenticate'}
+			</button>
+			{#if isPrivileged}
+				<button
+					onclick={logout}
+					class="mt-1 w-full rounded-lg px-3 py-2 text-sm font-semibold text-gray-500 transition-colors hover:bg-gray-100"
+				>
+					Logout
+				</button>
+			{/if}
+		</div>
+	{/if}
 
 	<!-- Mobile menu -->
 	{#if mobileOpen}
@@ -206,6 +364,20 @@
 					</a>
 				{/each}
 			</div>
+			{#if isAdmin}
+				<hr class="my-2 border-gray-200" />
+				<div class="space-y-1">
+					<a
+						href="/admin"
+						class="block rounded-md px-3 py-2 text-sm font-medium
+							{activePath === '/admin'
+								? 'bg-red-50 text-red-600'
+								: 'text-red-500 hover:bg-red-50 hover:text-red-700'}"
+					>
+						Admin
+					</a>
+				</div>
+			{/if}
 
 			<!-- Mobile search -->
 			<div class="relative mt-3">

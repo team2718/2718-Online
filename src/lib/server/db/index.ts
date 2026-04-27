@@ -10,12 +10,12 @@ export const db = drizzle(client, { schema });
 
 // --- Auth Functions ---
 
-export function saveAdminSessionKey(sessionToken: string) {
-	return db.insert(schema.admin_sessions).values({ cookieId: sessionToken }).run();
+export function saveAdminSessionKey(sessionToken: string, level: 'admin' | 'privileged' = 'admin') {
+	return db.insert(schema.admin_sessions).values({ cookieId: sessionToken, level }).run();
 }
 
-export async function checkAdminSessionKey(sessionId: string): Promise<boolean> {
-	if (!sessionId) return false;
+export async function checkSessionLevel(sessionId: string): Promise<'admin' | 'privileged' | null> {
+	if (!sessionId) return null;
 
 	const session = await db
 		.select()
@@ -27,11 +27,15 @@ export async function checkAdminSessionKey(sessionId: string): Promise<boolean> 
 		const now = Math.floor(Date.now() / 1000);
 		if (session.createdAt == null || now - session.createdAt > 60 * 60 * ADMIN_SESSION_EXPIRY_HOURS) {
 			await db.delete(admin_sessions).where(eq(admin_sessions.cookieId, sessionId)).run();
-			return false;
+			return null;
 		}
-		return true;
+		return session.level as 'admin' | 'privileged';
 	}
-	return false;
+	return null;
+}
+
+export async function checkAdminSessionKey(sessionId: string): Promise<boolean> {
+	return (await checkSessionLevel(sessionId)) === 'admin';
 }
 
 // --- Scouting Report Functions ---
@@ -254,13 +258,33 @@ export async function importFromTBA(eventKey: string, apiKey: string, skipMatche
 		errors.push(`Failed to fetch COPRs data: ${String(e)}`);
 	}
 
+	// -- Fetch Statbotics EPA --
+	const statboticsEpaByTeam: Record<number, number> = {};
+	try {
+		const res = await fetch(`https://api.statbotics.io/v3/team_events?event=${eventKey}`);
+		if (res.ok) {
+			const entries: Array<{ team: number; epa: { breakdown: { total_points: number } } }> = await res.json();
+			for (const entry of entries) {
+				if (entry.epa?.breakdown?.total_points != null) {
+					statboticsEpaByTeam[entry.team] = entry.epa.breakdown.total_points;
+				}
+			}
+		} else if (res.status !== 404) {
+			errors.push(`Statbotics API returned ${res.status}`);
+		}
+	} catch (e) {
+		errors.push(`Failed to fetch Statbotics EPA: ${String(e)}`);
+	}
+
 	// Build a ranking score lookup by team key
 	const rankingScoreByTeam: Record<string, number> = {};
+	const rankByTeam: Record<string, number> = {};
 	if (rankingsData?.rankings) {
 		for (const r of rankingsData.rankings) {
 			if (r.sort_orders && r.sort_orders.length > 0) {
 				rankingScoreByTeam[r.team_key] = r.sort_orders[0];
 			}
+			rankByTeam[r.team_key] = r.rank;
 		}
 	}
 
@@ -277,7 +301,9 @@ export async function importFromTBA(eventKey: string, apiKey: string, skipMatche
 						}
 					: {}),
 				ranking_score: rankingScoreByTeam[tbaKey] ?? null,
-				hub_total_fuel_count_copr: coprsData?.['Hub Total Fuel Count']?.[tbaKey] ?? null
+				rank: rankByTeam[tbaKey] ?? null,
+				hub_total_fuel_count_copr: coprsData?.['Hub Total Fuel Count']?.[tbaKey] ?? null,
+				statboticsEpa: statboticsEpaByTeam[t.team_number] ?? null
 			};
 			await db
 				.insert(teams)

@@ -1,17 +1,17 @@
 <script lang="ts">
 	let { data } = $props();
 
-	type SortKey = 'number' | 'name' | 'epop' | 'record' | 'rankingPoints';
+	type SortKey = 'rank' | 'number' | 'name' | 'epop' | 'record' | 'rankingPoints';
 
-	let sortKey = $state<SortKey>('rankingPoints');
-	let sortDir = $state<'asc' | 'desc'>('desc');
+	let sortKey = $state<SortKey>('rank');
+	let sortDir = $state<'asc' | 'desc'>('asc');
 
 	function toggleSort(key: SortKey) {
 		if (sortKey === key) {
 			sortDir = sortDir === 'asc' ? 'desc' : 'asc';
 		} else {
 			sortKey = key;
-			sortDir = key === 'number' || key === 'name' ? 'asc' : 'desc';
+			sortDir = key === 'rank' || key === 'number' || key === 'name' ? 'asc' : 'desc';
 		}
 	}
 
@@ -22,7 +22,8 @@
 	const sortedTeams = $derived.by(() => {
 		return [...data.teams].sort((a, b) => {
 			let v = 0;
-			if (sortKey === 'number') v = a.number - b.number;
+			if (sortKey === 'rank') v = (a.rank ?? Infinity) - (b.rank ?? Infinity);
+			else if (sortKey === 'number') v = a.number - b.number;
 			else if (sortKey === 'name') v = a.name.localeCompare(b.name);
 			else if (sortKey === 'epop') v = (a.epop ?? -1) - (b.epop ?? -1);
 			else if (sortKey === 'record') v = recordSortVal(a.record) - recordSortVal(b.record);
@@ -61,7 +62,7 @@
 		return 'text-blue-700 font-bold';
 	}
 
-	let scrollEl: HTMLDivElement | undefined;
+	let scrollEl = $state<HTMLDivElement | undefined>(undefined);
 	let canScrollRight = $state(false);
 
 	function checkScroll() {
@@ -87,6 +88,14 @@
 			<table class="w-full min-w-[36rem] text-sm">
 				<thead>
 					<tr class="border-b border-gray-200 bg-gray-50 text-left">
+						<th class="w-16">
+							<button
+								onclick={() => toggleSort('rank')}
+								class="w-full px-4 py-3 text-left text-xs font-bold tracking-wider text-gray-500 uppercase hover:text-gray-900"
+							>
+								Rank{arrow('rank')}
+							</button>
+						</th>
 						<th class="w-24">
 							<button
 								onclick={() => toggleSort('number')}
@@ -132,6 +141,13 @@
 				<tbody>
 					{#each sortedTeams as team, i}
 						<tr class="border-b border-gray-100 transition-colors hover:bg-blue-50 {i % 2 === 1 ? 'bg-gray-50/40' : ''}">
+							<td class="px-4 py-2.5 text-sm font-bold text-gray-500">
+								{#if team.rank != null}
+									#{team.rank}
+								{:else}
+									<span class="text-gray-300">—</span>
+								{/if}
+							</td>
 							<td class="px-4 py-2.5">
 								<a href="/teams/{team.number}" class="font-black text-blue-600 hover:underline">
 									{team.number}

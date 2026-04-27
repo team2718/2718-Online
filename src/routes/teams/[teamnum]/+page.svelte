@@ -320,7 +320,7 @@
 									</div>
 								</div>
 
-								{#if report.data?.notes}
+								{#if (data.isAdmin || data.isPrivileged) && report.data?.notes}
 									<p class="italic leading-snug text-gray-500">{report.data.notes}</p>
 								{/if}
 
@@ -445,26 +445,28 @@
 									</div>
 								</div>
 
-								<div
-									class="col-span-2 grid gap-4 border-t border-gray-100 pt-4 md:col-span-4 md:grid-cols-2"
-								>
-									<div class="rounded-lg border border-red-100 bg-red-50 p-4">
-										<p class="text-xs font-bold tracking-wider text-red-700 uppercase">
-											Known Issues
-										</p>
-										<p class="mt-1 text-sm text-gray-700 italic">
-											{pitData.knownIssues || 'No known issues reported.'}
-										</p>
+								{#if data.isAdmin || data.isPrivileged}
+									<div
+										class="col-span-2 grid gap-4 border-t border-gray-100 pt-4 md:col-span-4 md:grid-cols-2"
+									>
+										<div class="rounded-lg border border-red-100 bg-red-50 p-4">
+											<p class="text-xs font-bold tracking-wider text-red-700 uppercase">
+												Known Issues
+											</p>
+											<p class="mt-1 text-sm text-gray-700 italic">
+												{pitData.knownIssues || 'No known issues reported.'}
+											</p>
+										</div>
+										<div class="rounded-lg border border-blue-100 bg-blue-50 p-4">
+											<p class="text-xs font-bold tracking-wider text-blue-700 uppercase">
+												General Comments
+											</p>
+											<p class="mt-1 text-sm text-gray-700 italic">
+												{pitData.comments || 'No additional comments.'}
+											</p>
+										</div>
 									</div>
-									<div class="rounded-lg border border-blue-100 bg-blue-50 p-4">
-										<p class="text-xs font-bold tracking-wider text-blue-700 uppercase">
-											General Comments
-										</p>
-										<p class="mt-1 text-sm text-gray-700 italic">
-											{pitData.comments || 'No additional comments.'}
-										</p>
-									</div>
-								</div>
+								{/if}
 							</div>
 						{:else}
 							<div class="p-6 text-sm text-gray-500">This pit report does not contain structured pit data.</div>

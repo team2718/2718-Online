@@ -14,7 +14,8 @@ export const load: PageServerLoad = async ({ params, locals }) => {
         matchId: params.matchId,
         match: match ?? null,
         reports,
-        isAdmin: locals.admin
+        isAdmin: locals.admin,
+        isPrivileged: locals.privileged
     };
 };
 

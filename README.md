@@ -51,7 +51,19 @@ pnpm install
 
 ---
 
-### 3. Start the Development Server
+### 3. Set Up the Database
+
+The app uses SQLite via Drizzle ORM. On first run, push the schema to create the database:
+
+```sh
+DATABASE_URL=file:local.db pnpm run db:push
+```
+
+If you modify the schema in `src/lib/server/db/schema.ts`, run the same command again to apply the changes. See [Database Commands](#database-commands) for more detail.
+
+---
+
+### 4. Start the Development Server
 
 This will run the app locally so you can see changes as you code:
 
@@ -79,6 +91,39 @@ pnpm run preview
 
 ---
 
+## Database Commands
+
+The project uses [Drizzle ORM](https://orm.drizzle.team/) with SQLite. The schema lives in `src/lib/server/db/schema.ts`.
+
+All commands need `DATABASE_URL` set, either via `.env` or as a prefix:
+
+```sh
+DATABASE_URL=file:local.db pnpm run <command>
+```
+
+| Command | When to use |
+|---|---|
+| `pnpm run db:push` | **Most common.** Apply schema changes directly to the local database without generating migration files. Use this during development when you change the schema and want to update `local.db` immediately. |
+| `pnpm run db:generate` | Generate SQL migration files in `drizzle/` from your schema changes. Use this when you want a versioned migration record (e.g., before deploying to production or sharing schema changes with teammates). |
+| `pnpm run db:migrate` | Apply the generated migration files in `drizzle/` to the database. Run this after `db:generate` to execute the migrations. |
+| `pnpm run db:studio` | Open Drizzle Studio, a visual browser-based database editor, to inspect and edit data. |
+
+### Typical workflow for schema changes
+
+**During development (quick iteration):**
+1. Edit `src/lib/server/db/schema.ts`
+2. Run `DATABASE_URL=file:local.db pnpm run db:push`
+
+**When creating a versioned migration (e.g., for production):**
+1. Edit `src/lib/server/db/schema.ts`
+2. Run `DATABASE_URL=file:local.db pnpm run db:generate` — creates a `.sql` file in `drizzle/`
+3. Run `DATABASE_URL=file:local.db pnpm run db:migrate` — applies it to the database
+4. Commit both the schema change and the generated migration file
+
+> **Note:** `db:push` is convenient but bypasses migration history. Prefer `db:generate` + `db:migrate` for any schema change that needs to run on a shared or production database.
+
+---
+
 ## Troubleshooting & Tips
 
 - If you see errors about missing packages, make sure you ran `pnpm install`.
@@ -94,3 +139,7 @@ pnpm run preview
 - `pnpm run preview` – Preview the production build
 - `pnpm run lint` – Check code for style issues
 - `pnpm run format` – Format code automatically
+- `pnpm run db:push` – Apply schema changes to the local database
+- `pnpm run db:generate` – Generate migration files from schema changes
+- `pnpm run db:migrate` – Apply generated migration files
+- `pnpm run db:studio` – Open Drizzle Studio to browse/edit the database

@@ -2,19 +2,21 @@
 
 import type { Handle } from '@sveltejs/kit';
 import schedule from 'node-schedule';
-import { checkAdminSessionKey } from '$lib/server/db';
+import { checkSessionLevel, getEventSetting, importFromTBA } from '$lib/server/db';
 import { runBackup } from '$lib/server/backup';
+import { TBA_API_KEY } from '$lib/server/config';
 
 export const handle: Handle = async ({ event, resolve }) => {
 	const sessionId = event.cookies.get('admin-auth');
-	let hasAdminSession = false;
+	let level: 'admin' | 'privileged' | null = null;
 	if (sessionId) {
-		hasAdminSession = await checkAdminSessionKey(sessionId);
-		if (!hasAdminSession) {
+		level = await checkSessionLevel(sessionId);
+		if (!level) {
 			event.cookies.delete('admin-auth', { path: '/' });
 		}
 	}
-	event.locals.admin = hasAdminSession;
+	event.locals.admin = level === 'admin';
+	event.locals.privileged = level === 'admin' || level === 'privileged';
 	return resolve(event);
 };
 
@@ -26,10 +28,22 @@ const BACKUP_JOB_NAME = 'DB_BACKUP_JOB';
 if (!globalThis[JOB_NAME] && !globalThis[BACKUP_JOB_NAME]) {
 	console.log('--- Starting Background Tasks ---');
 
-	// globalThis[JOB_NAME] = schedule.scheduleJob('*/1 * * * *', async () => {
-	// 	console.log('Polling Match Data from TBA...');
-	// 	// Your logic here
-	// });
+	globalThis[JOB_NAME] = schedule.scheduleJob('*/15 * * * *', async () => {
+		const enabled = await getEventSetting('autoTbaPull');
+		if (enabled !== 'true') return;
+		const eventCode = await getEventSetting('eventCode');
+		if (!eventCode) return;
+		if (!TBA_API_KEY) { console.warn('[TBA Poll] No TBA_API_KEY configured'); return; }
+		try {
+			const matchType = await getEventSetting('defaultMatchType');
+			const skipMatches = matchType === 'practice';
+			const result = await importFromTBA(eventCode, TBA_API_KEY, skipMatches);
+			console.log(`[TBA Poll] ${result.teamsInserted} teams, ${result.matchesInserted} matches`);
+			if (result.errors.length) console.warn('[TBA Poll] Errors:', result.errors);
+		} catch (e) {
+			console.error('[TBA Poll] Failed:', e);
+		}
+	});
 
 	// Backup the database every 30 minutes, retaining up to 48 hours of backups
 	globalThis[BACKUP_JOB_NAME] = schedule.scheduleJob('*/30 * * * *', async () => {

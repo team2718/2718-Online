@@ -125,7 +125,7 @@
                             </div>
 
                             <!-- Notes -->
-                            {#if report.data?.notes}
+                            {#if (data.isAdmin || data.isPrivileged) && report.data?.notes}
                                 <p class="text-gray-500 italic leading-snug">{report.data.notes}</p>
                             {/if}
 
@@ -208,7 +208,7 @@
                                 </div>
                             </div>
 
-                            {#if report.data?.notes}
+                            {#if (data.isAdmin || data.isPrivileged) && report.data?.notes}
                                 <p class="text-gray-500 italic leading-snug">{report.data.notes}</p>
                             {/if}
 

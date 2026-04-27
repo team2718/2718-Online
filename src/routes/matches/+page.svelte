@@ -9,7 +9,7 @@
 	let pickerOpen = $state(false);
 	let filterText = $state('');
 	let pickerEl: HTMLElement | undefined;
-	let filterInputEl: HTMLInputElement | undefined;
+	let filterInputEl = $state<HTMLInputElement | undefined>(undefined);
 
 	// Keep selectedMatchId in sync with the URL when navigating via quick-links.
 	$effect(() => {
