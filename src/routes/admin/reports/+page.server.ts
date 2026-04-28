@@ -1,5 +1,5 @@
 import { db } from '$lib/server/db';
-import { scoutingReports, teams, matchesToTeams, matches } from '$lib/server/db/schema';
+import { scoutingReports, teams, matches } from '$lib/server/db/schema';
 import { eq, isNull, asc } from 'drizzle-orm';
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
@@ -115,7 +115,6 @@ export const actions: Actions = {
 			});
 		}
 
-		await db.delete(matchesToTeams).where(eq(matchesToTeams.teamNumber, teamNum)).run();
 		await db.delete(teams).where(eq(teams.number, teamNum)).run();
 
 		return { success: true, action: 'deleteGhostTeam', teamNum };

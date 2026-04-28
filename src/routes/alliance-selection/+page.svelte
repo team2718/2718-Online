@@ -1,9 +1,10 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	let { data } = $props();
 
 	// ── Alliance state ────────────────────────────────────────────
-	let alliances = $state<(number | null)[][]>(data.alliances.map((a) => [...a]));
-	let version = $state(data.version);
+	let alliances = $state<(number | null)[][]>(untrack(() => data.alliances.map((a) => [...a])));
+	let version = $state(untrack(() => data.version));
 	let selectedTeam = $state<number | null>(null);
 	let saving = $state(false);
 	let confirmResetOpen = $state(false);

@@ -1,5 +1,5 @@
 import { db, getEventSetting, setEventSetting, importFromTBA } from '$lib/server/db';
-import { scoutingReports, pitScoutingReports, matches, teams, matchesToTeams, admin_sessions } from '$lib/server/db/schema';
+import { scoutingReports, pitScoutingReports, matches, teams, admin_sessions } from '$lib/server/db/schema';
 import { fail, redirect } from '@sveltejs/kit';
 import { notInArray, eq } from 'drizzle-orm';
 import { TBA_API_KEY } from '$lib/server/config';
@@ -27,7 +27,7 @@ export const actions: Actions = {
 
         cookies.delete('admin-auth', { path: '/' });
 
-        throw redirect(303, '/admin-login');
+        throw redirect(303, '/');
     },
 
     setMatchType: async ({ request }) => {
@@ -84,7 +84,6 @@ export const actions: Actions = {
         try {
             await db.delete(scoutingReports).run();
             await db.delete(pitScoutingReports).run();
-            await db.delete(matchesToTeams).run();
             await db.delete(matches).run();
             await db.delete(teams).run();
             await db.delete(admin_sessions).run();
@@ -110,10 +109,8 @@ export const actions: Actions = {
             const deletedMatchIds = allMatches.map(m => m.id).filter(id => !activeMatchIds.includes(id));
 
             if (activeMatchIds.length > 0) {
-                await db.delete(matchesToTeams).where(notInArray(matchesToTeams.matchId, activeMatchIds)).run();
                 await db.delete(matches).where(notInArray(matches.id, activeMatchIds)).run();
             } else {
-                await db.delete(matchesToTeams).run();
                 await db.delete(matches).run();
             }
 
@@ -129,10 +126,8 @@ export const actions: Actions = {
             const deletedTeamNums = allTeams.map(t => t.number).filter(num => !activeTeamNums.includes(num));
 
             if (activeTeamNums.length > 0) {
-                await db.delete(matchesToTeams).where(notInArray(matchesToTeams.teamNumber, activeTeamNums)).run();
                 await db.delete(teams).where(notInArray(teams.number, activeTeamNums)).run();
             } else {
-                await db.delete(matchesToTeams).run();
                 await db.delete(teams).run();
             }
 

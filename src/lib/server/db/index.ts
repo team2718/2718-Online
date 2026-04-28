@@ -1,5 +1,5 @@
 import { eq, and } from 'drizzle-orm';
-import { admin_sessions, scoutingReports, pitScoutingReports, eventSettings, matches, teams, matchesToTeams } from './schema';
+import { admin_sessions, scoutingReports, pitScoutingReports, eventSettings, matches, teams } from './schema';
 import { drizzle } from 'drizzle-orm/libsql';
 import { createClient } from '@libsql/client';
 import * as schema from './schema';
@@ -32,10 +32,6 @@ export async function checkSessionLevel(sessionId: string): Promise<'admin' | 'p
 		return session.level as 'admin' | 'privileged';
 	}
 	return null;
-}
-
-export async function checkAdminSessionKey(sessionId: string): Promise<boolean> {
-	return (await checkSessionLevel(sessionId)) === 'admin';
 }
 
 // --- Scouting Report Functions ---
@@ -108,7 +104,6 @@ export async function deletePitReport(id: number) {
  */
 export async function deleteMatch(id: string) {
 	await db.delete(scoutingReports).where(eq(scoutingReports.matchId, id)).run();
-	await db.delete(matchesToTeams).where(eq(matchesToTeams.matchId, id)).run();
 	await db.delete(matches).where(eq(matches.id, id)).run();
 }
 
@@ -372,27 +367,6 @@ export async function importFromTBA(eventKey: string, apiKey: string, skipMatche
 					})
 					.run();
 
-				// Keep matchesToTeams junction table in sync
-				const stationEntries: { matchId: string; teamNumber: number; station: string }[] = [
-					...(red1 ? [{ matchId: localId, teamNumber: red1, station: 'red1' }] : []),
-					...(red2 ? [{ matchId: localId, teamNumber: red2, station: 'red2' }] : []),
-					...(red3 ? [{ matchId: localId, teamNumber: red3, station: 'red3' }] : []),
-					...(blue1 ? [{ matchId: localId, teamNumber: blue1, station: 'blue1' }] : []),
-					...(blue2 ? [{ matchId: localId, teamNumber: blue2, station: 'blue2' }] : []),
-					...(blue3 ? [{ matchId: localId, teamNumber: blue3, station: 'blue3' }] : [])
-				];
-
-				for (const entry of stationEntries) {
-					await db
-						.insert(matchesToTeams)
-						.values(entry)
-						.onConflictDoUpdate({
-							target: [matchesToTeams.matchId, matchesToTeams.teamNumber],
-							set: { station: entry.station }
-						})
-						.run();
-				}
-
 				matchesInserted++;
 			} catch (e) {
 				errors.push(`Failed to upsert match ${m.key}: ${String(e)}`);
@@ -401,16 +375,4 @@ export async function importFromTBA(eventKey: string, apiKey: string, skipMatche
 	}
 
 	return { teamsInserted, matchesInserted, matchesSkipped: skipMatches, errors };
-}
-
-/**
- * Given a raw match number from a scanned QR code, build the local match ID
- * based on the current defaultMatchType setting.
- */
-export async function getMatchIdForScan(matchNumber: number): Promise<string> {
-	const matchType = await getEventSetting('defaultMatchType');
-	if (matchType === 'qualification') return `qm${matchNumber}`;
-	if (matchType === 'practice') return `pr${matchNumber}`;
-	// Fallback: legacy bare number string
-	return String(matchNumber);
 }

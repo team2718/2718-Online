@@ -7,6 +7,7 @@
 		CloseCircleSolid
 	} from 'flowbite-svelte-icons';
 	import { enhance } from '$app/forms';
+	import { untrack } from 'svelte';
 
 	let { data, form } = $props();
 
@@ -14,8 +15,8 @@
 	let cleanupModalOpen = $state(false);
 
 	// Local state for the match type selector (initialised from server load data)
-	let selectedMatchType = $state(data.defaultMatchType ?? 'qualification');
-	let autoTbaPull = $state(data.autoTbaPull ?? false);
+	let selectedMatchType = $state(untrack(() => data.defaultMatchType ?? 'qualification'));
+	let autoTbaPull = $state(untrack(() => data.autoTbaPull ?? false));
 	$effect(() => { selectedMatchType = data.defaultMatchType ?? 'qualification'; });
 
 	const tbaMatchesSkipped = $derived((form as Record<string, unknown> | null)?.matchesSkipped === true);

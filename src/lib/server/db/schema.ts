@@ -1,5 +1,5 @@
 import { relations, sql } from 'drizzle-orm';
-import { integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 import type { PitScoutReportData, ScoutingReportData } from '$lib/types';
 
 export const teams = sqliteTable('teams', {
@@ -56,32 +56,14 @@ export const eventSettings = sqliteTable('event_settings', {
 	value: text('value').notNull()
 });
 
-// --- JUNCTION TABLES ---
-
-export const matchesToTeams = sqliteTable(
-	'matches_to_teams',
-	{
-		matchId: text('match_id')
-			.notNull()
-			.references(() => matches.id),
-		teamNumber: integer('team_number')
-			.notNull()
-			.references(() => teams.number),
-		station: text('station')
-	},
-	(t) => [primaryKey({ columns: [t.matchId, t.teamNumber] })]
-);
-
 // --- RELATIONS ---
 
 export const teamsRelations = relations(teams, ({ many }) => ({
-	matches: many(matchesToTeams),
 	reports: many(scoutingReports),
 	pitReports: many(pitScoutingReports)
 }));
 
 export const matchesRelations = relations(matches, ({ many }) => ({
-	teams: many(matchesToTeams),
 	reports: many(scoutingReports)
 }));
 
