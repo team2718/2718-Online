@@ -126,15 +126,8 @@
                     <p class="mb-6 text-sm text-gray-500">The pit scouting report was submitted successfully.</p>
                     <div class="flex flex-col gap-3">
                         <a href="/pit-scout" class="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
-                            Return to Pit Scout
+                            Return to Pit Scouting
                         </a>
-                        <button
-                            type="button"
-                            onclick={() => (saved = false)}
-                            class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                        >
-                            Scout Another Team
-                        </button>
                     </div>
                 </div>
             </div>

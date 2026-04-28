@@ -90,11 +90,14 @@
 	let authError = $state('');
 	let authLoading = $state(false);
 	let authContainerRef: HTMLElement | null = $state(null);
+	let mobileAuthPanelRef: HTMLElement | null = $state(null);
 
 	$effect(() => {
 		if (!authOpen) return;
 		function handleClickOutside(e: MouseEvent) {
-			if (authContainerRef && !authContainerRef.contains(e.target as Node)) {
+			const inDesktop = authContainerRef?.contains(e.target as Node);
+			const inMobile = mobileAuthPanelRef?.contains(e.target as Node);
+			if (!inDesktop && !inMobile) {
 				authOpen = false;
 			}
 		}
@@ -330,7 +333,7 @@
 
 	<!-- Mobile auth popover (shown below the top bar when open) -->
 	{#if authOpen && mobileOpen === false}
-		<div class="mt-2 border-t border-gray-100 pt-3 md:hidden">
+		<div bind:this={mobileAuthPanelRef} class="mt-2 border-t border-gray-100 pt-3 md:hidden">
 			<p class="mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">Authenticate</p>
 			<input
 				type="password"
