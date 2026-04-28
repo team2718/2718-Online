@@ -138,8 +138,7 @@
 	}
 
 	async function logout() {
-		await fetch('/api/auth', { method: 'DELETE' });
-		window.location.reload();
+		window.location.href = '/logout';
 	}
 
 	function onAuthKeydown(e: KeyboardEvent) {
@@ -187,18 +186,6 @@
 					{link.label}
 				</a>
 			{/each}
-			{#if isAdmin}
-				<span class="mx-1 h-4 w-px bg-gray-300" aria-hidden="true"></span>
-				<a
-					href="/admin"
-					class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors
-						{activePath === '/admin'
-							? 'text-red-600'
-							: 'text-red-500 hover:bg-red-50 hover:text-red-700'}"
-				>
-					Admin
-				</a>
-			{/if}
 			{#if isPrivileged}
 				<span class="mx-1 h-4 w-px bg-gray-300" aria-hidden="true"></span>
 				<a
@@ -209,6 +196,18 @@
 							: 'text-green-600 hover:bg-green-50 hover:text-green-800'}"
 				>
 					Alliance Selection
+				</a>
+			{/if}
+			{#if isAdmin}
+				<span class="mx-1 h-4 w-px bg-gray-300" aria-hidden="true"></span>
+				<a
+					href="/admin"
+					class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors
+						{activePath === '/admin'
+							? 'text-red-600'
+							: 'text-red-500 hover:bg-red-50 hover:text-red-700'}"
+				>
+					Admin
 				</a>
 			{/if}
 		</div>
@@ -393,20 +392,6 @@
 					</a>
 				{/each}
 			</div>
-			{#if isAdmin}
-				<hr class="my-2 border-gray-200" />
-				<div class="space-y-1">
-					<a
-						href="/admin"
-						class="block rounded-md px-3 py-2 text-sm font-medium
-							{activePath === '/admin'
-								? 'bg-red-50 text-red-600'
-								: 'text-red-500 hover:bg-red-50 hover:text-red-700'}"
-					>
-						Admin
-					</a>
-				</div>
-			{/if}
 			{#if isPrivileged}
 				<hr class="my-2 border-gray-200" />
 				<div class="space-y-1">
@@ -418,6 +403,20 @@
 								: 'text-green-600 hover:bg-green-50 hover:text-green-800'}"
 					>
 						Alliance Selection
+					</a>
+				</div>
+			{/if}
+			{#if isAdmin}
+				<hr class="my-2 border-gray-200" />
+				<div class="space-y-1">
+					<a
+						href="/admin"
+						class="block rounded-md px-3 py-2 text-sm font-medium
+							{activePath === '/admin'
+								? 'bg-red-50 text-red-600'
+								: 'text-red-500 hover:bg-red-50 hover:text-red-700'}"
+					>
+						Admin
 					</a>
 				</div>
 			{/if}

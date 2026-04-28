@@ -39,8 +39,3 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
 	return json({ level });
 };
-
-export const DELETE: RequestHandler = async ({ cookies }) => {
-	cookies.delete('admin-auth', { path: '/' });
-	return json({ ok: true });
-};
