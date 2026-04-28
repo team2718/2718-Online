@@ -12,6 +12,7 @@
 	// Use $derived to reactively track changes to data
 	const reports = $derived(data?.matchReports ?? []);
 	const pitReports = $derived(data?.pitReports ?? []);
+	const canGoUnderTrench = $derived(pitReports.at(-1)?.data?.canGoUnderTrench ?? null);
 
 	// Calculate average statistics for match reports
 	const avgStats = $derived.by(() => {
@@ -45,8 +46,6 @@
 					autoClimbed: majority((d) => !!d?.autoClimbed),
 					teleDidPass: majority((d) => !!d?.teleDidPass),
 					teleDidDef: majority((d) => !!d?.teleDidDef),
-					teleUsesRamp: majority((d) => !!d?.teleUsesRamp),
-					teleUsesTrench: majority((d) => !!d?.teleUsesTrench),
 				}
 			};
 		});
@@ -67,8 +66,9 @@
 					teleDefScore: acc.teleDefScore + (didDef ? (Number(d?.teleDefScore) || 0) : 0),
 					didLeave: acc.didLeave + (d?.didLeave ? 1 : 0),
 					autoClimbed: acc.autoClimbed + (d?.autoClimbed ? 1 : 0),
-					usesRamp: acc.usesRamp + (d?.teleUsesRamp ? 1 : 0),
-					usesTrench: acc.usesTrench + (d?.teleUsesTrench ? 1 : 0)
+					climbL1: acc.climbL1 + (d?.climbType === 1 ? 1 : 0),
+					climbL2: acc.climbL2 + (d?.climbType === 2 ? 1 : 0),
+					climbL3: acc.climbL3 + (d?.climbType === 3 ? 1 : 0)
 				};
 			},
 			{
@@ -81,8 +81,9 @@
 				teleDefScore: 0,
 				didLeave: 0,
 				autoClimbed: 0,
-				usesRamp: 0,
-				usesTrench: 0
+				climbL1: 0,
+				climbL2: 0,
+				climbL3: 0
 			}
 		);
 
@@ -96,8 +97,9 @@
 			defPercent: Math.round((sum.defCount / count) * 100),
 			didLeavePercent: Math.round((sum.didLeave / count) * 100),
 			autoClimbedPercent: Math.round((sum.autoClimbed / count) * 100),
-			rampPercent: Math.round((sum.usesRamp / count) * 100),
-			trenchPercent: Math.round((sum.usesTrench / count) * 100),
+			climbL1Pct: Math.round((sum.climbL1 / count) * 100),
+			climbL2Pct: Math.round((sum.climbL2 / count) * 100),
+			climbL3Pct: Math.round((sum.climbL3 / count) * 100),
 			reportCount: count
 		};
 	});
@@ -216,7 +218,7 @@
 		<div class="space-y-6 lg:col-span-8">
 			<div>
 				<div class="mb-4 flex items-center justify-between">
-					<h2 class="text-xl font-bold text-gray-800">Average Match Statistics</h2>
+					<h2 class="text-xl font-bold text-gray-800">Team Statistics</h2>
 					{#if avgStats}
 						<Badge color="green">{avgStats.reportCount} Matches</Badge>
 					{/if}
@@ -228,29 +230,7 @@
 					>
 						<div>
 							<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">
-								Auto Fuel Scored
-							</p>
-							<p class="text-2xl font-bold text-gray-900">{avgStats.autoFuel}</p>
-						</div>
-						<div>
-							<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">
-								Auto Fuel Missed
-							</p>
-							<p class="text-2xl font-bold text-gray-900">{avgStats.autoFuelMissed}</p>
-						</div>
-						<div>
-							<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">
-								Moved in Auto
-							</p>
-							<p class="text-2xl font-bold text-gray-900">{avgStats.didLeavePercent}%</p>
-						</div>
-						<div>
-							<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Auto Climb</p>
-							<p class="text-2xl font-bold text-gray-900">{avgStats.autoClimbedPercent}%</p>
-						</div>
-						<div>
-							<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">
-								Teleop Fuel
+								Fuel Rating
 							</p>
 							<p class="text-2xl font-bold text-gray-900">
 								{avgStats.teleFuelScore}<span class="text-sm font-normal text-gray-500">
@@ -260,7 +240,7 @@
 						</div>
 						<div>
 							<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">
-								Teleop Passing
+								Passing Rating
 							</p>
 							{#if avgStats.telePassScore !== null}
 								<p class="text-2xl font-bold text-gray-900">
@@ -287,19 +267,50 @@
 							{/if}
 						</div>
 						<div>
-							<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Uses Ramp</p>
-							<p class="text-2xl font-bold text-gray-900">{avgStats.rampPercent}%</p>
+							<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">
+								Auto Fuel Made / Missed
+							</p>
+							<p class="text-2xl font-bold text-gray-900">{avgStats.autoFuel} / {avgStats.autoFuelMissed}</p>
 						</div>
 						<div>
-							<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Uses Trench</p>
-							<p class="text-2xl font-bold text-gray-900">{avgStats.trenchPercent}%</p>
+							<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Climb Ability</p>
+							<div class="mt-1 space-y-0.5 text-sm">
+								<p class="font-semibold {avgStats.climbL1Pct > 0 ? 'text-gray-900' : 'text-gray-300'}">L1: {avgStats.climbL1Pct}%</p>
+								<p class="font-semibold {avgStats.climbL2Pct > 0 ? 'text-gray-900' : 'text-gray-300'}">L2: {avgStats.climbL2Pct}%</p>
+								<p class="font-semibold {avgStats.climbL3Pct > 0 ? 'text-gray-900' : 'text-gray-300'}">L3: {avgStats.climbL3Pct}%</p>
+							</div>
+						</div>
+						<div>
+							<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Auto Climb</p>
+							<p class="text-2xl font-bold text-gray-900">{avgStats.autoClimbedPercent}%</p>
+						</div>
+						<div>
+							<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Under Trench</p>
+							<p class="text-2xl font-bold text-gray-900">
+								{canGoUnderTrench === true ? 'Yes' : canGoUnderTrench === false ? 'No' : '—'}
+							</p>
+						</div>
+						<div>
+							<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">
+								Moved in Auto
+							</p>
+							<p class="text-2xl font-bold text-gray-900">{avgStats.didLeavePercent}%</p>
+						</div>
+					</div>
+				{:else if canGoUnderTrench !== null}
+					<div class="mb-8 grid grid-cols-2 gap-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm md:grid-cols-4">
+						<div>
+							<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Under Trench</p>
+							<p class="text-2xl font-bold text-gray-900">
+								{canGoUnderTrench === true ? 'Yes' : 'No'}
+							</p>
 						</div>
 					</div>
 				{:else}
 					<div
 						class="mb-8 rounded-xl border-2 border-dashed border-gray-200 bg-white p-8 text-center"
 					>
-						<p class="text-gray-400">No match data available to calculate averages.</p>
+						<p class="text-gray-400">No scouting data available yet.</p>
 					</div>
 				{/if}
 			</div>
@@ -336,8 +347,6 @@
 										<span>Fuel</span><span class="font-semibold {report.data?.teleFuelScoredAny ? '' : 'text-gray-400'}">{report.data?.teleFuelScoredAny ? `${report.data?.teleFuelScore}/5` : '—'}</span>
 										<span>Pass</span><span class="font-semibold {report.data?.teleDidPass ? '' : 'text-gray-400'}">{report.data?.teleDidPass ? `${report.data?.telePassScore}/5` : '—'}</span>
 										<span>Def</span><span class="font-semibold {report.data?.teleDidDef ? '' : 'text-gray-400'}">{report.data?.teleDidDef ? `${report.data?.teleDefScore}/5` : '—'}</span>
-										{#if report.data?.teleUsesRamp}<span>Ramp</span><span class="font-semibold text-green-600">✓</span>{/if}
-										{#if report.data?.teleUsesTrench}<span>Trench</span><span class="font-semibold text-green-600">✓</span>{/if}
 									</div>
 								</div>
 
@@ -431,6 +440,12 @@
 								<div>
 									<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Max Climb</p>
 									<p class="font-medium text-gray-900">{pitData.climb}</p>
+								</div>
+								<div>
+									<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Under Trench</p>
+									<p class="font-medium text-gray-900">
+										{pitData.canGoUnderTrench === true ? 'Yes' : pitData.canGoUnderTrench === false ? 'No' : '—'}
+									</p>
 								</div>
 
 								<div>

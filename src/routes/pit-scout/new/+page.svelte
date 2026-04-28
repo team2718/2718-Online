@@ -15,6 +15,7 @@
         autoFeatures: [],
         autoStart: 'N/A',
         climb: 'N/A',
+        canGoUnderTrench: false,
         fuelPerSecond: '',
         weightLbs: '',
         knownIssues: '',
@@ -81,7 +82,6 @@
             if (result.type === 'success') {
                 saved = true;
                 form = createEmptyForm(props.data.prefillTeam ?? '');
-                setTimeout(() => (saved = false), 3000);
             } else if (result.type === 'failure' && 'data' in result) {
                 error = String(result.data?.message ?? "Please check required fields.");
             } else {
@@ -106,14 +106,39 @@
                 {#if submitting}
                     <span class="text-blue-600 text-xs font-bold animate-pulse uppercase tracking-wider">Submitting...</span>
                 {/if}
-                {#if saved}
-                    <span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">Saved Successfully!</span>
-                {/if}
                 {#if error}
                     <span class="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded">{error}</span>
                 {/if}
             </div>
         </header>
+
+        {#if saved}
+            <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+                <div class="mx-4 w-full max-w-sm rounded-2xl bg-white p-8 text-center shadow-2xl">
+                    <div class="mb-4 flex justify-center">
+                        <span class="flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+                            <svg class="h-9 w-9 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </span>
+                    </div>
+                    <h2 class="mb-2 text-2xl font-extrabold text-gray-900">Report Saved!</h2>
+                    <p class="mb-6 text-sm text-gray-500">The pit scouting report was submitted successfully.</p>
+                    <div class="flex flex-col gap-3">
+                        <a href="/pit-scout" class="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
+                            Return to Pit Scout
+                        </a>
+                        <button
+                            type="button"
+                            onclick={() => (saved = false)}
+                            class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                        >
+                            Scout Another Team
+                        </button>
+                    </div>
+                </div>
+            </div>
+        {/if}
 
         <form onsubmit={save} class="space-y-6">
             <section class="bg-white shadow rounded-lg p-6 border-l-4 border-blue-600">
@@ -178,6 +203,12 @@
                         <select id="climb" bind:value={form.climb} class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm">
                             {#each OPTIONS.climb as climbOption}<option>{climbOption}</option>{/each}
                         </select>
+                    </div>
+                    <div class="flex items-center sm:col-span-2">
+                        <label class="relative flex items-start py-2 px-3 border rounded-md cursor-pointer hover:bg-gray-50 w-full">
+                            <input type="checkbox" bind:checked={form.canGoUnderTrench} class="h-4 w-4 text-blue-600 border-gray-300 rounded" />
+                            <span class="ml-3 text-sm text-gray-600">Can Go Under Trench</span>
+                        </label>
                     </div>
                 </div>
             </section>

@@ -91,8 +91,7 @@ export async function load({ url }: { url: URL }) {
 				climbL1Pct: 0,
 				climbL2Pct: 0,
 				climbL3Pct: 0,
-				rampPct: 0,
-				trenchPct: 0,
+				canGoUnderTrench: pit?.data?.canGoUnderTrench ?? null,
 				pit
 			};
 		}
@@ -101,7 +100,6 @@ export async function load({ url }: { url: URL }) {
 		let fuelCount = 0;
 		let defSum = 0, defCount = 0;
 		let passSum = 0, passCount = 0;
-		let rampCount = 0, trenchCount = 0;
 		let climbL1Count = 0, climbL2Count = 0, climbL3Count = 0;
 
 		for (const r of reports) {
@@ -116,8 +114,6 @@ export async function load({ url }: { url: URL }) {
 			if (climbType == 1) climbL1Count++;
 			if (climbType == 2) climbL2Count++;
 			if (climbType == 3) climbL3Count++;
-			if ((d as any).teleUsesRamp) rampCount++;
-			if ((d as any).teleUsesTrench) trenchCount++;
 		}
 
 		return {
@@ -135,8 +131,7 @@ export async function load({ url }: { url: URL }) {
 			climbL1Pct: Math.round((climbL1Count / count) * 100),
 			climbL2Pct: Math.round((climbL2Count / count) * 100),
 			climbL3Pct: Math.round((climbL3Count / count) * 100),
-			rampPct: Math.round((rampCount / count) * 100),
-			trenchPct: Math.round((trenchCount / count) * 100),
+			canGoUnderTrench: pit?.data?.canGoUnderTrench ?? null,
 			pit
 		};
 	};

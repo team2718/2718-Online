@@ -37,10 +37,6 @@ export interface ScoutingReportData {
     teleDidDef?: boolean;
     /** Teleop defensive capability (1-5 scale) */
     teleDefScore: number;
-    /** Whether the robot used the ramp side lane in Teleop */
-    teleUsesRamp?: boolean;
-    /** Whether the robot used the trench side lane in Teleop */
-    teleUsesTrench?: boolean;
     /** 0: None, 1: L1, 2: L2, 3: L3 */
     climbType: number;
     /** 0: None, 1: Yellow, 2: Red */
@@ -68,6 +64,8 @@ export interface PitScoutReportData {
     autoStart: string;
     /** Highest level of climbing capable */
     climb: string;
+    /** Whether the robot can fit under the trench */
+    canGoUnderTrench?: boolean;
     /** Scoring speed in fuel per second */
     fuelPerSecond: string;
     /** Total weight of the robot in pounds */

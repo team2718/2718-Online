@@ -119,8 +119,6 @@
                                     <span>Fuel</span><span class="font-semibold {report.data?.teleFuelScoredAny ? '' : 'text-gray-400'}">{report.data?.teleFuelScoredAny ? `${report.data?.teleFuelScore}/5` : '—'}</span>
                                     <span>Pass</span><span class="font-semibold {report.data?.teleDidPass ? '' : 'text-gray-400'}">{report.data?.teleDidPass ? `${report.data?.telePassScore}/5` : '—'}</span>
                                     <span>Def</span><span class="font-semibold {report.data?.teleDidDef ? '' : 'text-gray-400'}">{report.data?.teleDidDef ? `${report.data?.teleDefScore}/5` : '—'}</span>
-                                    {#if report.data?.teleUsesRamp}<span>Ramp</span><span class="font-semibold text-green-600">✓</span>{/if}
-                                    {#if report.data?.teleUsesTrench}<span>Trench</span><span class="font-semibold text-green-600">✓</span>{/if}
                                 </div>
                             </div>
 
@@ -211,8 +209,6 @@
                                     <span>Fuel</span><span class="font-semibold {report.data?.teleFuelScoredAny ? '' : 'text-gray-400'}">{report.data?.teleFuelScoredAny ? `${report.data?.teleFuelScore}/5` : '—'}</span>
                                     <span>Pass</span><span class="font-semibold {report.data?.teleDidPass ? '' : 'text-gray-400'}">{report.data?.teleDidPass ? `${report.data?.telePassScore}/5` : '—'}</span>
                                     <span>Def</span><span class="font-semibold {report.data?.teleDidDef ? '' : 'text-gray-400'}">{report.data?.teleDidDef ? `${report.data?.teleDefScore}/5` : '—'}</span>
-                                    {#if report.data?.teleUsesRamp}<span>Ramp</span><span class="font-semibold text-green-600">✓</span>{/if}
-                                    {#if report.data?.teleUsesTrench}<span>Trench</span><span class="font-semibold text-green-600">✓</span>{/if}
                                 </div>
                             </div>
 

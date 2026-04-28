@@ -389,21 +389,10 @@
 				</div>
 			</div>
 
-			<div class="grid grid-cols-3 divide-x divide-gray-100 border-b border-gray-100">
+			<div class="grid grid-cols-2 divide-x divide-gray-100 border-b border-gray-100">
 				<div class="px-3 py-2.5 text-center">
 					<p class="text-xs font-semibold tracking-wider text-gray-400 uppercase">Auto Fuel</p>
 					<p class="text-xl font-black text-gray-900">{fmt1(team.avgAutoFuel)}</p>
-				</div>
-				<div class="px-3 py-2.5 text-center">
-					<p class="text-xs font-semibold tracking-wider text-gray-400 uppercase">Ramp / Trench</p>
-					<div class="mt-1 flex flex-col items-center gap-1">
-						<span class="inline-flex items-center gap-1 text-xs font-semibold {team.rampPct > 20 ? 'text-green-600' : 'text-gray-300'}">
-							<span>{team.rampPct > 20 ? '✓' : '✗'}</span> Ramp
-						</span>
-						<span class="inline-flex items-center gap-1 text-xs font-semibold {team.trenchPct > 20 ? 'text-green-600' : 'text-gray-300'}">
-							<span>{team.trenchPct > 20 ? '✓' : '✗'}</span> Trench
-						</span>
-					</div>
 				</div>
 				<div class="px-3 py-2.5 text-center">
 					<p class="text-xs font-semibold tracking-wider text-gray-400 uppercase">Climb Ability</p>
@@ -428,6 +417,10 @@
 					<div>
 						<span class="text-gray-400">Shooter:</span>
 						<span class="ml-1 font-semibold text-gray-700">{team.pit.data?.shooterType ?? '—'}</span>
+					</div>
+					<div>
+						<span class="text-gray-400">Under Trench:</span>
+						<span class="ml-1 font-semibold text-gray-700">{team.canGoUnderTrench ? 'Yes' : 'No'}</span>
 					</div>
 				</div>
 			</div>

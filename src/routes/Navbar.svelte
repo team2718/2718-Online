@@ -102,7 +102,8 @@
 		return () => document.removeEventListener('click', handleClickOutside);
 	});
 
-	function toggleAuth() {
+	function toggleAuth(e: MouseEvent) {
+		e.stopPropagation();
 		authOpen = !authOpen;
 		if (authOpen) {
 			authPassword = '';

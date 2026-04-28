@@ -206,7 +206,7 @@
 				</Button>
 			</form>
 			<div class="mt-4 border-t border-indigo-200 pt-4">
-				<form method="POST" action="?/setAutoTbaPull" use:enhance>
+				<form method="POST" action="?/setAutoTbaPull" use:enhance={() => { autoTbaPull = !autoTbaPull; }}>
 					<input type="hidden" name="autoTbaPull" value={autoTbaPull ? 'false' : 'true'} />
 					<label class="flex cursor-pointer items-center gap-3">
 						<div
@@ -218,7 +218,6 @@
 						</div>
 						<button
 							type="submit"
-							onclick={() => (autoTbaPull = !autoTbaPull)}
 							class="text-sm font-medium text-indigo-800 hover:underline"
 						>
 							Auto-pull every 15 minutes
