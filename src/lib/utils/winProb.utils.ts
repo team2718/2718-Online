@@ -10,8 +10,7 @@ export function normCDF(x: number): number {
 	const t = 1 / (1 + 0.3275911 * Math.abs(x));
 	const poly =
 		t *
-		(0.254829592 +
-			t * (-0.284496736 + t * (1.421413741 + t * (-1.453152027 + t * 1.061405429))));
+		(0.254829592 + t * (-0.284496736 + t * (1.421413741 + t * (-1.453152027 + t * 1.061405429))));
 	const erf = sign * (1 - poly * Math.exp(-x * x));
 	return 0.5 * (1 + erf);
 }
@@ -24,4 +23,3 @@ export function normCDF(x: number): number {
 export function winProbability(myAllianceEpop: number, theirAllianceEpop: number): number {
 	return normCDF((myAllianceEpop - theirAllianceEpop) / (EPOP_RMSE * Math.SQRT2));
 }
-

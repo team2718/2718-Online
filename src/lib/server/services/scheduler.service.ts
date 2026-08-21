@@ -47,7 +47,9 @@ export function startBackgroundTasks(): void {
 			const skipMatches = defaultMatchType === 'practice';
 
 			const result = await syncEventData(eventCode, TBA_API_KEY, skipMatches);
-			console.log(`[Scheduler TBA Poll] Synced ${result.teamsInserted} teams, ${result.matchesInserted} matches.`);
+			console.log(
+				`[Scheduler TBA Poll] Synced ${result.teamsInserted} teams, ${result.matchesInserted} matches.`
+			);
 			if (result.errors.length > 0) {
 				console.warn('[Scheduler TBA Poll] Errors encountered:', result.errors);
 			}
@@ -92,4 +94,3 @@ export function stopBackgroundTasks(): void {
 		delete globalThis[SESSION_PURGE_JOB_KEY];
 	}
 }
-

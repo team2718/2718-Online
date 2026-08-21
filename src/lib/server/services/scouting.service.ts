@@ -56,11 +56,7 @@ export async function recordScoutingReport(
 
 			// 3. Ensure Match exists / populate practice slot
 			if (matchType === 'practice') {
-				const existingMatch = await tx
-					.select()
-					.from(matches)
-					.where(eq(matches.id, matchId))
-					.get();
+				const existingMatch = await tx.select().from(matches).where(eq(matches.id, matchId)).get();
 
 				if (!existingMatch) {
 					await tx
@@ -79,19 +75,43 @@ export async function recordScoutingReport(
 						.run();
 				} else {
 					if (reportData.alliance === 0) {
-						if (!existingMatch.red1 && existingMatch.red2 !== teamNum && existingMatch.red3 !== teamNum) {
+						if (
+							!existingMatch.red1 &&
+							existingMatch.red2 !== teamNum &&
+							existingMatch.red3 !== teamNum
+						) {
 							await tx.update(matches).set({ red1: teamNum }).where(eq(matches.id, matchId)).run();
-						} else if (!existingMatch.red2 && existingMatch.red1 !== teamNum && existingMatch.red3 !== teamNum) {
+						} else if (
+							!existingMatch.red2 &&
+							existingMatch.red1 !== teamNum &&
+							existingMatch.red3 !== teamNum
+						) {
 							await tx.update(matches).set({ red2: teamNum }).where(eq(matches.id, matchId)).run();
-						} else if (!existingMatch.red3 && existingMatch.red1 !== teamNum && existingMatch.red2 !== teamNum) {
+						} else if (
+							!existingMatch.red3 &&
+							existingMatch.red1 !== teamNum &&
+							existingMatch.red2 !== teamNum
+						) {
 							await tx.update(matches).set({ red3: teamNum }).where(eq(matches.id, matchId)).run();
 						}
 					} else {
-						if (!existingMatch.blue1 && existingMatch.blue2 !== teamNum && existingMatch.blue3 !== teamNum) {
+						if (
+							!existingMatch.blue1 &&
+							existingMatch.blue2 !== teamNum &&
+							existingMatch.blue3 !== teamNum
+						) {
 							await tx.update(matches).set({ blue1: teamNum }).where(eq(matches.id, matchId)).run();
-						} else if (!existingMatch.blue2 && existingMatch.blue1 !== teamNum && existingMatch.blue3 !== teamNum) {
+						} else if (
+							!existingMatch.blue2 &&
+							existingMatch.blue1 !== teamNum &&
+							existingMatch.blue3 !== teamNum
+						) {
 							await tx.update(matches).set({ blue2: teamNum }).where(eq(matches.id, matchId)).run();
-						} else if (!existingMatch.blue3 && existingMatch.blue1 !== teamNum && existingMatch.blue2 !== teamNum) {
+						} else if (
+							!existingMatch.blue3 &&
+							existingMatch.blue1 !== teamNum &&
+							existingMatch.blue2 !== teamNum
+						) {
 							await tx.update(matches).set({ blue3: teamNum }).where(eq(matches.id, matchId)).run();
 						}
 					}
@@ -134,7 +154,9 @@ export async function recordScoutingReport(
 /**
  * Atomically records a pit scouting report.
  */
-export async function recordPitReport(reportData: PitScoutReportData): Promise<{ success: boolean; error?: string }> {
+export async function recordPitReport(
+	reportData: PitScoutReportData
+): Promise<{ success: boolean; error?: string }> {
 	const teamNum = Number(reportData.teamNumber);
 	if (isNaN(teamNum) || teamNum <= 0) {
 		return { success: false, error: 'Invalid team number' };
@@ -229,10 +251,16 @@ export async function deleteMatch(id: string): Promise<void> {
 /**
  * Removes orphaned matches and teams that have no associated reports.
  */
-export async function cleanupDatabase(): Promise<{ deletedMatches: string[]; deletedTeams: number[] }> {
+export async function cleanupDatabase(): Promise<{
+	deletedMatches: string[];
+	deletedTeams: number[];
+}> {
 	const [allMatches, allReports, allTeams, allPitReports] = await Promise.all([
 		db.select({ id: matches.id }).from(matches).all(),
-		db.select({ matchId: scoutingReports.matchId, teamNumber: scoutingReports.teamNumber }).from(scoutingReports).all(),
+		db
+			.select({ matchId: scoutingReports.matchId, teamNumber: scoutingReports.teamNumber })
+			.from(scoutingReports)
+			.all(),
 		db.select({ number: teams.number, metadata: teams.metadata }).from(teams).all(),
 		db.select({ teamNumber: pitScoutingReports.teamNumber }).from(pitScoutingReports).all()
 	]);
@@ -274,4 +302,3 @@ export async function wipeDatabase(): Promise<void> {
 	});
 	invalidateEpopCache();
 }
-

@@ -37,7 +37,12 @@ export async function syncEventData(
 	let matchesInserted = 0;
 
 	if (!eventKey) {
-		return { teamsInserted: 0, matchesInserted: 0, matchesSkipped: skipMatches, errors: ['No event key provided'] };
+		return {
+			teamsInserted: 0,
+			matchesInserted: 0,
+			matchesSkipped: skipMatches,
+			errors: ['No event key provided']
+		};
 	}
 
 	// Persist the event key in settings

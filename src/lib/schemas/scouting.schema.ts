@@ -30,13 +30,15 @@ export type ValidatedScoutingReportData = z.infer<typeof scoutingReportDataSchem
 /**
  * Parses and validates raw QR code data string.
  */
-export function parseScoutingQr(rawString: string): {
-	success: true;
-	data: ScoutingReportData;
-} | {
-	success: false;
-	error: string;
-} {
+export function parseScoutingQr(rawString: string):
+	| {
+			success: true;
+			data: ScoutingReportData;
+	  }
+	| {
+			success: false;
+			error: string;
+	  } {
 	if (!rawString || typeof rawString !== 'string') {
 		return { success: false, error: 'No QR code data received' };
 	}
@@ -60,4 +62,3 @@ export function parseScoutingQr(rawString: string): {
 
 	return { success: true, data: result.data };
 }
-

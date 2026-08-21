@@ -33,10 +33,8 @@
 	});
 
 	// ── Pareto front computation ──────────────────────────────────
-	// T is excluded only if some U beats it by > epsilon in BOTH axes,
-	// so teams with small measurement-error gaps still appear on the front.
-	const PARETO_EPOP_EPS = 10; // ePOP units
-	const PARETO_SCORE_EPS = 0.3; // 1–5 scale
+	const PARETO_EPOP_EPS = 10;
+	const PARETO_SCORE_EPS = 0.3;
 
 	function computePareto(teams: typeof data.teams, m: Metric) {
 		const eligible = teams.filter(
@@ -56,7 +54,6 @@
 
 	const paretoFront = $derived(computePareto(unchosenTeams, metric));
 
-	// Pareto front sorted by y-axis desc for the step-line
 	const paretoSorted = $derived(
 		[...paretoFront].sort((a, b) => {
 			const ay = metric === 'def' ? (a.defScore ?? 0) : (a.passScore ?? 0);
@@ -66,7 +63,7 @@
 	);
 
 	// ── SVG chart dimensions ──────────────────────────────────────
-	const PAD = { top: 20, right: 20, bottom: 40, left: 44 };
+	const PAD = { top: 20, right: 25, bottom: 40, left: 44 };
 	const W = 480;
 	const H = 260;
 	const chartW = W - PAD.left - PAD.right;
@@ -80,7 +77,6 @@
 		const vals = data.teams.filter((t) => t.epop != null && t.epop > 0).map((t) => t.epop!);
 		return vals.length > 0 ? Math.min(...vals) * 0.9 : 1;
 	});
-	// 5 log-spaced tick values across the x range
 	const xTicks = $derived.by(() => {
 		const logMin = Math.log(epopMin);
 		const logMax = Math.log(epopMax);
@@ -114,8 +110,8 @@
 				body: JSON.stringify({ alliances: next })
 			});
 			if (res.ok) {
-				const data = await res.json();
-				version = data.version;
+				const resData = await res.json();
+				version = resData.version;
 				alliances = next;
 			}
 		} finally {
@@ -127,15 +123,12 @@
 		const occupant = alliances[allianceIdx][slotIdx];
 
 		if (occupant != null) {
-			// Select the occupant for moving
 			selectedTeam = selectedTeam === occupant ? null : occupant;
 			return;
 		}
 
 		if (selectedTeam != null) {
-			// Place selected team here
 			const next = alliances.map((a) => [...a]);
-			// Remove from current position if it's already placed
 			for (let ai = 0; ai < 8; ai++) {
 				for (let si = 0; si < 4; si++) {
 					if (next[ai][si] === selectedTeam) next[ai][si] = null;
@@ -197,7 +190,6 @@
 		return () => clearInterval(id);
 	});
 
-	// Helper: look up team by number
 	function teamInfo(num: number | null) {
 		if (num == null) return null;
 		return data.teams.find((t) => t.number === num) ?? null;
@@ -210,7 +202,6 @@
 		return Math.round(v * 100) + '%';
 	}
 
-	// ── ePOP coloring (percentile-based, same as /teams) ──────────
 	const epopSorted = $derived(
 		data.teams
 			.filter((t) => t.epop != null)
@@ -224,14 +215,13 @@
 	}
 	function epopColorClass(epop: number | null): string {
 		const pct = epopPct(epop);
-		if (pct == null) return 'text-gray-300';
-		if (pct < 33.33) return 'text-red-600 font-bold';
-		if (pct < 66.67) return 'text-gray-700 font-bold';
-		if (pct < 90) return 'text-green-700 font-bold';
-		return 'text-blue-700 font-bold';
+		if (pct == null) return 'text-slate-400';
+		if (pct < 33.33) return 'text-rose-600 dark:text-rose-400 font-bold';
+		if (pct < 66.67) return 'text-slate-700 dark:text-slate-300 font-bold';
+		if (pct < 90) return 'text-emerald-600 dark:text-emerald-400 font-bold';
+		return 'text-cyan-600 dark:text-cyan-400 font-bold';
 	}
 
-	// ── Snake draft order: fill slots 0+1 per alliance (1→8), then slot 2 (8→1), slot 3 (1→8) ──
 	const SNAKE_ORDER: [number, number][] = [
 		...[0, 1, 2, 3, 4, 5, 6, 7].flatMap((ai): [number, number][] => [
 			[ai, 0],
@@ -259,36 +249,63 @@
 		selectedTeam = null;
 		saveAlliances(next);
 	}
+
+	const slotLabels = ['Captain', 'Pick 1', 'Pick 2', 'Backup'];
 </script>
 
-<div class="mx-auto max-w-screen-xl px-4 py-6">
+<div class="mx-auto max-w-7xl space-y-5 sm:space-y-6">
 	<!-- Header -->
-	<div class="mb-6 flex items-center justify-between">
+	<div
+		class="flex flex-col justify-between gap-3 border-b border-slate-200/80 pb-4 sm:flex-row sm:items-end dark:border-slate-800/80"
+	>
 		<div>
-			<div class="flex items-center gap-3">
-				<h1 class="text-3xl font-black tracking-tight text-gray-900">Alliance Selection</h1>
-				<button
-					onclick={() => (confirmResetOpen = true)}
-					class="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-100"
+			<div class="flex items-center gap-2.5">
+				<h1 class="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl dark:text-white">
+					Alliance Selection
+				</h1>
+				<span
+					class="rounded-full bg-cyan-50 px-2.5 py-0.5 font-mono text-xs font-bold text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300"
 				>
-					Reset
-				</button>
+					{chosenSet.size} of {data.teams.length} Placed
+				</span>
+				{#if saving}
+					<span class="font-mono text-xs font-semibold text-cyan-600 dark:text-cyan-400"
+						>Saving…</span
+					>
+				{/if}
 			</div>
-			<p class="mt-1 text-sm text-gray-500">
-				{chosenSet.size} of {data.teams.length} teams placed
-				{#if saving}<span class="ml-2 text-blue-500">Saving…</span>{/if}
+			<p class="mt-0.5 text-xs text-slate-500 sm:text-sm dark:text-slate-400">
+				Playoff draft board, real-time Pareto frontier analysis, and team selection matrix.
 			</p>
+		</div>
+
+		<div>
+			<button
+				onclick={() => (confirmResetOpen = true)}
+				class="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2 text-xs font-bold text-rose-700 shadow-2xs transition-colors hover:bg-rose-100 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300 dark:hover:bg-rose-900/60"
+			>
+				Reset Alliances
+			</button>
 		</div>
 	</div>
 
-	<!-- Alliance boards: 2×4 grid of 8 alliances -->
-	<div class="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
+	<!-- 8 Alliance Draft Board Grid (2x4 or 4x2) -->
+	<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
 		{#each alliances as alliance, ai}
-			<div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-				<div class="border-b border-gray-100 bg-gray-50 px-3 py-2">
-					<span class="text-xs font-bold tracking-wider text-gray-500 uppercase"
-						>Alliance {ai + 1}</span
+			<div
+				class="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800/80 dark:bg-slate-900"
+			>
+				<div
+					class="flex items-center justify-between border-b border-slate-100 bg-slate-50/75 px-3.5 py-2 dark:border-slate-800 dark:bg-slate-800/50"
+				>
+					<span
+						class="font-mono text-xs font-black tracking-wider text-slate-700 uppercase dark:text-slate-200"
 					>
+						Alliance {ai + 1}
+					</span>
+					<span class="text-[10px] font-bold text-slate-400">
+						{alliance.filter((x) => x != null).length}/4
+					</span>
 				</div>
 				<div class="space-y-1.5 p-2">
 					{#each alliance as occupant, si}
@@ -297,27 +314,38 @@
 						{#if occupant != null}
 							<!-- Occupied slot -->
 							<div
-								class="flex items-center gap-1 rounded-lg border {isSelected
-									? 'border-blue-400 bg-blue-50'
-									: 'border-gray-200 bg-gray-50'} px-2 py-1.5"
+								class="flex items-center justify-between gap-2 rounded-xl border px-2.5 py-1.5 transition-all
+								{isSelected
+									? 'border-cyan-500 bg-cyan-50 dark:border-cyan-400 dark:bg-cyan-950/50'
+									: 'border-slate-200 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-800/30'}"
 							>
 								<button
 									onclick={() => clickSlot(ai, si)}
 									class="min-w-0 flex-1 text-left"
 									title="Click to select for moving"
 								>
-									<span
-										class="block text-sm font-bold {isSelected ? 'text-blue-700' : 'text-gray-800'}"
-										>{occupant}</span
-									>
+									<div class="flex items-center gap-1.5">
+										<span class="text-[9px] font-bold tracking-wider text-slate-400 uppercase"
+											>{slotLabels[si]}:</span
+										>
+										<span
+											class="font-mono text-xs font-black {isSelected
+												? 'text-cyan-700 dark:text-cyan-300'
+												: 'text-slate-900 dark:text-slate-100'}"
+										>
+											{occupant}
+										</span>
+									</div>
 									{#if info}
-										<span class="block truncate text-[11px] text-gray-500">{info.name}</span>
+										<p class="truncate text-[11px] font-medium text-slate-500 dark:text-slate-400">
+											{info.name}
+										</p>
 									{/if}
 								</button>
 								<button
 									onclick={() => removeFromAlliance(ai, si)}
-									class="shrink-0 rounded p-0.5 text-gray-300 hover:text-red-500"
-									title="Remove"
+									class="shrink-0 rounded-lg p-1 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-400"
+									title="Remove from alliance"
 								>
 									<svg
 										class="h-3.5 w-3.5"
@@ -334,12 +362,15 @@
 							<!-- Empty slot -->
 							<button
 								onclick={() => clickSlot(ai, si)}
-								class="w-full rounded-lg border-2 border-dashed px-2 py-1.5 text-left text-xs transition-colors
+								class="flex w-full items-center justify-between rounded-xl border border-dashed px-2.5 py-2 text-left text-xs transition-colors
 									{selectedTeam != null
-									? 'border-blue-300 bg-blue-50 text-blue-400 hover:bg-blue-100'
-									: 'border-gray-200 text-gray-300 hover:border-gray-300'}"
+									? 'border-cyan-400 bg-cyan-50/60 text-cyan-700 hover:bg-cyan-100/60 dark:border-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-300'
+									: 'border-slate-200 text-slate-400 hover:border-slate-300 dark:border-slate-800 dark:text-slate-600'}"
 							>
-								{selectedTeam != null ? '→ Place here' : 'Empty'}
+								<span class="text-[10px] font-bold tracking-wider text-slate-400 uppercase"
+									>{slotLabels[si]}</span
+								>
+								<span class="font-medium">{selectedTeam != null ? '→ Place here' : 'Empty'}</span>
 							</button>
 						{/if}
 					{/each}
@@ -348,289 +379,474 @@
 		{/each}
 	</div>
 
-	<!-- Bottom section: Pareto chart + Available teams -->
-	<div class="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_1.4fr]">
-		<!-- Left: Pareto chart -->
-		<div class="rounded-xl border border-gray-200 bg-white shadow-sm">
-			<div class="border-b border-gray-100 px-4 py-3">
-				<div class="flex items-center justify-between">
-					<h2 class="font-bold text-gray-900">Pareto Front</h2>
-					<div class="flex overflow-hidden rounded-lg border border-gray-200 text-xs font-medium">
+	<!-- Bottom Section: Pareto Scatter Plot + Available Pool -->
+	<div class="grid grid-cols-1 gap-6 lg:grid-cols-[1.1fr_1.3fr]">
+		<!-- Left: Pareto Frontier Scatter Plot -->
+		<div class="space-y-3">
+			<div
+				class="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800/80 dark:bg-slate-900"
+			>
+				<div
+					class="flex flex-col justify-between gap-2 border-b border-slate-100 p-4 sm:flex-row sm:items-center dark:border-slate-800"
+				>
+					<div>
+						<h2 class="text-sm font-bold text-slate-900 dark:text-white">
+							Pareto Frontier Analysis
+						</h2>
+						<p class="text-[11px] text-slate-400">
+							{paretoFront.length} optimal teams on frontier · {unchosenTeams.length} available
+						</p>
+					</div>
+
+					<div
+						class="flex rounded-xl border border-slate-200 bg-slate-50 p-0.5 text-xs font-bold dark:border-slate-700 dark:bg-slate-800"
+					>
 						<button
 							onclick={() => (metric = 'def')}
-							class="px-3 py-1.5 transition-colors {metric === 'def'
-								? 'bg-blue-600 text-white'
-								: 'bg-white text-gray-600 hover:bg-gray-50'}">ePOP vs Defense</button
+							class="rounded-lg px-2.5 py-1 transition-colors {metric === 'def'
+								? 'bg-cyan-600 text-white shadow-2xs'
+								: 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'}"
 						>
+							ePOP vs Defense
+						</button>
 						<button
 							onclick={() => (metric = 'pass')}
-							class="px-3 py-1.5 transition-colors {metric === 'pass'
-								? 'bg-blue-600 text-white'
-								: 'bg-white text-gray-600 hover:bg-gray-50'}">ePOP vs Passing</button
+							class="rounded-lg px-2.5 py-1 transition-colors {metric === 'pass'
+								? 'bg-cyan-600 text-white shadow-2xs'
+								: 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'}"
 						>
+							ePOP vs Passing
+						</button>
 					</div>
 				</div>
-				<p class="mt-1 text-xs text-gray-400">
-					{paretoFront.length} team{paretoFront.length !== 1 ? 's' : ''} on front · {unchosenTeams.length}
-					teams remaining
-				</p>
-			</div>
 
-			<div class="p-3">
-				<!-- SVG scatter plot -->
-				<svg viewBox="0 0 {W} {H}" class="w-full" role="img" aria-label="Pareto front scatter plot">
-					<g transform="translate({PAD.left},{PAD.top})">
-						<!-- Grid lines -->
-						{#each [1, 2, 3, 4, 5] as y}
+				<div class="p-3">
+					<!-- SVG scatter plot -->
+					<svg
+						viewBox="0 0 {W} {H}"
+						class="w-full select-none"
+						role="img"
+						aria-label="Pareto front scatter plot"
+					>
+						<g transform="translate({PAD.left},{PAD.top})">
+							<!-- Grid lines -->
+							{#each [1, 2, 3, 4, 5] as y}
+								<line
+									x1="0"
+									y1={yScale(y)}
+									x2={chartW}
+									y2={yScale(y)}
+									stroke="#e2e8f0"
+									stroke-width="1"
+									stroke-dasharray="3,3"
+									class="dark:stroke-slate-800"
+								/>
+								<text
+									x="-6"
+									y={yScale(y) + 3}
+									text-anchor="end"
+									font-size="10"
+									fill="#94a3b8"
+									class="font-mono font-semibold"
+								>
+									{y}
+								</text>
+							{/each}
+
+							{#each xTicks as xv}
+								<line
+									x1={xScale(xv)}
+									y1="0"
+									x2={xScale(xv)}
+									y2={chartH}
+									stroke="#e2e8f0"
+									stroke-width="1"
+									stroke-dasharray="3,3"
+									class="dark:stroke-slate-800"
+								/>
+								<text
+									x={xScale(xv)}
+									y={chartH + 14}
+									text-anchor="middle"
+									font-size="10"
+									fill="#94a3b8"
+									class="font-mono font-semibold"
+								>
+									{xv.toFixed(0)}
+								</text>
+							{/each}
+
+							<!-- Axes -->
 							<line
 								x1="0"
-								y1={yScale(y)}
+								y1={chartH}
 								x2={chartW}
-								y2={yScale(y)}
-								stroke="#f3f4f6"
-								stroke-width="1"
-							/>
-							<text x="-6" y={yScale(y) + 4} text-anchor="end" font-size="10" fill="#9ca3af"
-								>{y}</text
-							>
-						{/each}
-						{#each xTicks as xv}
-							<line
-								x1={xScale(xv)}
-								y1="0"
-								x2={xScale(xv)}
 								y2={chartH}
-								stroke="#f3f4f6"
+								stroke="#cbd5e1"
 								stroke-width="1"
+								class="dark:stroke-slate-700"
 							/>
+							<line
+								x1="0"
+								y1="0"
+								x2="0"
+								y2={chartH}
+								stroke="#cbd5e1"
+								stroke-width="1"
+								class="dark:stroke-slate-700"
+							/>
+
+							<!-- Axis labels -->
 							<text
-								x={xScale(xv)}
-								y={chartH + 14}
+								x={chartW / 2}
+								y={chartH + 32}
 								text-anchor="middle"
-								font-size="10"
-								fill="#9ca3af"
+								font-size="11"
+								fill="#64748b"
+								class="font-semibold"
 							>
-								{xv.toFixed(0)}
+								ePOP Rating
 							</text>
-						{/each}
+							<text
+								transform="rotate(-90)"
+								x={-(chartH / 2)}
+								y="-30"
+								text-anchor="middle"
+								font-size="11"
+								fill="#64748b"
+								class="font-semibold"
+							>
+								{metric === 'def' ? 'Defense' : 'Passing'} (1–5)
+							</text>
 
-						<!-- Axes -->
-						<line x1="0" y1={chartH} x2={chartW} y2={chartH} stroke="#d1d5db" stroke-width="1" />
-						<line x1="0" y1="0" x2="0" y2={chartH} stroke="#d1d5db" stroke-width="1" />
-
-						<!-- Axis labels -->
-						<text x={chartW / 2} y={chartH + 32} text-anchor="middle" font-size="11" fill="#6b7280"
-							>ePOP</text
-						>
-						<text
-							transform="rotate(-90)"
-							x={-(chartH / 2)}
-							y="-34"
-							text-anchor="middle"
-							font-size="11"
-							fill="#6b7280">{metric === 'def' ? 'Defense' : 'Passing'} (1–5)</text
-						>
-
-						<!-- Data points: all unchosen, pareto front on top -->
-						{#each unchosenTeams as t}
-							{#if t.epop != null && (metric === 'def' ? t.defScore : t.passScore) != null}
-								{@const pt = teamPoint(t)}
-								{@const onFront = paretoFront.includes(t)}
-								<circle
-									cx={pt.x}
-									cy={pt.y}
-									r={onFront ? 6 : 4}
-									fill={onFront ? '#f59e0b' : '#3b82f6'}
-									opacity={onFront ? 1 : 0.6}
-									stroke={hoverTeam === t.number ? '#1d4ed8' : 'none'}
-									stroke-width="2"
-									class="cursor-pointer"
-									onmouseenter={() => (hoverTeam = t.number)}
-									onmouseleave={() => (hoverTeam = null)}
-									role="img"
-									aria-label="Team {t.number}"
-								/>
-								{#if onFront || hoverTeam === t.number}
-									<text
-										x={pt.x + 7}
-										y={pt.y + 4}
-										font-size="10"
-										font-weight={onFront ? '700' : '400'}
-										fill={onFront ? '#b45309' : '#1d4ed8'}>{t.number}</text
-									>
+							<!-- Chosen teams (muted) -->
+							{#each data.teams.filter((t) => chosenSet.has(t.number)) as t}
+								{#if t.epop != null && (metric === 'def' ? t.defScore : t.passScore) != null}
+									{@const pt = teamPoint(t)}
+									<circle
+										cx={pt.x}
+										cy={pt.y}
+										r="3.5"
+										fill="#cbd5e1"
+										opacity="0.4"
+										class="dark:fill-slate-700"
+									/>
 								{/if}
-							{/if}
-						{/each}
+							{/each}
 
-						<!-- Chosen teams (faded) -->
-						{#each data.teams.filter((t) => chosenSet.has(t.number)) as t}
-							{#if t.epop != null && (metric === 'def' ? t.defScore : t.passScore) != null}
-								{@const pt = teamPoint(t)}
-								<circle cx={pt.x} cy={pt.y} r="3" fill="#d1d5db" opacity="0.5" />
-							{/if}
-						{/each}
-					</g>
-				</svg>
+							<!-- Available Teams & Pareto Front -->
+							{#each unchosenTeams as t}
+								{#if t.epop != null && (metric === 'def' ? t.defScore : t.passScore) != null}
+									{@const pt = teamPoint(t)}
+									{@const onFront = paretoFront.includes(t)}
+									{@const isHovered = hoverTeam === t.number || selectedTeam === t.number}
+									<circle
+										cx={pt.x}
+										cy={pt.y}
+										r={isHovered ? (onFront ? 7 : 5.5) : onFront ? 6 : 4.5}
+										fill={onFront ? '#f59e0b' : '#06b6d4'}
+										stroke={isHovered ? '#0284c7' : '#ffffff'}
+										stroke-width={isHovered ? 2.5 : 1}
+										class="cursor-pointer"
+										onmouseenter={() => (hoverTeam = t.number)}
+										onmouseleave={() => (hoverTeam = null)}
+										onclick={() => clickAvailableTeam(t.number)}
+										onkeydown={(e) => {
+											if (e.key === 'Enter' || e.key === ' ') clickAvailableTeam(t.number);
+										}}
+										role="button"
+										tabindex="0"
+									/>
+									{#if onFront || isHovered}
+										<text
+											x={pt.x + 7}
+											y={pt.y + 4}
+											font-size="10"
+											font-weight="700"
+											fill={onFront ? '#b45309' : '#0891b2'}
+											class="pointer-events-none font-mono select-none"
+										>
+											{t.number}
+										</text>
+									{/if}
+								{/if}
+							{/each}
+						</g>
+					</svg>
 
-				<!-- Legend -->
-				<div class="mt-1 flex items-center gap-4 px-1 text-xs text-gray-500">
-					<span class="flex items-center gap-1.5"
-						><span class="inline-block h-3 w-3 rounded-full bg-amber-400"></span>Pareto front</span
+					<!-- Legend -->
+					<div
+						class="mt-2 flex items-center justify-between border-t border-slate-100 px-2 pt-2 text-[11px] text-slate-500 dark:border-slate-800 dark:text-slate-400"
 					>
-					<span class="flex items-center gap-1.5"
-						><span class="inline-block h-3 w-3 rounded-full bg-blue-500 opacity-60"
-						></span>Available</span
-					>
-					<span class="flex items-center gap-1.5"
-						><span class="inline-block h-3 w-3 rounded-full bg-gray-300"></span>Chosen</span
-					>
+						<div class="flex items-center gap-3">
+							<span class="flex items-center gap-1.5">
+								<span class="inline-block h-2.5 w-2.5 rounded-full bg-amber-400"></span> Pareto Frontier
+							</span>
+							<span class="flex items-center gap-1.5">
+								<span class="inline-block h-2.5 w-2.5 rounded-full bg-cyan-500"></span> Available
+							</span>
+							<span class="flex items-center gap-1.5">
+								<span class="inline-block h-2.5 w-2.5 rounded-full bg-slate-300 dark:bg-slate-700"
+								></span> Picked
+							</span>
+						</div>
+					</div>
+
+					<!-- Active Inspected Team HUD -->
+					{#if hoverTeam != null || selectedTeam != null}
+						{@const activeTeamNum = (hoverTeam ?? selectedTeam)!}
+						{@const t = teamInfo(activeTeamNum)}
+						{#if t}
+							{@const onFront = paretoFront.some((x) => x.number === t.number)}
+							<div
+								class="mt-3 rounded-2xl border border-cyan-200/80 bg-cyan-50/60 p-3.5 text-xs shadow-xs dark:border-cyan-900/50 dark:bg-cyan-950/30"
+							>
+								<div class="flex items-center justify-between">
+									<div class="flex items-center gap-2">
+										<span class="font-mono text-sm font-black text-cyan-700 dark:text-cyan-300">
+											Team {t.number}
+										</span>
+										<span class="font-bold text-slate-800 dark:text-slate-200">{t.name}</span>
+										{#if onFront}
+											<span
+												class="rounded bg-amber-100 px-1.5 py-0.5 font-mono text-[10px] font-bold text-amber-700 dark:bg-amber-950 dark:text-amber-300"
+											>
+												Pareto
+											</span>
+										{/if}
+									</div>
+
+									<div class="flex items-center gap-1.5">
+										<a
+											href="/teams/{t.number}"
+											class="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-700 shadow-2xs hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+										>
+											Profile ↗
+										</a>
+										<button
+											type="button"
+											onclick={() => quickAddTeam(t.number)}
+											class="rounded-lg bg-cyan-600 px-2.5 py-1 text-[11px] font-bold text-white shadow-2xs hover:bg-cyan-700"
+										>
+											+ Draft
+										</button>
+									</div>
+								</div>
+
+								<div
+									class="mt-2.5 grid grid-cols-4 gap-2 border-t border-cyan-100/80 pt-2 text-center text-[11px] dark:border-cyan-900/40"
+								>
+									<div>
+										<span class="text-[10px] font-bold text-slate-400 uppercase">Rank</span>
+										<p class="font-mono font-bold text-slate-700 dark:text-slate-300">
+											{t.rank != null ? `#${t.rank}` : '—'}
+										</p>
+									</div>
+									<div>
+										<span class="text-[10px] font-bold text-slate-400 uppercase">ePOP</span>
+										<p class="font-mono font-bold {epopColorClass(t.epop)}">
+											{fmt1(t.epop)}
+										</p>
+									</div>
+									<div>
+										<span class="text-[10px] font-bold text-slate-400 uppercase">Defense</span>
+										<p class="font-mono font-bold text-amber-600 dark:text-amber-400">
+											{t.defScore != null ? `${fmt1(t.defScore)}/5` : '—'}
+										</p>
+									</div>
+									<div>
+										<span class="text-[10px] font-bold text-slate-400 uppercase">Passing</span>
+										<p class="font-mono font-bold text-indigo-600 dark:text-indigo-400">
+											{t.passScore != null ? `${fmt1(t.passScore)}/5` : '—'}
+										</p>
+									</div>
+								</div>
+							</div>
+						{/if}
+					{/if}
 				</div>
-			</div>
 
-			<!-- Pareto front table -->
-			{#if paretoSorted.length > 0}
-				<div class="border-t border-gray-100">
-					<div class="px-4 py-2">
-						<p class="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase">
-							Pareto Front Teams
+				<!-- Pareto Front Teams Table -->
+				{#if paretoSorted.length > 0}
+					<div class="border-t border-slate-100 p-3 dark:border-slate-800">
+						<p
+							class="mb-2 text-[10px] font-bold tracking-wider text-amber-600 uppercase dark:text-amber-400"
+						>
+							Pareto Frontier Recommendations
 						</p>
 						<table class="w-full text-xs">
 							<thead>
-								<tr class="text-left text-gray-400">
-									<th class="pb-1 font-medium">Rank</th>
-									<th class="pb-1 font-medium">Team</th>
-									<th class="pb-1 font-medium">ePOP</th>
-									<th class="pb-1 font-medium">Def</th>
-									<th class="pb-1 font-medium">Pass</th>
+								<tr class="text-left text-[10px] font-bold text-slate-400 uppercase">
+									<th class="pb-1">Rank</th>
+									<th class="pb-1">Team</th>
+									<th class="pb-1">ePOP</th>
+									<th class="pb-1">Def</th>
+									<th class="pb-1">Pass</th>
 								</tr>
 							</thead>
-							<tbody>
+							<tbody class="divide-y divide-slate-100 dark:divide-slate-800">
 								{#each paretoSorted as t}
-									<tr class="border-t border-gray-50 hover:bg-gray-50">
-										<td class="py-1 font-bold text-gray-400"
+									<tr class="transition-colors hover:bg-amber-50/60 dark:hover:bg-amber-950/20">
+										<td class="py-1.5 font-mono font-bold text-slate-400"
 											>{t.rank != null ? `#${t.rank}` : '—'}</td
 										>
-										<td class="py-1">
+										<td class="py-1.5 font-mono font-bold">
 											<a
-												href="/teams/{t.number}?from=alliance-selection"
-												class="font-bold text-blue-600 hover:underline">{t.number}</a
+												href="/teams/{t.number}"
+												class="text-cyan-600 hover:underline dark:text-cyan-400"
 											>
-											<!-- <span class="ml-1 text-gray-500 truncate">{t.name}</span> -->
+												{t.number}
+											</a>
 										</td>
-										<td class="py-1 font-semibold {epopColorClass(t.epop)}">{fmt1(t.epop)}</td>
-										<td
-											class="py-1 {metric === 'def' ? 'font-bold text-gray-800' : 'text-gray-500'}"
-											>{fmt1(t.defScore)}</td
+										<td class="py-1.5 font-mono font-bold {epopColorClass(t.epop)}"
+											>{fmt1(t.epop)}</td
 										>
 										<td
-											class="py-1 {metric === 'pass' ? 'font-bold text-gray-800' : 'text-gray-500'}"
-											>{fmt1(t.passScore)}</td
+											class="py-1.5 font-mono {metric === 'def'
+												? 'font-bold text-slate-800 dark:text-slate-200'
+												: 'text-slate-500'}"
 										>
+											{fmt1(t.defScore)}
+										</td>
+										<td
+											class="py-1.5 font-mono {metric === 'pass'
+												? 'font-bold text-slate-800 dark:text-slate-200'
+												: 'text-slate-500'}"
+										>
+											{fmt1(t.passScore)}
+										</td>
 									</tr>
 								{/each}
 							</tbody>
 						</table>
 					</div>
-				</div>
-			{/if}
+				{/if}
+			</div>
 		</div>
 
-		<!-- Right: Available teams table -->
-		<div class="rounded-xl border border-gray-200 bg-white shadow-sm">
-			<div class="border-b border-gray-100 px-4 py-3">
-				<h2 class="font-bold text-gray-900">Available Teams</h2>
-				<p class="mt-0.5 text-xs text-gray-400">
-					Click a team to select it, then click an alliance slot to place them.
+		<!-- Right: Available Teams Pool -->
+		<div
+			class="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800/80 dark:bg-slate-900"
+		>
+			<div class="border-b border-slate-100 p-4 dark:border-slate-800">
+				<div class="flex items-center justify-between">
+					<h2 class="text-sm font-bold text-slate-900 dark:text-white">Available Draft Pool</h2>
+					<span
+						class="rounded-full bg-slate-100 px-2 py-0.5 font-mono text-[10px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+					>
+						{filteredTeams.length} Teams
+					</span>
+				</div>
+				<p class="mt-0.5 text-[11px] text-slate-400">
+					Select a team to place them in the draft board, or tap "+" for automatic snake slotting.
 				</p>
 			</div>
+
 			<!-- Search bar -->
-			<div class="border-b border-gray-100 px-3 py-2">
+			<div class="border-b border-slate-100 p-3 dark:border-slate-800">
 				<input
 					type="search"
 					bind:value={searchQuery}
-					placeholder="Search by # or name…"
-					class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+					placeholder="Search team # or name…"
+					class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 outline-none placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
 				/>
 			</div>
-			<div class="overflow-x-auto">
-				<table class="w-full text-sm">
+
+			<div class="max-h-[32rem] overflow-y-auto">
+				<table class="w-full text-left text-xs">
 					<thead>
 						<tr
-							class="border-b border-gray-100 bg-gray-50 text-left text-xs font-bold tracking-wider text-gray-400 uppercase"
+							class="border-b border-slate-100 bg-slate-50/75 text-[10px] font-bold tracking-wider text-slate-400 uppercase dark:border-slate-800 dark:bg-slate-800/50"
 						>
-							<th class="px-2 py-2"></th>
-							<th class="px-2 py-2">Rank</th>
-							<th class="px-2 py-2">Team</th>
-							<th class="px-2 py-2">ePOP</th>
-							<th class="px-2 py-2" title="Defense: avg score / rate">Def</th>
-							<th class="px-2 py-2" title="Passing: avg score / rate">Pass</th>
+							<th class="w-10 px-2.5 py-2.5"></th>
+							<th class="px-2.5 py-2.5">Rank</th>
+							<th class="px-2.5 py-2.5">Team</th>
+							<th class="px-2.5 py-2.5">ePOP</th>
+							<th class="px-2.5 py-2.5">Defense</th>
+							<th class="px-2.5 py-2.5">Passing</th>
 						</tr>
 					</thead>
-					<tbody>
-						{#each filteredTeams as t, i}
+					<tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+						{#each filteredTeams as t}
 							{@const onFront = paretoFront.includes(t)}
 							{@const isSelected = t.number === selectedTeam}
 							<tr
-								class="cursor-pointer border-b border-gray-50 transition-colors
+								class="cursor-pointer transition-colors
 									{isSelected
-									? 'bg-blue-50'
+									? 'bg-cyan-50 dark:bg-cyan-950/60'
 									: onFront
-										? 'bg-amber-50 hover:bg-amber-100'
-										: i % 2 === 1
-											? 'bg-gray-50/40 hover:bg-blue-50'
-											: 'hover:bg-blue-50'}"
+										? 'bg-amber-50/60 hover:bg-amber-100/60 dark:bg-amber-950/30 dark:hover:bg-amber-950/50'
+										: 'hover:bg-cyan-50/40 dark:hover:bg-cyan-950/20'}"
 								onclick={() => clickAvailableTeam(t.number)}
 							>
-								<td class="px-2 py-1.5">
+								<td class="px-2.5 py-2">
 									<button
 										onclick={(e) => {
 											e.stopPropagation();
 											quickAddTeam(t.number);
 										}}
-										class="flex h-6 w-6 items-center justify-center rounded bg-blue-600 text-sm font-bold text-white hover:bg-blue-700"
-										title="Quick add to next snake slot">+</button
+										class="flex h-6 w-6 items-center justify-center rounded-lg bg-cyan-600 font-mono text-xs font-bold text-white shadow-2xs transition-colors hover:bg-cyan-700"
+										title="Quick add to next snake slot"
 									>
+										+
+									</button>
 								</td>
-								<td class="px-2 py-1.5 text-xs font-bold whitespace-nowrap text-gray-400"
-									>{t.rank != null ? `#${t.rank}` : '—'}</td
-								>
-								<td class="px-2 py-1.5">
-									<a
-										href="/teams/{t.number}?from=alliance-selection"
-										onclick={(e) => e.stopPropagation()}
-										class="leading-tight font-black text-blue-600 hover:underline">{t.number}</a
-									>
-									<div class="max-w-[110px] truncate text-[11px] leading-tight text-gray-500">
-										{t.name}
+								<td class="px-2.5 py-2 font-mono text-xs font-bold text-slate-400">
+									{t.rank != null ? `#${t.rank}` : '—'}
+								</td>
+								<td class="px-2.5 py-2">
+									<div class="flex items-center gap-1.5">
+										<a
+											href="/teams/{t.number}"
+											onclick={(e) => e.stopPropagation()}
+											class="font-mono text-xs font-black text-cyan-600 hover:underline dark:text-cyan-400"
+										>
+											{t.number}
+										</a>
+										{#if onFront}
+											<span
+												class="py-0.2 rounded bg-amber-100 px-1 font-mono text-[9px] font-bold text-amber-700 dark:bg-amber-950 dark:text-amber-300"
+											>
+												Pareto
+											</span>
+										{/if}
 									</div>
+									<p class="max-w-[120px] truncate text-[11px] text-slate-500 dark:text-slate-400">
+										{t.name}
+									</p>
 								</td>
-								<td class="px-2 py-1.5 text-xs whitespace-nowrap {epopColorClass(t.epop)}"
-									>{fmt1(t.epop)}</td
-								>
-								<td class="px-2 py-1.5 text-xs whitespace-nowrap text-gray-600">
+								<td class="px-2.5 py-2 font-mono text-xs font-bold {epopColorClass(t.epop)}">
+									{fmt1(t.epop)}
+								</td>
+								<td class="px-2.5 py-2 font-mono text-xs text-slate-600 dark:text-slate-400">
 									{#if t.defScore != null}
-										<span class="font-semibold">{fmt1(t.defScore)}</span>
-										<span class="text-[10px] text-gray-400"> {fmtPct(t.defRate)}</span>
+										<span class="font-bold text-slate-800 dark:text-slate-200"
+											>{fmt1(t.defScore)}</span
+										>
+										<span class="text-[10px] text-slate-400"> ({fmtPct(t.defRate)})</span>
 									{:else}
-										<span class="text-gray-300">—</span>
+										<span class="text-slate-300 dark:text-slate-600">—</span>
 									{/if}
 								</td>
-								<td class="px-2 py-1.5 text-xs whitespace-nowrap text-gray-600">
+								<td class="px-2.5 py-2 font-mono text-xs text-slate-600 dark:text-slate-400">
 									{#if t.passScore != null}
-										<span class="font-semibold">{fmt1(t.passScore)}</span>
-										<span class="text-[10px] text-gray-400"> {fmtPct(t.passRate)}</span>
+										<span class="font-bold text-slate-800 dark:text-slate-200"
+											>{fmt1(t.passScore)}</span
+										>
+										<span class="text-[10px] text-slate-400"> ({fmtPct(t.passRate)})</span>
 									{:else}
-										<span class="text-gray-300">—</span>
+										<span class="text-slate-300 dark:text-slate-600">—</span>
 									{/if}
 								</td>
 							</tr>
 						{/each}
+
 						{#if filteredTeams.length === 0}
-							<tr
-								><td colspan="6" class="px-4 py-8 text-center text-gray-400">
+							<tr>
+								<td colspan="6" class="p-8 text-center text-xs text-slate-400 italic">
 									{searchQuery ? 'No teams match your search.' : 'All teams have been placed.'}
-								</td></tr
-							>
+								</td>
+							</tr>
 						{/if}
 					</tbody>
 				</table>
@@ -639,34 +855,33 @@
 	</div>
 </div>
 
-<!-- Reset confirmation modal -->
+<!-- Reset Confirmation Modal -->
 {#if confirmResetOpen}
 	<div
-		class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+		class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs"
 		role="dialog"
 		aria-modal="true"
-		aria-labelledby="reset-dialog-title"
 	>
-		<div class="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
-			<h2 id="reset-dialog-title" class="text-lg font-bold text-gray-900">
-				Reset Alliance Selection?
-			</h2>
-			<p class="mt-2 text-sm text-gray-500">
-				This will clear all {chosenSet.size} team placement{chosenSet.size !== 1 ? 's' : ''} and cannot
-				be undone. All users on this page will see the reset immediately.
+		<div
+			class="w-full max-w-sm rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900"
+		>
+			<h2 class="text-base font-bold text-slate-900 dark:text-white">Reset Alliance Selection?</h2>
+			<p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+				This will clear all {chosenSet.size} team placements and reset the draft board. This action cannot
+				be undone.
 			</p>
-			<div class="mt-5 flex justify-end gap-3">
+			<div class="mt-5 flex justify-end gap-2.5">
 				<button
 					onclick={() => (confirmResetOpen = false)}
-					class="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+					class="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
 				>
 					Cancel
 				</button>
 				<button
 					onclick={resetAlliances}
-					class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+					class="rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white shadow-2xs transition-colors hover:bg-rose-700"
 				>
-					Reset
+					Reset Draft Board
 				</button>
 			</div>
 		</div>

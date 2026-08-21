@@ -67,6 +67,7 @@ export function sparkY(
 	topPad: number,
 	chartHeight: number
 ): number {
-	return topPad + (1 - (v - (rawMin - vPad)) / Math.max(rawMax - rawMin + 2 * vPad, 1)) * chartHeight;
+	return (
+		topPad + (1 - (v - (rawMin - vPad)) / Math.max(rawMax - rawMin + 2 * vPad, 1)) * chartHeight
+	);
 }
-

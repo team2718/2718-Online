@@ -132,4 +132,3 @@ export async function purgeExpiredSessions(): Promise<void> {
 	const cutoff = now - 60 * 60 * ADMIN_SESSION_EXPIRY_HOURS;
 	await db.delete(admin_sessions).where(lt(admin_sessions.createdAt, cutoff)).run();
 }
-

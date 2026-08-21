@@ -18,7 +18,9 @@ export async function fetchStatboticsEpa(eventKey: string): Promise<Record<numbe
 	const epaByTeam: Record<number, number> = {};
 
 	try {
-		const res = await fetch(`https://api.statbotics.io/v3/team_events?event=${encodeURIComponent(eventKey)}`);
+		const res = await fetch(
+			`https://api.statbotics.io/v3/team_events?event=${encodeURIComponent(eventKey)}`
+		);
 		if (res.status === 404) return epaByTeam;
 		if (!res.ok) {
 			console.warn(`[Statbotics] API returned HTTP ${res.status}`);
@@ -38,4 +40,3 @@ export async function fetchStatboticsEpa(eventKey: string): Promise<Record<numbe
 
 	return epaByTeam;
 }
-

@@ -1,6 +1,4 @@
 <script lang="ts">
-	import { Badge, Button } from 'flowbite-svelte';
-	import { ArrowLeftOutline, ChevronRightOutline, TrashBinSolid } from 'flowbite-svelte-icons';
 	import { enhance } from '$app/forms';
 	import { playoffKey } from '$lib/matchUtils';
 	import { page } from '$app/state';
@@ -11,17 +9,14 @@
 		page.url.searchParams.get('from') === 'alliance-selection'
 	);
 
-	// Use $derived to reactively track changes to data
 	const reports = $derived(data?.matchReports ?? []);
 	const pitReports = $derived(data?.pitReports ?? []);
 	const canGoUnderTrench = $derived(pitReports.at(-1)?.data?.canGoUnderTrench ?? null);
 
-	// Calculate average statistics for match reports
+	// Deduplicate reports by matchId for average stats calculation
 	const avgStats = $derived.by(() => {
 		if (!reports || reports.length === 0) return null;
 
-		// Deduplicate by matchId: for each match with multiple reports, produce one
-		// effective report by averaging numeric fields and majority-voting booleans.
 		const byMatch = new Map<string, typeof reports>();
 		for (const r of reports) {
 			if (!byMatch.has(r.matchId)) byMatch.set(r.matchId, []);
@@ -106,11 +101,8 @@
 		};
 	});
 
-	// Helper to format camelCase keys from autoFeatures into readable text
 	const formatFeature = (key: string) => {
-		return key
-			.replace(/([A-Z])/g, ' $1') // Add space before capitals
-			.replace(/^./, (str) => str.toUpperCase()); // Capitalize first letter
+		return key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase());
 	};
 
 	const reportsSorted = $derived(
@@ -154,320 +146,397 @@
 	});
 </script>
 
-<div class="min-h-screen bg-gray-50">
-	<div class="mx-auto max-w-7xl px-4 py-8">
-		<div class="mb-8 flex items-start gap-4">
-			{#if fromAllianceSelection}
-				<Button href="/alliance-selection" color="green" pill size="sm" class="mt-1 shrink-0">
-					<ArrowLeftOutline class="mr-2 h-4 w-4" /> Alliance Selection
-				</Button>
-			{:else}
-				<Button href="/teams" color="light" pill size="sm" class="mt-1 shrink-0">
-					<ArrowLeftOutline class="mr-2 h-4 w-4" /> Teams
-				</Button>
-			{/if}
-			<div>
-				<h1 class="text-4xl font-black tracking-tight text-gray-900">Team {data.teamnum}</h1>
-				{#if data.team}
-					<p class="mt-1 text-lg font-semibold text-gray-600">{data.team.name}</p>
-					{#if (data.team.metadata as Record<string, unknown>)?.state_prov}
-						<p class="mt-0.5 text-sm text-gray-400">
-							{[
-								(data.team.metadata as Record<string, unknown>)?.city,
-								(data.team.metadata as Record<string, unknown>)?.state_prov,
-								(data.team.metadata as Record<string, unknown>)?.country
-							]
-								.filter(Boolean)
-								.join(', ')}
-						</p>
-					{/if}
-				{/if}
-			</div>
+<div class="mx-auto max-w-7xl space-y-6">
+	<!-- Top Breadcrumb & Header -->
+	<div class="border-b border-slate-200/80 pb-5 dark:border-slate-800/80">
+		<div class="mb-3">
+			<a
+				href={fromAllianceSelection ? '/alliance-selection' : '/teams'}
+				class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+			>
+				<svg
+					class="h-3.5 w-3.5"
+					fill="none"
+					viewBox="0 0 24 24"
+					stroke="currentColor"
+					stroke-width="2"
+				>
+					<path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+				</svg>
+				Back to {fromAllianceSelection ? 'Alliance Selection' : 'Teams'}
+			</a>
 		</div>
 
-		{#if data.epop != null}
-			<div class="mb-6">
-				<div class="mb-2 flex items-center gap-2">
-					<span class="text-xs font-semibold tracking-wider text-gray-400 uppercase">ePOP</span>
-					<a
-						href="https://www.thebluealliance.com/team/{data.teamnum}"
-						target="_blank"
-						rel="noopener noreferrer"
-						class="text-xs text-blue-400 transition-colors hover:text-blue-600"
-						>thebluealliance.com ↗</a
+		<div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+			<div>
+				<div class="flex items-center gap-3">
+					<h1
+						class="font-mono text-3xl font-black tracking-tight text-slate-900 sm:text-4xl dark:text-white"
 					>
-				</div>
-				<div class="grid grid-cols-2 gap-3">
-					<div class="rounded-lg border border-purple-100 bg-purple-50 px-3 py-2 text-center">
-						<p class="text-2xl font-black text-purple-700">{data.epop.toFixed(1)}</p>
-						<p class="text-xs font-semibold tracking-wider text-purple-400 uppercase">ePOP</p>
-					</div>
-					{#if data.epopHistory && data.epopHistory.length >= 2}
-						{@const pts = data.epopHistory}
-						{@const W = 300}
-						{@const H = 48}
-						{@const PAD = { t: 4, b: 4, l: 4, r: 4 }}
-						{@const cW = W - PAD.l - PAD.r}
-						{@const cH = H - PAD.t - PAD.b}
-						{@const minM = pts[0].matchNumber}
-						{@const maxM = pts[pts.length - 1].matchNumber}
-						{@const rawMin = Math.min(...pts.map((p) => p.epop))}
-						{@const rawMax = Math.max(...pts.map((p) => p.epop))}
-						{@const vPad = Math.max((rawMax - rawMin) * 0.15, 2)}
-						{@const xp = (m: number) => sparkX(m, minM, maxM, PAD.l, cW)}
-						{@const yp = (v: number) => sparkY(v, rawMin, rawMax, vPad, PAD.t, cH)}
-						{@const polyPts = pts
-							.map((p) => `${xp(p.matchNumber).toFixed(1)},${yp(p.epop).toFixed(1)}`)
-							.join(' ')}
-						<div class="rounded-lg border border-purple-100 bg-white px-2 py-2">
-							<svg viewBox="0 0 {W} {H}" class="w-full" style="height:40px">
-								<polyline
-									points={polyPts}
-									fill="none"
-									stroke="#7c3aed"
-									stroke-width="1.5"
-									stroke-linejoin="round"
-									stroke-linecap="round"
-								/>
-								{#each pts as p}
-									<circle
-										cx={xp(p.matchNumber).toFixed(1)}
-										cy={yp(p.epop).toFixed(1)}
-										r="2"
-										fill="#7c3aed"
-									/>
-								{/each}
-							</svg>
-							<p
-								class="mt-0.5 text-center text-xs font-semibold tracking-wider text-purple-300 uppercase"
-							>
-								ePOP Trend
-							</p>
-						</div>
+						Team {data.teamnum}
+					</h1>
+					{#if data.team}
+						<span class="text-xl font-bold text-slate-700 dark:text-slate-300">
+							{data.team.name}
+						</span>
 					{/if}
+				</div>
+				{#if data.team && (data.team.metadata as Record<string, unknown>)?.state_prov}
+					<p class="mt-1 text-xs text-slate-400">
+						{[
+							(data.team.metadata as Record<string, unknown>)?.city,
+							(data.team.metadata as Record<string, unknown>)?.state_prov,
+							(data.team.metadata as Record<string, unknown>)?.country
+						]
+							.filter(Boolean)
+							.join(', ')}
+					</p>
+				{/if}
+			</div>
+
+			<div class="flex items-center gap-2">
+				<a
+					href="https://www.thebluealliance.com/team/{data.teamnum}"
+					target="_blank"
+					rel="noopener noreferrer"
+					class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+				>
+					TBA ↗
+				</a>
+				<a
+					href="https://www.statbotics.io/team/{data.teamnum}"
+					target="_blank"
+					rel="noopener noreferrer"
+					class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+				>
+					Statbotics ↗
+				</a>
+			</div>
+		</div>
+	</div>
+
+	<!-- ePOP & Power Rating Summary -->
+	{#if data.epop != null}
+		<div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+			<div
+				class="rounded-2xl border border-purple-200/80 bg-purple-50/50 p-4 dark:border-purple-900/50 dark:bg-purple-950/20"
+			>
+				<p
+					class="text-[11px] font-bold tracking-wider text-purple-600 uppercase dark:text-purple-400"
+				>
+					ePOP Rating
+				</p>
+				<p class="mt-1 font-mono text-3xl font-black text-purple-700 dark:text-purple-300">
+					{data.epop.toFixed(1)}
+				</p>
+				<p class="mt-1 text-[11px] text-purple-500">Regularized points above replacement</p>
+			</div>
+
+			{#if data.epopHistory && data.epopHistory.length >= 2}
+				{@const pts = data.epopHistory}
+				{@const W = 300}
+				{@const H = 54}
+				{@const PAD = { t: 6, b: 6, l: 6, r: 6 }}
+				{@const cW = W - PAD.l - PAD.r}
+				{@const cH = H - PAD.t - PAD.b}
+				{@const minM = pts[0].matchNumber}
+				{@const maxM = pts[pts.length - 1].matchNumber}
+				{@const rawMin = Math.min(...pts.map((p) => p.epop))}
+				{@const rawMax = Math.max(...pts.map((p) => p.epop))}
+				{@const vPad = Math.max((rawMax - rawMin) * 0.15, 2)}
+				{@const xp = (m: number) => sparkX(m, minM, maxM, PAD.l, cW)}
+				{@const yp = (v: number) => sparkY(v, rawMin, rawMax, vPad, PAD.t, cH)}
+				{@const polyPts = pts
+					.map((p) => `${xp(p.matchNumber).toFixed(1)},${yp(p.epop).toFixed(1)}`)
+					.join(' ')}
+				<div
+					class="col-span-2 rounded-2xl border border-slate-200/80 bg-white p-4 dark:border-slate-800/80 dark:bg-slate-900"
+				>
+					<div class="mb-1 flex items-center justify-between">
+						<p
+							class="text-[11px] font-bold tracking-wider text-slate-500 uppercase dark:text-slate-400"
+						>
+							ePOP Progression By Match
+						</p>
+						<span class="font-mono text-[10px] text-purple-600 dark:text-purple-400">
+							Q{minM} → Q{maxM}
+						</span>
+					</div>
+					<svg viewBox="0 0 {W} {H}" class="w-full" style="height: 48px">
+						<polyline
+							points={polyPts}
+							fill="none"
+							stroke="#8b5cf6"
+							stroke-width="2"
+							stroke-linejoin="round"
+							stroke-linecap="round"
+						/>
+						{#each pts as p}
+							<circle
+								cx={xp(p.matchNumber).toFixed(1)}
+								cy={yp(p.epop).toFixed(1)}
+								r="2.5"
+								fill="#8b5cf6"
+							/>
+						{/each}
+					</svg>
+				</div>
+			{/if}
+		</div>
+	{/if}
+
+	<!-- Statistics Overview Cards -->
+	<div>
+		<div class="mb-3 flex items-center justify-between">
+			<h2 class="text-base font-bold text-slate-900 dark:text-white">Scouting Averages</h2>
+			{#if avgStats}
+				<span
+					class="rounded-full bg-cyan-50 px-2.5 py-0.5 font-mono text-xs font-bold text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300"
+				>
+					{avgStats.reportCount} Matches Observed
+				</span>
+			{/if}
+		</div>
+
+		{#if avgStats}
+			<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+				<div
+					class="rounded-2xl border border-slate-200/80 bg-white p-4 dark:border-slate-800/80 dark:bg-slate-900"
+				>
+					<p class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+						Tele Fuel Rating
+					</p>
+					<p class="mt-1 font-mono text-2xl font-black text-slate-900 dark:text-white">
+						{avgStats.teleFuelScore}<span class="text-xs font-normal text-slate-400">/5</span>
+					</p>
+				</div>
+				<div
+					class="rounded-2xl border border-slate-200/80 bg-white p-4 dark:border-slate-800/80 dark:bg-slate-900"
+				>
+					<p class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+						Passing Rating
+					</p>
+					{#if avgStats.telePassScore !== null}
+						<p class="mt-1 font-mono text-2xl font-black text-slate-900 dark:text-white">
+							{avgStats.telePassScore}<span class="text-xs font-normal text-slate-400">/5</span>
+						</p>
+						<p class="text-[10px] text-slate-400">{avgStats.passPercent}% of matches</p>
+					{:else}
+						<p class="mt-1 font-mono text-2xl font-bold text-slate-300 dark:text-slate-600">—</p>
+						<p class="text-[10px] text-slate-400">Never passed</p>
+					{/if}
+				</div>
+				<div
+					class="rounded-2xl border border-slate-200/80 bg-white p-4 dark:border-slate-800/80 dark:bg-slate-900"
+				>
+					<p class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+						Defense Rating
+					</p>
+					{#if avgStats.teleDefScore !== null}
+						<p class="mt-1 font-mono text-2xl font-black text-slate-900 dark:text-white">
+							{avgStats.teleDefScore}<span class="text-xs font-normal text-slate-400">/5</span>
+						</p>
+						<p class="text-[10px] text-slate-400">{avgStats.defPercent}% of matches</p>
+					{:else}
+						<p class="mt-1 font-mono text-2xl font-bold text-slate-300 dark:text-slate-600">—</p>
+						<p class="text-[10px] text-slate-400">Never defended</p>
+					{/if}
+				</div>
+				<div
+					class="rounded-2xl border border-slate-200/80 bg-white p-4 dark:border-slate-800/80 dark:bg-slate-900"
+				>
+					<p class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+						Auto Scored / Missed
+					</p>
+					<p class="mt-1 font-mono text-2xl font-black text-slate-900 dark:text-white">
+						{avgStats.autoFuel}
+						<span class="text-xs font-normal text-slate-400">/ {avgStats.autoFuelMissed}</span>
+					</p>
+				</div>
+				<div
+					class="rounded-2xl border border-slate-200/80 bg-white p-4 dark:border-slate-800/80 dark:bg-slate-900"
+				>
+					<p class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+						Climb Breakdown
+					</p>
+					<div
+						class="mt-1 flex items-center gap-2 font-mono text-xs font-bold text-slate-700 dark:text-slate-300"
+					>
+						<span
+							class={avgStats.climbL1Pct > 0
+								? 'text-cyan-600 dark:text-cyan-400'
+								: 'text-slate-300 dark:text-slate-600'}>L1: {avgStats.climbL1Pct}%</span
+						>
+						<span
+							class={avgStats.climbL2Pct > 0
+								? 'text-cyan-600 dark:text-cyan-400'
+								: 'text-slate-300 dark:text-slate-600'}>L2: {avgStats.climbL2Pct}%</span
+						>
+						<span
+							class={avgStats.climbL3Pct > 0
+								? 'text-cyan-600 dark:text-cyan-400'
+								: 'text-slate-300 dark:text-slate-600'}>L3: {avgStats.climbL3Pct}%</span
+						>
+					</div>
+				</div>
+				<div
+					class="rounded-2xl border border-slate-200/80 bg-white p-4 dark:border-slate-800/80 dark:bg-slate-900"
+				>
+					<p class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+						Auto Climb Success
+					</p>
+					<p class="mt-1 font-mono text-2xl font-black text-slate-900 dark:text-white">
+						{avgStats.autoClimbedPercent}%
+					</p>
+				</div>
+				<div
+					class="rounded-2xl border border-slate-200/80 bg-white p-4 dark:border-slate-800/80 dark:bg-slate-900"
+				>
+					<p class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Under Trench</p>
+					<p class="mt-1 font-mono text-2xl font-black text-slate-900 dark:text-white">
+						{canGoUnderTrench === true ? 'Yes' : canGoUnderTrench === false ? 'No' : '—'}
+					</p>
+				</div>
+				<div
+					class="rounded-2xl border border-slate-200/80 bg-white p-4 dark:border-slate-800/80 dark:bg-slate-900"
+				>
+					<p class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Auto Leave %</p>
+					<p class="mt-1 font-mono text-2xl font-black text-slate-900 dark:text-white">
+						{avgStats.didLeavePercent}%
+					</p>
 				</div>
 			</div>
-		{/if}
-
-		<div class="grid grid-cols-1 gap-8 lg:grid-cols-12">
-			<div class="space-y-6 lg:col-span-8">
-				<div>
-					<div class="mb-4 flex items-center justify-between">
-						<h2 class="text-xl font-bold text-gray-800">Team Statistics</h2>
-						{#if avgStats}
-							<Badge color="green">{avgStats.reportCount} Matches</Badge>
-						{/if}
-					</div>
-
-					{#if avgStats}
-						<div
-							class="mb-8 grid grid-cols-2 gap-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm md:grid-cols-4"
-						>
-							<div>
-								<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Fuel Rating</p>
-								<p class="text-2xl font-bold text-gray-900">
-									{avgStats.teleFuelScore}<span class="text-sm font-normal text-gray-500">
-										/ 5</span
-									>
-								</p>
-							</div>
-							<div>
-								<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">
-									Passing Rating
-								</p>
-								{#if avgStats.telePassScore !== null}
-									<p class="text-2xl font-bold text-gray-900">
-										{avgStats.telePassScore}<span class="text-sm font-normal text-gray-500">
-											/ 5</span
-										>
-									</p>
-									<p class="text-xs text-gray-400">{avgStats.passPercent}% of matches</p>
-								{:else}
-									<p class="text-2xl font-bold text-gray-400">—</p>
-									<p class="text-xs text-gray-400">Never passed</p>
-								{/if}
-							</div>
-							<div>
-								<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">
-									Defense Rating
-								</p>
-								{#if avgStats.teleDefScore !== null}
-									<p class="text-2xl font-bold text-gray-900">
-										{avgStats.teleDefScore}<span class="text-sm font-normal text-gray-500">
-											/ 5</span
-										>
-									</p>
-									<p class="text-xs text-gray-400">{avgStats.defPercent}% of matches</p>
-								{:else}
-									<p class="text-2xl font-bold text-gray-400">—</p>
-									<p class="text-xs text-gray-400">Never defended</p>
-								{/if}
-							</div>
-							<div>
-								<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">
-									Auto Fuel Made / Missed
-								</p>
-								<p class="text-2xl font-bold text-gray-900">
-									{avgStats.autoFuel} / {avgStats.autoFuelMissed}
-								</p>
-							</div>
-							<div>
-								<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">
-									Climb Ability
-								</p>
-								<div class="mt-1 space-y-0.5 text-sm">
-									<p
-										class="font-semibold {avgStats.climbL1Pct > 0
-											? 'text-gray-900'
-											: 'text-gray-300'}"
-									>
-										L1: {avgStats.climbL1Pct}%
-									</p>
-									<p
-										class="font-semibold {avgStats.climbL2Pct > 0
-											? 'text-gray-900'
-											: 'text-gray-300'}"
-									>
-										L2: {avgStats.climbL2Pct}%
-									</p>
-									<p
-										class="font-semibold {avgStats.climbL3Pct > 0
-											? 'text-gray-900'
-											: 'text-gray-300'}"
-									>
-										L3: {avgStats.climbL3Pct}%
-									</p>
-								</div>
-							</div>
-							<div>
-								<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Auto Climb</p>
-								<p class="text-2xl font-bold text-gray-900">{avgStats.autoClimbedPercent}%</p>
-							</div>
-							<div>
-								<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Under Trench</p>
-								<p class="text-2xl font-bold text-gray-900">
-									{canGoUnderTrench === true ? 'Yes' : canGoUnderTrench === false ? 'No' : '—'}
-								</p>
-							</div>
-							<div>
-								<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">
-									Moved in Auto
-								</p>
-								<p class="text-2xl font-bold text-gray-900">{avgStats.didLeavePercent}%</p>
-							</div>
-						</div>
-					{:else if canGoUnderTrench !== null}
-						<div
-							class="mb-8 grid grid-cols-2 gap-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm md:grid-cols-4"
-						>
-							<div>
-								<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Under Trench</p>
-								<p class="text-2xl font-bold text-gray-900">
-									{canGoUnderTrench === true ? 'Yes' : 'No'}
-								</p>
-							</div>
-						</div>
-					{:else}
-						<div
-							class="mb-8 rounded-xl border-2 border-dashed border-gray-200 bg-white p-8 text-center"
-						>
-							<p class="text-gray-400">No scouting data available yet.</p>
-						</div>
-					{/if}
+		{:else if canGoUnderTrench !== null}
+			<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+				<div
+					class="rounded-2xl border border-slate-200/80 bg-white p-4 dark:border-slate-800/80 dark:bg-slate-900"
+				>
+					<p class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Under Trench</p>
+					<p class="mt-1 font-mono text-2xl font-black text-slate-900 dark:text-white">
+						{canGoUnderTrench === true ? 'Yes' : 'No'}
+					</p>
 				</div>
+			</div>
+		{:else}
+			<div
+				class="rounded-2xl border border-dashed border-slate-200 p-8 text-center dark:border-slate-800"
+			>
+				<p class="text-xs text-slate-400">
+					No match scouting data recorded yet for Team {data.teamnum}.
+				</p>
+			</div>
+		{/if}
+	</div>
 
-				<div class="flex items-center justify-between">
-					<h2 class="text-xl font-bold text-gray-800">Match Reports</h2>
-					<Badge color="gray">{reports.length} Report{reports.length !== 1 ? 's' : ''}</Badge>
+	<!-- Main Content: Left = Reports & Pit, Right = Match History -->
+	<div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
+		<div class="space-y-6 lg:col-span-8">
+			<!-- Match Scouting Reports -->
+			<div>
+				<div class="mb-3 flex items-center justify-between">
+					<h2 class="text-base font-bold text-slate-900 dark:text-white">Match Reports</h2>
+					<span
+						class="rounded-full bg-slate-100 px-2 py-0.5 font-mono text-[11px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+					>
+						{reports.length} Report{reports.length !== 1 ? 's' : ''}
+					</span>
 				</div>
 
 				{#if reportsSorted.length > 0}
-					<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+					<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
 						{#each reportsSorted as report}
-							<div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-								<div class="border-b border-gray-100 bg-gray-50 px-3 py-2 text-center">
+							<div
+								class="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-2xs dark:border-slate-800/80 dark:bg-slate-900"
+							>
+								<div
+									class="flex items-center justify-between border-b border-slate-100 bg-slate-50/75 px-3 py-2 text-xs dark:border-slate-800 dark:bg-slate-800/50"
+								>
 									<a
 										href="/matches?match={report.matchId}"
-										class="block text-sm font-black text-gray-700 hover:underline"
-										>{report.matchId}</a
+										class="font-mono font-black text-cyan-600 hover:underline dark:text-cyan-400"
 									>
-									<p class="truncate text-[10px] text-gray-400">{report.scouterName}</p>
+										{report.matchId}
+									</a>
+									<span class="truncate font-medium text-slate-400">{report.scouterName}</span>
 								</div>
-								<div class="space-y-2 p-2 text-[11px]">
-									<div class="text-gray-500">{posLabel(report.data?.startingPosition)}</div>
+								<div class="space-y-2 p-3 text-xs">
+									<div class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+										Pos: {posLabel(report.data?.startingPosition)}
+									</div>
 
-									<div>
-										<p
-											class="mb-0.5 text-[9px] font-semibold tracking-wide text-gray-600 uppercase"
-										>
+									<!-- Auto -->
+									<div class="rounded-lg bg-slate-50 p-2 dark:bg-slate-800/50">
+										<p class="mb-1 text-[10px] font-bold tracking-wider text-slate-400 uppercase">
 											Auto
 										</p>
-										<div class="grid grid-cols-2 gap-x-1 gap-y-0.5 text-gray-700">
-											<span>Move</span><span
-												class="font-semibold {report.data?.didLeave
-													? 'text-green-600'
-													: 'text-gray-400'}">{yn(report.data?.didLeave)}</span
+										<div class="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[11px]">
+											<span class="text-slate-500">Leave:</span>
+											<span
+												class="font-bold {report.data?.didLeave
+													? 'text-emerald-600'
+													: 'text-slate-400'}">{yn(report.data?.didLeave)}</span
 											>
-											<span>Climb</span><span
-												class="font-semibold {report.data?.autoClimbed
-													? 'text-green-600'
-													: 'text-gray-400'}">{yn(report.data?.autoClimbed)}</span
+											<span class="text-slate-500">Climb:</span>
+											<span
+												class="font-bold {report.data?.autoClimbed
+													? 'text-emerald-600'
+													: 'text-slate-400'}">{yn(report.data?.autoClimbed)}</span
 											>
-											<span>Scored</span><span class="font-semibold text-blue-600"
+											<span class="text-slate-500">Scored:</span>
+											<span class="font-bold text-cyan-600 dark:text-cyan-400"
 												>{report.data?.autoFuel ?? 0}</span
 											>
-											<span>Missed</span><span class="font-semibold text-red-400"
-												>{report.data?.autoFuelMissed ?? 0}</span
+											<span class="text-slate-500">Missed:</span>
+											<span class="font-bold text-rose-500">{report.data?.autoFuelMissed ?? 0}</span
 											>
 										</div>
 									</div>
 
-									<div>
-										<p
-											class="mb-0.5 text-[9px] font-semibold tracking-wide text-gray-600 uppercase"
-										>
+									<!-- Teleop -->
+									<div class="rounded-lg bg-slate-50 p-2 dark:bg-slate-800/50">
+										<p class="mb-1 text-[10px] font-bold tracking-wider text-slate-400 uppercase">
 											Teleop
 										</p>
-										<div class="grid grid-cols-2 gap-x-1 gap-y-0.5 text-gray-700">
-											<span>Fuel</span><span
-												class="font-semibold {report.data?.teleFuelScoredAny
-													? ''
-													: 'text-gray-400'}"
+										<div class="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[11px]">
+											<span class="text-slate-500">Fuel:</span>
+											<span class="font-bold"
 												>{report.data?.teleFuelScoredAny
 													? `${report.data?.teleFuelScore}/5`
 													: '—'}</span
 											>
-											<span>Pass</span><span
-												class="font-semibold {report.data?.teleDidPass ? '' : 'text-gray-400'}"
+											<span class="text-slate-500">Pass:</span>
+											<span class="font-bold"
 												>{report.data?.teleDidPass ? `${report.data?.telePassScore}/5` : '—'}</span
 											>
-											<span>Def</span><span
-												class="font-semibold {report.data?.teleDidDef ? '' : 'text-gray-400'}"
+											<span class="text-slate-500">Def:</span>
+											<span class="font-bold"
 												>{report.data?.teleDidDef ? `${report.data?.teleDefScore}/5` : '—'}</span
 											>
 										</div>
 									</div>
 
-									<div>
-										<p
-											class="mb-0.5 text-[9px] font-semibold tracking-wide text-gray-600 uppercase"
+									<!-- Endgame -->
+									<div class="flex items-center justify-between text-[11px]">
+										<span class="text-slate-500"
+											>Climb: <b class="text-slate-800 dark:text-slate-200"
+												>{climbLabel(report.data?.climbType)}</b
+											></span
 										>
-											Endgame
-										</p>
-										<div class="grid grid-cols-2 gap-x-1 gap-y-0.5 text-gray-700">
-											<span>Climb</span><span class="font-semibold"
-												>{climbLabel(report.data?.climbType)}</span
+										{#if (report.data?.cardReceived ?? 0) > 0}
+											<span
+												class="rounded bg-amber-100 px-1.5 py-0.5 font-bold text-amber-700 dark:bg-amber-950 dark:text-amber-300"
 											>
-											{#if (report.data?.cardReceived ?? 0) > 0}
-												<span>Card</span><span class="font-semibold text-yellow-600"
-													>{cardLabel(report.data?.cardReceived)}</span
-												>
-											{/if}
-										</div>
+												{cardLabel(report.data?.cardReceived)}
+											</span>
+										{/if}
 									</div>
 
 									{#if (data.isAdmin || data.isPrivileged) && report.data?.notes}
-										<p class="leading-snug text-gray-500 italic">{report.data.notes}</p>
+										<p
+											class="border-t border-slate-100 pt-1.5 text-[11px] text-slate-500 italic dark:border-slate-800"
+										>
+											"{report.data.notes}"
+										</p>
 									{/if}
 
 									{#if data.isAdmin}
@@ -475,9 +544,10 @@
 											<input type="hidden" name="id" value={report.id} />
 											<button
 												type="submit"
-												class="w-full rounded bg-red-50 py-1 text-[10px] font-semibold text-red-500 hover:bg-red-100"
-												>Delete</button
+												class="w-full rounded-lg bg-rose-50 py-1 text-[10px] font-bold text-rose-600 transition-colors hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-400"
 											>
+												Delete Report
+											</button>
 										</form>
 									{/if}
 								</div>
@@ -485,79 +555,113 @@
 						{/each}
 					</div>
 				{:else}
-					<div class="rounded-xl border-2 border-dashed border-gray-200 bg-white p-8 text-center">
-						<p class="text-gray-400">No match reports recorded yet.</p>
+					<div
+						class="rounded-2xl border border-dashed border-slate-200 p-8 text-center dark:border-slate-800"
+					>
+						<p class="text-xs text-slate-400">No match reports recorded yet.</p>
 					</div>
 				{/if}
+			</div>
 
-				<div class="flex items-center justify-between">
-					<h2 class="text-xl font-bold text-gray-800">Pit Reports</h2>
-					<Badge color="blue">{pitReports.length} Reports</Badge>
+			<!-- Pit Scouting Reports -->
+			<div>
+				<div class="mb-3 flex items-center justify-between">
+					<h2 class="text-base font-bold text-slate-900 dark:text-white">Pit Scouting Specs</h2>
+					<span
+						class="rounded-full bg-slate-100 px-2 py-0.5 font-mono text-[11px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+					>
+						{pitReports.length} Pit {pitReports.length === 1 ? 'Entry' : 'Entries'}
+					</span>
 				</div>
 
 				{#if pitReports.length > 0}
 					{#each pitReports as report}
-						<div class="mb-6 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-							<div class="flex items-center justify-between border-b bg-gray-50 px-6 py-3 text-sm">
+						<div
+							class="mb-4 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800/80 dark:bg-slate-900"
+						>
+							<div
+								class="flex items-center justify-between border-b border-slate-100 bg-slate-50/75 px-5 py-3 text-xs dark:border-slate-800 dark:bg-slate-800/50"
+							>
 								<div>
 									{#if report.data}
 										{@const pitData = report.data}
-										<span class="font-semibold text-blue-600">
+										<span class="font-bold text-cyan-700 dark:text-cyan-400">
 											Scouted by {pitData.scoutName || 'Unknown'}
 										</span>
-										<span class="ml-2 text-gray-500">
-											{pitData.timestamp ? new Date(pitData.timestamp).toLocaleString() : 'No Date'}
+										<span class="ml-2 text-slate-400">
+											{pitData.timestamp ? new Date(pitData.timestamp).toLocaleString() : ''}
 										</span>
 									{:else}
-										<span class="font-semibold text-blue-600">Pit report</span>
-										<span class="ml-2 text-gray-500">No structured data</span>
+										<span class="font-bold text-slate-700">Pit Report</span>
 									{/if}
 								</div>
 
 								{#if data.isAdmin}
 									<form method="POST" action="?/deletePitReport" use:enhance>
 										<input type="hidden" name="id" value={report.id} />
-										<Button
+										<button
 											type="submit"
-											color="red"
-											size="xs"
-											class="p-1.5!"
+											class="rounded-lg p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950"
 											title="Delete Pit Report"
 										>
-											<TrashBinSolid class="h-4 w-4" />
-										</Button>
+											<svg
+												class="h-4 w-4"
+												fill="none"
+												viewBox="0 0 24 24"
+												stroke="currentColor"
+												stroke-width="2"
+											>
+												<path
+													stroke-linecap="round"
+													stroke-linejoin="round"
+													d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+												/>
+											</svg>
+										</button>
 									</form>
 								{/if}
 							</div>
 
 							{#if report.data}
 								{@const pitData = report.data}
-								<div class="grid grid-cols-2 gap-6 p-6 md:grid-cols-4">
+								<div class="grid grid-cols-2 gap-4 p-5 text-xs sm:grid-cols-4">
 									<div>
-										<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">
+										<p class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
 											Drivetrain
 										</p>
-										<p class="font-medium text-gray-900">{pitData.drivetrain}</p>
+										<p class="mt-0.5 font-semibold text-slate-900 dark:text-white">
+											{pitData.drivetrain || '—'}
+										</p>
 									</div>
 									<div>
-										<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Shooter</p>
-										<p class="font-medium text-gray-900">{pitData.shooterType}</p>
+										<p class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+											Shooter
+										</p>
+										<p class="mt-0.5 font-semibold text-slate-900 dark:text-white">
+											{pitData.shooterType || '—'}
+										</p>
 									</div>
 									<div>
-										<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Intake</p>
-										<p class="font-medium text-gray-900">{pitData.intakeType}</p>
+										<p class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+											Intake
+										</p>
+										<p class="mt-0.5 font-semibold text-slate-900 dark:text-white">
+											{pitData.intakeType || '—'}
+										</p>
 									</div>
 									<div>
-										<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">
+										<p class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
 											Max Climb
 										</p>
-										<p class="font-medium text-gray-900">{pitData.climb}</p>
+										<p class="mt-0.5 font-semibold text-slate-900 dark:text-white">
+											{pitData.climb || '—'}
+										</p>
 									</div>
 									<div>
-										<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">
+										<p class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
 											Under Trench
 										</p>
-										<p class="font-medium text-gray-900">
+										<p class="mt-0.5 font-semibold text-slate-900 dark:text-white">
 											{pitData.canGoUnderTrench === true
 												? 'Yes'
 												: pitData.canGoUnderTrench === false
@@ -565,116 +669,166 @@
 													: '—'}
 										</p>
 									</div>
-
 									<div>
-										<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Weight</p>
-										<p class="font-medium text-gray-900">{pitData.weightLbs || '??'} lbs</p>
+										<p class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+											Weight
+										</p>
+										<p class="mt-0.5 font-semibold text-slate-900 dark:text-white">
+											{pitData.weightLbs || '??'} lbs
+										</p>
 									</div>
 									<div>
-										<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">
+										<p class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
 											Fuel / Sec
 										</p>
-										<p class="font-medium text-gray-900">{pitData.fuelPerSecond || 'N/A'}</p>
-									</div>
-									<div>
-										<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">Hopper</p>
-										<p class="font-medium text-gray-900">{pitData.hopperCapacity}</p>
-									</div>
-									<div>
-										<p class="text-xs font-bold tracking-wider text-gray-400 uppercase">
-											Driver Exp
+										<p class="mt-0.5 font-semibold text-slate-900 dark:text-white">
+											{pitData.fuelPerSecond || 'N/A'}
 										</p>
-										<p class="font-medium text-gray-900">{pitData.driverYOE}</p>
+									</div>
+									<div>
+										<p class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+											Hopper
+										</p>
+										<p class="mt-0.5 font-semibold text-slate-900 dark:text-white">
+											{pitData.hopperCapacity || '—'}
+										</p>
 									</div>
 
-									<div class="col-span-2 border-t border-gray-100 pt-4 md:col-span-4">
-										<p class="mb-3 text-xs font-bold tracking-wider text-gray-400 uppercase">
+									<div
+										class="col-span-2 border-t border-slate-100 pt-3 sm:col-span-4 dark:border-slate-800"
+									>
+										<p class="mb-2 text-[10px] font-bold tracking-wider text-slate-400 uppercase">
 											Autonomous Capabilities
 										</p>
-										<div class="space-y-3">
-											<div class="text-sm">
-												<span class="text-gray-500 italic">Preferred Start:</span>
-												<span class="ml-2 font-semibold text-gray-800">{pitData.autoStart}</span>
+										<div class="space-y-2">
+											<div>
+												<span class="text-slate-400">Preferred Start:</span>
+												<span class="ml-2 font-bold text-slate-800 dark:text-slate-200"
+													>{pitData.autoStart || '—'}</span
+												>
 											</div>
-											<div class="flex flex-wrap gap-2">
+											<div class="flex flex-wrap gap-1.5">
 												{#if pitData.autoFeatures && pitData.autoFeatures.length > 0}
 													{#each pitData.autoFeatures as feature}
-														<Badge color="green" rounded class="px-3 py-1">
+														<span
+															class="rounded-md bg-emerald-50 px-2 py-0.5 font-semibold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
+														>
 															{formatFeature(feature)}
-														</Badge>
+														</span>
 													{/each}
 												{:else}
-													<span class="text-sm text-gray-400 italic"
-														>No auto features reported.</span
+													<span class="text-slate-400 italic"
+														>No specific auto features reported.</span
 													>
 												{/if}
 											</div>
 										</div>
 									</div>
 
-									{#if data.isAdmin || data.isPrivileged}
+									{#if (data.isAdmin || data.isPrivileged) && (pitData.knownIssues || pitData.comments)}
 										<div
-											class="col-span-2 grid gap-4 border-t border-gray-100 pt-4 md:col-span-4 md:grid-cols-2"
+											class="col-span-2 grid gap-3 border-t border-slate-100 pt-3 sm:col-span-4 sm:grid-cols-2 dark:border-slate-800"
 										>
-											<div class="rounded-lg border border-red-100 bg-red-50 p-4">
-												<p class="text-xs font-bold tracking-wider text-red-700 uppercase">
-													Known Issues
-												</p>
-												<p class="mt-1 text-sm text-gray-700 italic">
-													{pitData.knownIssues || 'No known issues reported.'}
-												</p>
-											</div>
-											<div class="rounded-lg border border-blue-100 bg-blue-50 p-4">
-												<p class="text-xs font-bold tracking-wider text-blue-700 uppercase">
-													General Comments
-												</p>
-												<p class="mt-1 text-sm text-gray-700 italic">
-													{pitData.comments || 'No additional comments.'}
-												</p>
-											</div>
+											{#if pitData.knownIssues}
+												<div
+													class="rounded-xl border border-rose-100 bg-rose-50/60 p-3 dark:border-rose-900/40 dark:bg-rose-950/20"
+												>
+													<p
+														class="text-[10px] font-bold tracking-wider text-rose-700 uppercase dark:text-rose-300"
+													>
+														Known Issues
+													</p>
+													<p class="mt-1 text-xs text-rose-900 dark:text-rose-200">
+														{pitData.knownIssues}
+													</p>
+												</div>
+											{/if}
+											{#if pitData.comments}
+												<div
+													class="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-800/40"
+												>
+													<p
+														class="text-[10px] font-bold tracking-wider text-slate-500 uppercase dark:text-slate-400"
+													>
+														General Notes
+													</p>
+													<p class="mt-1 text-xs text-slate-700 dark:text-slate-300">
+														{pitData.comments}
+													</p>
+												</div>
+											{/if}
 										</div>
 									{/if}
-								</div>
-							{:else}
-								<div class="p-6 text-sm text-gray-500">
-									This pit report does not contain structured pit data.
 								</div>
 							{/if}
 						</div>
 					{/each}
 				{:else}
-					<div class="rounded-xl border-2 border-dashed border-gray-200 bg-white p-12 text-center">
-						<p class="mb-4 text-gray-400">No pit data available for this team yet.</p>
+					<div
+						class="rounded-2xl border border-dashed border-slate-200 p-8 text-center dark:border-slate-800"
+					>
+						<div
+							class="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400"
+						>
+							<svg
+								class="h-5 w-5"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke="currentColor"
+								stroke-width="2"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+								/>
+							</svg>
+						</div>
+						<p class="mt-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
+							Awaiting Pit Inspection
+						</p>
+						<p class="mt-0.5 text-xs text-slate-400">
+							No pit scouting data recorded yet for Team {data.teamnum}.
+						</p>
+						<a
+							href="/pit-scout/new?team={data.teamnum}"
+							class="mt-3.5 inline-flex items-center gap-1.5 rounded-xl bg-cyan-600 px-4 py-2 text-xs font-bold text-white shadow-2xs transition-colors hover:bg-cyan-700 active:bg-cyan-800"
+						>
+							+ Scout Pit for Team {data.teamnum} →
+						</a>
 					</div>
 				{/if}
 			</div>
+		</div>
 
-			<div class="lg:col-span-4">
-				<div class="top-8">
-					<h2 class="mb-4 text-xl font-bold text-gray-800">Match History</h2>
-					<div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-						<!-- Header row -->
-						<div class="flex items-center gap-2 border-b border-gray-200 bg-gray-50 px-3 py-1.5">
-							<span
-								class="w-16 shrink-0 text-[10px] font-bold tracking-wider text-gray-400 uppercase"
-								>Match</span
-							>
-							<span
-								class="flex-1 text-center text-[10px] font-bold tracking-wider text-gray-400 uppercase"
-								>Score</span
-							>
-							<span
-								class="w-10 shrink-0 text-center text-[10px] font-bold tracking-wider text-gray-400 uppercase"
-								>Actual</span
-							>
-							{#if data.hasEpopData}
-								<span
-									class="w-10 shrink-0 text-center text-[10px] font-bold tracking-wider text-purple-400 uppercase"
-									>Pred</span
-								>
-							{/if}
-							<span class="w-3.5 shrink-0"></span>
-						</div>
+		<!-- Right Column: Match History Timeline -->
+		<div class="lg:col-span-4">
+			<div class="sticky top-24 space-y-3">
+				<div class="flex items-center justify-between">
+					<h2 class="text-base font-bold text-slate-900 dark:text-white">Match Schedule</h2>
+					<span
+						class="rounded-full bg-slate-100 px-2 py-0.5 font-mono text-[11px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+					>
+						{sortedTeamMatches.length} Matches
+					</span>
+				</div>
+
+				<div
+					class="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800/80 dark:bg-slate-900"
+				>
+					<!-- Header row -->
+					<div
+						class="flex items-center gap-2 border-b border-slate-100 bg-slate-50/75 px-3 py-2 text-[10px] font-bold tracking-wider text-slate-400 uppercase dark:border-slate-800 dark:bg-slate-800/50"
+					>
+						<span class="w-14">Match</span>
+						<span class="flex-1 text-center">Score</span>
+						<span class="w-8 text-center">Res</span>
+						{#if data.hasEpopData}
+							<span class="w-8 text-center text-purple-600 dark:text-purple-400">Pred</span>
+						{/if}
+					</div>
+
+					<div class="divide-y divide-slate-100 dark:divide-slate-800">
 						{#each sortedTeamMatches as match}
 							{@const onRed = [match.red1, match.red2, match.red3].includes(data.teamnum)}
 							{@const myScore = onRed ? match.redScore : match.blueScore}
@@ -686,54 +840,62 @@
 							{@const isPredLoss = predProb < 0.49}
 							<a
 								href="/matches?match={match.id}"
-								class="group flex items-center gap-2 border-b border-gray-100 px-3 py-2.5 transition-colors last:border-0 hover:bg-blue-50"
+								class="flex items-center gap-2 px-3 py-2 text-xs transition-colors hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20"
 							>
-								<span class="w-16 shrink-0 font-mono text-xs font-semibold text-gray-600"
-									>{match.id}</span
-								>
+								<span class="w-14 font-mono font-bold text-slate-700 dark:text-slate-300">
+									{match.id}
+								</span>
+
 								{#if myScore != null && theirScore != null}
-									<span class="flex-1 text-center font-mono text-sm">
-										<span class="{onRed ? 'text-red-700' : 'text-blue-700'} font-black"
-											>{myScore}</span
+									<span class="flex-1 text-center font-mono">
+										<span
+											class="{onRed
+												? 'text-rose-600 dark:text-rose-400'
+												: 'text-blue-600 dark:text-blue-400'} font-bold"
 										>
-										<span class="mx-1 text-gray-300">–</span>
-										<span class="{!onRed ? 'text-red-700' : 'text-blue-700'} font-normal"
-											>{theirScore}</span
+											{myScore}
+										</span>
+										<span class="text-slate-300 dark:text-slate-600">-</span>
+										<span
+											class={!onRed
+												? 'text-rose-600 dark:text-rose-400'
+												: 'text-blue-600 dark:text-blue-400'}
 										>
+											{theirScore}
+										</span>
 									</span>
 									<span
-										class="w-10 shrink-0 text-center text-xs font-bold {isWin
-											? 'text-green-600'
+										class="inline-flex w-8 items-center justify-center rounded text-[11px] font-bold
+										{isWin
+											? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
 											: isLoss
-												? 'text-red-500'
-												: 'text-gray-400'}"
+												? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+												: 'text-slate-400'}"
 									>
 										{isWin ? 'W' : isLoss ? 'L' : 'T'}
 									</span>
 								{:else}
-									<span class="flex-1 text-center text-xs text-gray-400 italic">unscored</span>
-									<span class="w-10 shrink-0"></span>
+									<span class="flex-1 text-center text-slate-400 italic">Unplayed</span>
+									<span class="w-8"></span>
 								{/if}
+
 								{#if data.hasEpopData}
 									<span
-										class="w-10 shrink-0 text-center text-xs font-bold {isPredWin
-											? 'text-green-500'
+										class="inline-flex w-8 items-center justify-center rounded text-[11px] font-bold
+										{isPredWin
+											? 'text-purple-600 dark:text-purple-400'
 											: isPredLoss
-												? 'text-red-400'
-												: 'text-gray-400'}"
+												? 'text-slate-400'
+												: 'text-slate-400'}"
 									>
 										{isPredWin ? 'W' : isPredLoss ? 'L' : 'T'}
 									</span>
 								{/if}
-								<ChevronRightOutline
-									class="h-3.5 w-3.5 shrink-0 text-gray-300 group-hover:text-blue-400"
-								/>
 							</a>
 						{/each}
-						{#if data.teamMatches.length === 0}
-							<div class="p-8 text-center text-sm text-gray-400 italic">
-								No matches in schedule for this team.
-							</div>
+
+						{#if sortedTeamMatches.length === 0}
+							<div class="p-6 text-center text-xs text-slate-400 italic">No matches scheduled.</div>
 						{/if}
 					</div>
 				</div>

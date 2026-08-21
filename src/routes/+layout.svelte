@@ -1,8 +1,9 @@
 <script lang="ts">
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import Navbar from './Navbar.svelte';
 	import type { Snippet } from 'svelte';
 	import '../app.css';
+
 	interface Props {
 		children: Snippet;
 		data: {
@@ -13,35 +14,31 @@
 	}
 	let { children, data }: Props = $props();
 
-	let title = $derived(
-		[
-			'2718 Online',
-			...$page.url.pathname
-				.split('/')
-				.slice(1)
-				.filter(Boolean)
-				.map((part) =>
-					part
-						.split('-')
-						.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-						.join(' ')
-				)
-		].join(' - ')
-	);
+	let title = $derived.by(() => {
+		const parts = page.url.pathname
+			.split('/')
+			.slice(1)
+			.filter(Boolean)
+			.map((part) =>
+				part
+					.split('-')
+					.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+					.join(' ')
+			);
+		return ['2718 Online', ...parts].join(' • ');
+	});
 </script>
 
 <svelte:head>
 	<title>{title}</title>
 </svelte:head>
 
-<h1 class="hidden">{title}</h1>
-
 <header
-	class="fixed top-0 z-40 mx-auto w-full flex-none border-b border-gray-200 bg-white dark:border-gray-600 dark:bg-gray-800"
+	class="fixed top-0 z-40 w-full border-b border-slate-200/80 bg-white/85 backdrop-blur-md transition-colors dark:border-slate-800/80 dark:bg-slate-900/85"
 >
 	<Navbar teams={data.teamSearchList} isAdmin={data.isAdmin} isPrivileged={data.isPrivileged} />
 </header>
 
-<div class="mx-auto max-w-screen-2xl pt-[98px] pr-4 pb-10 pl-4">
+<main class="mx-auto max-w-screen-2xl px-4 pt-20 pb-12 sm:px-6 sm:pt-22 lg:px-8">
 	{@render children()}
-</div>
+</main>

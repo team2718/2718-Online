@@ -11,4 +11,3 @@ export const setMatchTypeSchema = z.object({
 export const setAutoTbaPullSchema = z.object({
 	autoTbaPull: z.enum(['true', 'false'])
 });
-

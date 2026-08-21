@@ -25,13 +25,15 @@ export type ValidatedPitReportData = z.infer<typeof pitReportDataSchema>;
 /**
  * Parses and validates pit scouting payload from string or object.
  */
-export function parsePitReport(rawInput: unknown): {
-	success: true;
-	data: PitScoutReportData;
-} | {
-	success: false;
-	error: string;
-} {
+export function parsePitReport(rawInput: unknown):
+	| {
+			success: true;
+			data: PitScoutReportData;
+	  }
+	| {
+			success: false;
+			error: string;
+	  } {
 	let json: unknown = rawInput;
 	if (typeof rawInput === 'string') {
 		try {
@@ -53,4 +55,3 @@ export function parsePitReport(rawInput: unknown): {
 
 	return { success: true, data: result.data };
 }
-

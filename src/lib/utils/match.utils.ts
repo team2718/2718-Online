@@ -56,4 +56,3 @@ export function matchTypeColorBorder(t: string | null): string {
 	if (t === 'playoff') return 'text-purple-700 bg-purple-50 border-purple-200';
 	return 'text-gray-600 bg-gray-50 border-gray-200';
 }
-

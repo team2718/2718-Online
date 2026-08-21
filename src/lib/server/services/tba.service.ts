@@ -95,7 +95,10 @@ export async function fetchTbaOprs(eventKey: string, apiKey: string): Promise<TB
 /**
  * Fetches event rankings from TBA.
  */
-export async function fetchTbaRankings(eventKey: string, apiKey: string): Promise<TBARankings | null> {
+export async function fetchTbaRankings(
+	eventKey: string,
+	apiKey: string
+): Promise<TBARankings | null> {
 	const res = await fetch(`${BASE_URL}/event/${eventKey}/rankings`, {
 		headers: getHeaders(apiKey)
 	});
@@ -133,4 +136,3 @@ export async function fetchTbaMatches(eventKey: string, apiKey: string): Promise
 	}
 	return await res.json();
 }
-

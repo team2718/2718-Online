@@ -1,11 +1,4 @@
 <script lang="ts">
-	import { Button, Modal, Alert, Label, Input, Radio } from 'flowbite-svelte';
-	import {
-		ExclamationCircleOutline,
-		InfoCircleSolid,
-		CheckCircleSolid,
-		CloseCircleSolid
-	} from 'flowbite-svelte-icons';
 	import { enhance } from '$app/forms';
 	import { untrack } from 'svelte';
 
@@ -14,9 +7,9 @@
 	let wipeModalOpen = $state(false);
 	let cleanupModalOpen = $state(false);
 
-	// Local state for the match type selector (initialised from server load data)
 	let selectedMatchType = $state(untrack(() => data.defaultMatchType ?? 'qualification'));
 	let autoTbaPull = $state(untrack(() => data.autoTbaPull ?? false));
+
 	$effect(() => {
 		selectedMatchType = data.defaultMatchType ?? 'qualification';
 	});
@@ -26,198 +19,220 @@
 	);
 </script>
 
-<div class="mx-auto max-w-7xl px-4 py-10">
-	<div class="mb-8 flex items-center justify-between">
-		<h1 class="text-3xl font-bold">Admin Dashboard</h1>
-		<form method="POST" action="?/logout" use:enhance>
-			<Button color="alternative" type="submit">Log out</Button>
-		</form>
+<div class="mx-auto max-w-6xl space-y-6 px-4 py-6 sm:py-8">
+	<!-- Page Header -->
+	<div
+		class="flex flex-col justify-between gap-3 border-b border-slate-200/80 pb-4 sm:flex-row sm:items-end dark:border-slate-800/80"
+	>
+		<div>
+			<div class="flex items-center gap-2.5">
+				<h1 class="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl dark:text-white">
+					Admin Dashboard
+				</h1>
+				<span
+					class="rounded-full bg-rose-50 px-2.5 py-0.5 font-mono text-xs font-bold text-rose-700 dark:bg-rose-950 dark:text-rose-300"
+				>
+					Admin Mode
+				</span>
+			</div>
+			<p class="mt-0.5 text-xs text-slate-500 sm:text-sm dark:text-slate-400">
+				Manage event synchronization, match types, data integrity, and database operations.
+			</p>
+		</div>
+
+		<div class="flex items-center gap-2">
+			<a
+				href="/admin/reports"
+				class="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+			>
+				Report Fixer ↗
+			</a>
+			<form method="POST" action="?/logout" use:enhance>
+				<button
+					type="submit"
+					class="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2 text-xs font-bold text-rose-700 shadow-2xs transition-colors hover:bg-rose-100 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300"
+				>
+					Log out
+				</button>
+			</form>
+		</div>
 	</div>
 
-	<!-- ── Alerts ────────────────────────────────────────────────────── -->
-
+	<!-- Alerts -->
 	{#if form?.success && form?.action === 'cleanup'}
-		<Alert color="green" class="mb-6 border border-green-200">
-			<div class="flex items-center gap-2 text-lg font-bold text-green-800">
-				<InfoCircleSolid class="h-6 w-6" />
-				Database Cleanup Successful
-			</div>
-			<div class="mt-4 space-y-2 text-sm text-green-700">
-				<p>
-					<strong class="font-bold">Deleted Matches ({form.deletedMatches?.length || 0}):</strong>
-					{form.deletedMatches?.length ? form.deletedMatches.join(', ') : 'None'}
-				</p>
-				<p>
-					<strong class="font-bold">Deleted Teams ({form.deletedTeams?.length || 0}):</strong>
-					{form.deletedTeams?.length ? form.deletedTeams.join(', ') : 'None'}
-				</p>
-			</div>
-		</Alert>
+		<div
+			class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-xs dark:border-emerald-900/50 dark:bg-emerald-950/30"
+		>
+			<p class="font-bold text-emerald-800 dark:text-emerald-300">Database Cleanup Successful</p>
+			<p class="mt-1 text-emerald-700 dark:text-emerald-400">
+				Removed {form.deletedMatches?.length ?? 0} unused matches and {form.deletedTeams?.length ??
+					0} unused teams.
+			</p>
+		</div>
 	{/if}
 
 	{#if form?.action === 'setMatchType'}
 		{#if form.success}
-			<Alert color="green" class="mb-6 border border-green-200">
-				<div class="flex items-center gap-2 font-semibold text-green-800">
-					<CheckCircleSolid class="h-5 w-5" />
-					Match type set to <strong>{form.matchType}</strong>.
-				</div>
-			</Alert>
+			<div
+				class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-semibold text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-300"
+			>
+				Match type set to <b>{form.matchType}</b>.
+			</div>
 		{:else}
-			<Alert color="red" class="mb-6 border border-red-200">
-				<div class="flex items-center gap-2 font-semibold text-red-800">
-					<CloseCircleSolid class="h-5 w-5" />
-					{form?.message ?? 'Failed to set match type.'}
-				</div>
-			</Alert>
+			<div
+				class="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs font-semibold text-rose-800 dark:border-rose-900/50 dark:bg-rose-950/30 dark:text-rose-300"
+			>
+				{form?.message ?? 'Failed to set match type.'}
+			</div>
 		{/if}
 	{/if}
 
 	{#if form?.action === 'fetchTBA'}
 		{#if form.success}
-			<Alert color="green" class="mb-6 border border-green-200">
-				<div class="flex items-center gap-2 text-lg font-bold text-green-800">
-					<CheckCircleSolid class="h-6 w-6" />
-					TBA Import Successful
-				</div>
-				<div class="mt-2 text-sm text-green-700">
+			<div
+				class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-xs dark:border-emerald-900/50 dark:bg-emerald-950/30"
+			>
+				<p class="font-bold text-emerald-800 dark:text-emerald-300">TBA Import Successful</p>
+				<p class="mt-1 text-emerald-700 dark:text-emerald-400">
 					{#if tbaMatchesSkipped}
-						Imported <strong>{form.teamsInserted}</strong> teams. Match import skipped — practice matches
-						are created automatically when scans are submitted.
+						Imported <b>{form.teamsInserted}</b> teams. Match schedule skipped in practice mode.
 					{:else}
-						Imported <strong>{form.teamsInserted}</strong> teams and
-						<strong>{form.matchesInserted}</strong> matches.
+						Imported <b>{form.teamsInserted}</b> teams and <b>{form.matchesInserted}</b> matches.
 					{/if}
-				</div>
-			</Alert>
+				</p>
+			</div>
 		{:else}
-			<Alert color="red" class="mb-6 border border-red-200">
-				<div class="flex items-center gap-2 text-lg font-bold text-red-800">
-					<CloseCircleSolid class="h-6 w-6" />
-					TBA Import Completed with Errors
-				</div>
-				<div class="mt-2 text-sm text-red-700">
-					{#if (form.teamsInserted ?? 0) > 0 || (form.matchesInserted ?? 0) > 0}
-						<p>
-							Partial import: <strong>{form.teamsInserted}</strong> teams,
-							<strong>{form.matchesInserted}</strong> matches.
-						</p>
-					{/if}
+			<div
+				class="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs dark:border-rose-900/50 dark:bg-rose-950/30"
+			>
+				<p class="font-bold text-rose-800 dark:text-rose-300">TBA Import Failed or Incomplete</p>
+				<div class="mt-1 text-rose-700 dark:text-rose-400">
 					{#if form.errors?.length}
-						<ul class="mt-1 list-disc pl-4">
+						<ul class="list-disc pl-4">
 							{#each form.errors as err}
 								<li>{err}</li>
 							{/each}
 						</ul>
 					{:else}
-						<p>{form.message ?? 'Unknown error.'}</p>
+						<p>{form.message ?? 'Unknown error occurred during import.'}</p>
 					{/if}
 				</div>
-			</Alert>
+			</div>
 		{/if}
 	{/if}
 
-	{#if form?.action === 'setAutoTbaPull'}
-		{#if form.success}
-			<Alert color="green" class="mb-6 border border-green-200">
-				<div class="flex items-center gap-2 font-semibold text-green-800">
-					<CheckCircleSolid class="h-5 w-5" />
-					Auto-pull {form.autoTbaPull ? 'enabled' : 'disabled'}.
-				</div>
-			</Alert>
-		{:else}
-			<Alert color="red" class="mb-6 border border-red-200">
-				<div class="flex items-center gap-2 font-semibold text-red-800">
-					<CloseCircleSolid class="h-5 w-5" />
-					{form?.message ?? 'Failed to update auto-pull setting.'}
-				</div>
-			</Alert>
-		{/if}
-	{/if}
+	<!-- Main Settings Grid -->
+	<div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+		<!-- Match Type Selector -->
+		<div
+			class="overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs dark:border-slate-800/80 dark:bg-slate-900"
+		>
+			<div class="mb-3">
+				<h2 class="text-sm font-bold text-slate-900 dark:text-white">Active Match Type</h2>
+				<p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+					Choose whether new scouting scans are recorded as qualification or practice matches.
+				</p>
+			</div>
 
-	<!-- ── Main Grid ─────────────────────────────────────────────────── -->
-
-	<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-		<!-- Today's Match Type -->
-		<div class="rounded-xl border border-blue-200 bg-blue-50 p-6">
-			<h2 class="text-lg font-bold text-blue-700">Today's Match Type</h2>
-			<p class="mb-4 text-sm text-blue-600">
-				Select whether today's scouting session covers practice or qualification matches. Scanned QR
-				codes will be filed under the selected type.
-			</p>
-			<form method="POST" action="?/setMatchType" use:enhance class="space-y-3">
-				<div class="flex gap-6">
-					<Label class="flex cursor-pointer items-center gap-2 font-medium text-blue-800">
-						<Radio name="matchType" value="qualification" bind:group={selectedMatchType} />
+			<form method="POST" action="?/setMatchType" use:enhance class="space-y-4 pt-1">
+				<div class="grid grid-cols-2 gap-2.5">
+					<label
+						class="flex cursor-pointer items-center gap-2.5 rounded-xl border p-3 text-xs font-bold transition-colors
+						{selectedMatchType === 'qualification'
+							? 'border-cyan-500 bg-cyan-50/60 text-cyan-800 dark:border-cyan-500 dark:bg-cyan-950/40 dark:text-cyan-300'
+							: 'border-slate-200 bg-slate-50/50 text-slate-700 hover:bg-slate-100/50 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-300'}"
+					>
+						<input
+							type="radio"
+							name="matchType"
+							value="qualification"
+							bind:group={selectedMatchType}
+							class="text-cyan-600 focus:ring-cyan-500"
+						/>
 						Qualification
-					</Label>
-					<Label class="flex cursor-pointer items-center gap-2 font-medium text-blue-800">
-						<Radio name="matchType" value="practice" bind:group={selectedMatchType} />
+					</label>
+
+					<label
+						class="flex cursor-pointer items-center gap-2.5 rounded-xl border p-3 text-xs font-bold transition-colors
+						{selectedMatchType === 'practice'
+							? 'border-cyan-500 bg-cyan-50/60 text-cyan-800 dark:border-cyan-500 dark:bg-cyan-950/40 dark:text-cyan-300'
+							: 'border-slate-200 bg-slate-50/50 text-slate-700 hover:bg-slate-100/50 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-300'}"
+					>
+						<input
+							type="radio"
+							name="matchType"
+							value="practice"
+							bind:group={selectedMatchType}
+							class="text-cyan-600 focus:ring-cyan-500"
+						/>
 						Practice
-					</Label>
+					</label>
 				</div>
-				<Button color="blue" type="submit">Save</Button>
+
+				<button
+					type="submit"
+					class="rounded-xl bg-cyan-600 px-4 py-2 text-xs font-bold text-white shadow-2xs transition-colors hover:bg-cyan-700"
+				>
+					Save Match Type
+				</button>
 			</form>
 		</div>
 
-		<!-- The Blue Alliance Import -->
-		<div class="rounded-xl border border-indigo-200 bg-indigo-50 p-6">
-			<h2 class="text-lg font-bold text-indigo-700">Import from The Blue Alliance</h2>
-			<p class="mb-4 text-sm text-indigo-600">
-				{#if selectedMatchType === 'practice'}
-					Download the team list for this event. Match import is skipped in practice mode — TBA does
-					not track practice matches. Matches will be created automatically as scans are submitted.
-				{:else}
-					Download the match schedule and team list for an event. Existing records will be updated.
-				{/if}
-				{#if data.tbaApiKeyConfigured}
-					<span class="font-medium">(TBA_API_KEY is configured in the environment.)</span>
-				{/if}
-			</p>
-			{#if data.eventCode}
-				<p class="mb-3 text-sm text-indigo-700">
-					Stored event code: <code class="rounded bg-indigo-100 px-1 font-mono"
-						>{data.eventCode}</code
-					>
+		<!-- TBA & Statbotics Sync -->
+		<div
+			class="overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs dark:border-slate-800/80 dark:bg-slate-900"
+		>
+			<div class="mb-3">
+				<h2 class="text-sm font-bold text-slate-900 dark:text-white">
+					Event Synchronization (TBA & Statbotics)
+				</h2>
+				<p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+					Pull team lists, EPA ratings, OPRs, and match schedules from The Blue Alliance.
 				</p>
-			{/if}
-			<form method="POST" action="?/fetchTBA" use:enhance class="space-y-3">
+			</div>
+
+			<form method="POST" action="?/fetchTBA" use:enhance class="space-y-3 pt-1">
 				<div>
-					<Label for="eventKey" class="mb-1 block text-sm font-medium text-indigo-800">
-						Event Key
-					</Label>
-					<Input
+					<label for="eventKey" class="block text-xs font-bold text-slate-700 dark:text-slate-300">
+						TBA Event Code
+					</label>
+					<input
 						id="eventKey"
 						name="eventKey"
 						placeholder="e.g. 2026okok"
 						value={data.eventCode}
 						required
-						class="bg-white"
+						class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 outline-none focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
 					/>
-					<p class="mt-1 text-xs text-indigo-500">
-						Find event keys on thebluealliance.com — e.g. <code>2026okok</code> for the 2026 Oklahoma
-						Regional.
-					</p>
 				</div>
+
 				{#if !data.tbaApiKeyConfigured}
 					<div>
-						<Label for="tbaApiKey" class="mb-1 block text-sm font-medium text-indigo-800">
+						<label
+							for="tbaApiKey"
+							class="block text-xs font-bold text-slate-700 dark:text-slate-300"
+						>
 							TBA API Key
-						</Label>
-						<Input
+						</label>
+						<input
 							id="tbaApiKey"
 							name="tbaApiKey"
 							type="password"
-							placeholder="Your Read API key from thebluealliance.com/account"
-							class="bg-white"
+							placeholder="Your TBA Read API key"
+							class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 outline-none focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
 						/>
 					</div>
 				{/if}
-				<Button color="purple" type="submit">
-					{selectedMatchType === 'practice' ? 'Download Teams' : 'Download Schedule & Teams'}
-				</Button>
+
+				<button
+					type="submit"
+					class="rounded-xl bg-cyan-600 px-4 py-2 text-xs font-bold text-white shadow-2xs transition-colors hover:bg-cyan-700"
+				>
+					{selectedMatchType === 'practice' ? 'Download Teams' : 'Sync Event & Schedule'}
+				</button>
 			</form>
-			<div class="mt-4 border-t border-indigo-200 pt-4">
+
+			<div class="mt-4 border-t border-slate-100 pt-3 dark:border-slate-800">
 				<form
 					method="POST"
 					action="?/setAutoTbaPull"
@@ -226,20 +241,22 @@
 					}}
 				>
 					<input type="hidden" name="autoTbaPull" value={autoTbaPull ? 'false' : 'true'} />
-					<label class="flex cursor-pointer items-center gap-3">
-						<div
+					<label class="flex cursor-pointer items-center justify-between">
+						<span class="text-xs font-semibold text-slate-700 dark:text-slate-300">
+							Background Auto-Sync (Every 15 mins)
+						</span>
+						<button
+							type="submit"
+							aria-label="Toggle background auto-sync"
 							class="relative h-6 w-11 rounded-full transition-colors {autoTbaPull
-								? 'bg-indigo-600'
-								: 'bg-gray-300'}"
+								? 'bg-cyan-600'
+								: 'bg-slate-200 dark:bg-slate-700'}"
 						>
-							<div
-								class="absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform {autoTbaPull
+							<span
+								class="absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-xs transition-transform {autoTbaPull
 									? 'translate-x-5'
-									: 'translate-x-0.5'}"
-							></div>
-						</div>
-						<button type="submit" class="text-sm font-medium text-indigo-800 hover:underline">
-							Auto-pull every 15 minutes
+									: 'translate-x-0'}"
+							></span>
 						</button>
 					</label>
 				</form>
@@ -247,64 +264,108 @@
 		</div>
 
 		<!-- Database Cleanup -->
-		<div class="rounded-xl border border-yellow-200 bg-yellow-50 p-6">
-			<h2 class="text-lg font-bold text-yellow-700">Database Cleanup</h2>
-			<p class="mb-4 text-sm text-yellow-600">
-				Clean up orphaned records. This will safely delete any matches or teams that do not have any
-				associated scouting or pit reports.
+		<div
+			class="overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs dark:border-slate-800/80 dark:bg-slate-900"
+		>
+			<h2 class="text-sm font-bold text-slate-900 dark:text-white">Database Cleanup</h2>
+			<p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+				Safely remove orphaned matches or teams that do not have any attached scouting or pit
+				reports.
 			</p>
-			<Button color="yellow" onclick={() => (cleanupModalOpen = true)}>Clean Up Database</Button>
-		</div>
-
-		<!-- Report Fixer -->
-		<div class="rounded-xl border border-orange-200 bg-orange-50 p-6">
-			<h2 class="text-lg font-bold text-orange-700">Report Fixer</h2>
-			<p class="mb-4 text-sm text-orange-600">
-				Find and fix scouting reports with wrong team numbers. Also remove ghost teams created by
-				bad scans.
-			</p>
-			<a
-				href="/admin/reports"
-				class="inline-flex items-center rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600"
-			>
-				Open Report Fixer
-			</a>
+			<div class="mt-4">
+				<button
+					type="button"
+					onclick={() => (cleanupModalOpen = true)}
+					class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-bold text-amber-700 shadow-2xs transition-colors hover:bg-amber-100 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-300"
+				>
+					Clean Up Unused Records
+				</button>
+			</div>
 		</div>
 
 		<!-- Danger Zone -->
-		<div class="rounded-xl border border-red-200 bg-red-50 p-6">
-			<h2 class="text-lg font-bold text-red-700">Danger Zone</h2>
-			<p class="mb-4 text-sm text-red-600">
-				Wiping the database will permanently delete all matches, teams, and scouting reports. This
-				action cannot be undone.
+		<div
+			class="overflow-hidden rounded-2xl border border-rose-200/80 bg-rose-50/40 p-5 dark:border-rose-900/50 dark:bg-rose-950/20"
+		>
+			<h2 class="text-sm font-bold text-rose-700 dark:text-rose-300">Danger Zone</h2>
+			<p class="mt-1 text-xs text-rose-600 dark:text-rose-400">
+				Wiping the database will permanently delete all matches, teams, and scouting reports.
 			</p>
-			<Button color="red" onclick={() => (wipeModalOpen = true)}>Wipe Database</Button>
+			<div class="mt-4">
+				<button
+					type="button"
+					onclick={() => (wipeModalOpen = true)}
+					class="rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white shadow-2xs transition-colors hover:bg-rose-700"
+				>
+					Wipe Database
+				</button>
+			</div>
 		</div>
 	</div>
 </div>
 
-<Modal title="Confirm Database Cleanup" bind:open={cleanupModalOpen} autoclose size="sm">
-	<div class="text-center">
-		<ExclamationCircleOutline class="mx-auto mb-4 h-12 w-12 text-yellow-500" />
-		<h3 class="mb-5 text-lg font-normal text-gray-500 dark:text-gray-400">
-			Are you sure you want to remove all unused matches and teams?
-		</h3>
-		<form method="POST" action="?/cleanupDatabase" use:enhance>
-			<Button color="yellow" type="submit" class="me-2">Yes, clean up</Button>
-			<Button color="alternative">No, cancel</Button>
-		</form>
+<!-- Cleanup Confirmation Modal -->
+{#if cleanupModalOpen}
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs"
+	>
+		<div
+			class="w-full max-w-sm rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900"
+		>
+			<h2 class="text-base font-bold text-slate-900 dark:text-white">Clean Up Unused Data?</h2>
+			<p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+				This will remove matches and teams with zero scouting reports. Scouted reports and active
+				teams will be kept.
+			</p>
+			<div class="mt-5 flex justify-end gap-2.5">
+				<button
+					onclick={() => (cleanupModalOpen = false)}
+					class="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+				>
+					Cancel
+				</button>
+				<form method="POST" action="?/cleanupDatabase" use:enhance>
+					<button
+						type="submit"
+						class="rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white shadow-2xs hover:bg-amber-700"
+					>
+						Yes, Clean Up
+					</button>
+				</form>
+			</div>
+		</div>
 	</div>
-</Modal>
+{/if}
 
-<Modal title="Confirm Database Wipe" bind:open={wipeModalOpen} autoclose size="sm">
-	<div class="text-center">
-		<ExclamationCircleOutline class="mx-auto mb-4 h-12 w-12 text-gray-400 dark:text-gray-200" />
-		<h3 class="mb-5 text-lg font-normal text-gray-500 dark:text-gray-400">
-			Are you absolutely sure you want to delete ALL data?
-		</h3>
-		<form method="POST" action="?/wipeDatabase" use:enhance>
-			<Button color="red" type="submit" class="me-2">Yes, I'm sure</Button>
-			<Button color="alternative">No, cancel</Button>
-		</form>
+<!-- Wipe Confirmation Modal -->
+{#if wipeModalOpen}
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs"
+	>
+		<div
+			class="w-full max-w-sm rounded-3xl border border-rose-200 bg-white p-6 shadow-2xl dark:border-rose-900 dark:bg-slate-900"
+		>
+			<h2 class="text-base font-bold text-rose-700 dark:text-rose-400">Wipe Entire Database?</h2>
+			<p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+				Are you sure you want to permanently erase ALL teams, matches, pit scouting data, and
+				observations? This cannot be undone.
+			</p>
+			<div class="mt-5 flex justify-end gap-2.5">
+				<button
+					onclick={() => (wipeModalOpen = false)}
+					class="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+				>
+					Cancel
+				</button>
+				<form method="POST" action="?/wipeDatabase" use:enhance>
+					<button
+						type="submit"
+						class="rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white shadow-2xs hover:bg-rose-700"
+					>
+						Yes, Delete Everything
+					</button>
+				</form>
+			</div>
+		</div>
 	</div>
-</Modal>
+{/if}

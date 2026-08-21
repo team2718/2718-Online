@@ -5,4 +5,3 @@ export * from './sync.service';
 export * from './scouting.service';
 export * from './settings.service';
 export * from './scheduler.service';
-

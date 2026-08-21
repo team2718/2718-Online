@@ -6,12 +6,11 @@ import type { MatchType } from '$lib/types';
 /**
  * Retrieves an event setting by key.
  */
-export async function getEventSetting(key: string, defaultValue: string | null = null): Promise<string | null> {
-	const row = await db
-		.select()
-		.from(eventSettings)
-		.where(eq(eventSettings.key, key))
-		.get();
+export async function getEventSetting(
+	key: string,
+	defaultValue: string | null = null
+): Promise<string | null> {
+	const row = await db.select().from(eventSettings).where(eq(eventSettings.key, key)).get();
 	return row?.value ?? defaultValue;
 }
 
@@ -49,4 +48,3 @@ export async function isAutoTbaPullEnabled(): Promise<boolean> {
 export async function getEventCode(): Promise<string | null> {
 	return await getEventSetting('eventCode');
 }
-
