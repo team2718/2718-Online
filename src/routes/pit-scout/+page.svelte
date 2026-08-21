@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
+
 	let { data } = $props();
 
 	let searchFilter = $state('');
@@ -94,7 +96,7 @@
 		<div
 			class="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs dark:divide-slate-800 dark:border-slate-800/80 dark:bg-slate-900"
 		>
-			{#each filteredTeams as team}
+			{#each filteredTeams as team (team.number)}
 				<div
 					class="flex items-center justify-between p-3.5 transition-colors hover:bg-cyan-50/40 dark:hover:bg-cyan-950/20"
 				>
@@ -114,7 +116,7 @@
 						<div>
 							<div class="flex items-center gap-2">
 								<a
-									href="/teams/{team.number}"
+									href={resolve('/teams/[teamnum]', { teamnum: String(team.number) })}
 									class="font-mono text-sm font-black text-cyan-600 hover:underline dark:text-cyan-400"
 								>
 									Team {team.number}
@@ -132,14 +134,15 @@
 					<div>
 						{#if team.pitScouted}
 							<a
-								href="/teams/{team.number}"
+								href={resolve('/teams/[teamnum]', { teamnum: String(team.number) })}
 								class="inline-flex items-center rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
 							>
 								View Specs
 							</a>
 						{:else}
 							<a
-								href="/pit-scout/new?team={team.number}"
+								href={`${resolve('/pit-scout/new')}?team=${encodeURIComponent(team.number)}`}
+								rel="external"
 								class="inline-flex items-center rounded-lg bg-cyan-600 px-3 py-1.5 text-xs font-bold text-white shadow-2xs transition-colors hover:bg-cyan-700 active:bg-cyan-800"
 							>
 								Scout →
@@ -159,7 +162,20 @@
 		<div
 			class="rounded-2xl border border-slate-200 bg-white p-12 text-center dark:border-slate-800 dark:bg-slate-900"
 		>
-			<p class="text-xs text-slate-400">No teams found in database.</p>
+			<p class="text-sm font-semibold text-slate-600 dark:text-slate-300">
+				No teams available to pit scout.
+			</p>
+			<p class="mt-1 text-xs text-slate-400">
+				Import team lists from The Blue Alliance in the Admin dashboard.
+			</p>
+			<div class="mt-4">
+				<a
+					href={resolve('/admin')}
+					class="inline-flex items-center rounded-xl bg-cyan-600 px-4 py-2 text-xs font-bold text-white shadow-xs transition-colors hover:bg-cyan-700"
+				>
+					Open Admin Dashboard →
+				</a>
+			</div>
 		</div>
 	{/if}
 </div>

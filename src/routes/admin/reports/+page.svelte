@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { resolve } from '$app/paths';
 
 	let { data, form } = $props();
 
@@ -37,7 +38,7 @@
 	<div class="border-b border-slate-200/80 pb-4 dark:border-slate-800/80">
 		<div class="mb-2">
 			<a
-				href="/admin"
+				href={resolve('/admin')}
 				class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
 			>
 				<svg
@@ -154,7 +155,7 @@
 			<div
 				class="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs dark:divide-slate-800 dark:border-slate-800/80 dark:bg-slate-900"
 			>
-				{#each data.ghostTeams as team}
+				{#each data.ghostTeams as team (team.number)}
 					<div class="flex items-center justify-between p-3.5">
 						<div class="flex items-center gap-2.5">
 							<span class="font-mono text-sm font-black text-amber-600 dark:text-amber-400">
@@ -230,7 +231,7 @@
 							</tr>
 						</thead>
 						<tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-							{#each sortedReports as report}
+							{#each sortedReports as report (report.id)}
 								<tr
 									class="transition-colors hover:bg-cyan-50/30 dark:hover:bg-cyan-950/20 {report.isGhost
 										? 'bg-amber-50/40 dark:bg-amber-950/20'
@@ -238,7 +239,7 @@
 								>
 									<td class="px-4 py-2.5">
 										<a
-											href="/reports/{report.matchId}"
+											href={resolve('/reports/[matchId]', { matchId: report.matchId })}
 											class="font-mono font-bold text-cyan-600 hover:underline dark:text-cyan-400"
 										>
 											{report.matchId}

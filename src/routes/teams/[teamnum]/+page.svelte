@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { playoffKey } from '$lib/matchUtils';
+	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+	import { SvelteMap } from 'svelte/reactivity';
+	import { playoffKey } from '$lib/matchUtils';
 
 	let { data } = $props();
 
@@ -17,7 +19,7 @@
 	const avgStats = $derived.by(() => {
 		if (!reports || reports.length === 0) return null;
 
-		const byMatch = new Map<string, typeof reports>();
+		const byMatch = new SvelteMap<string, typeof reports>();
 		for (const r of reports) {
 			if (!byMatch.has(r.matchId)) byMatch.set(r.matchId, []);
 			byMatch.get(r.matchId)!.push(r);
@@ -150,21 +152,39 @@
 	<!-- Top Breadcrumb & Header -->
 	<div class="border-b border-slate-200/80 pb-5 dark:border-slate-800/80">
 		<div class="mb-3">
-			<a
-				href={fromAllianceSelection ? '/alliance-selection' : '/teams'}
-				class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-			>
-				<svg
-					class="h-3.5 w-3.5"
-					fill="none"
-					viewBox="0 0 24 24"
-					stroke="currentColor"
-					stroke-width="2"
+			{#if fromAllianceSelection}
+				<a
+					href={resolve('/alliance-selection')}
+					class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
 				>
-					<path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-				</svg>
-				Back to {fromAllianceSelection ? 'Alliance Selection' : 'Teams'}
-			</a>
+					<svg
+						class="h-3.5 w-3.5"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke="currentColor"
+						stroke-width="2"
+					>
+						<path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+					</svg>
+					Back to Alliance Selection
+				</a>
+			{:else}
+				<a
+					href={resolve('/teams')}
+					class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+				>
+					<svg
+						class="h-3.5 w-3.5"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke="currentColor"
+						stroke-width="2"
+					>
+						<path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+					</svg>
+					Back to Teams
+				</a>
+			{/if}
 		</div>
 
 		<div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
@@ -271,7 +291,7 @@
 							stroke-linejoin="round"
 							stroke-linecap="round"
 						/>
-						{#each pts as p}
+						{#each pts as p (p.matchNumber)}
 							<circle
 								cx={xp(p.matchNumber).toFixed(1)}
 								cy={yp(p.epop).toFixed(1)}
@@ -444,7 +464,7 @@
 
 				{#if reportsSorted.length > 0}
 					<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-						{#each reportsSorted as report}
+						{#each reportsSorted as report (report.id)}
 							<div
 								class="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-2xs dark:border-slate-800/80 dark:bg-slate-900"
 							>
@@ -452,7 +472,8 @@
 									class="flex items-center justify-between border-b border-slate-100 bg-slate-50/75 px-3 py-2 text-xs dark:border-slate-800 dark:bg-slate-800/50"
 								>
 									<a
-										href="/matches?match={report.matchId}"
+										href={`${resolve('/matches')}?match=${encodeURIComponent(report.matchId)}`}
+										rel="external"
 										class="font-mono font-black text-cyan-600 hover:underline dark:text-cyan-400"
 									>
 										{report.matchId}
@@ -575,7 +596,7 @@
 				</div>
 
 				{#if pitReports.length > 0}
-					{#each pitReports as report}
+					{#each pitReports as report (report.id)}
 						<div
 							class="mb-4 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800/80 dark:bg-slate-900"
 						>
@@ -659,6 +680,22 @@
 									</div>
 									<div>
 										<p class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+											Hopper Capacity
+										</p>
+										<p class="mt-0.5 font-semibold text-slate-900 dark:text-white">
+											{pitData.hopperCapacity || '—'}
+										</p>
+									</div>
+									<div>
+										<p class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+											Driver Experience
+										</p>
+										<p class="mt-0.5 font-semibold text-slate-900 dark:text-white">
+											{pitData.driverYOE || '—'}
+										</p>
+									</div>
+									<div>
+										<p class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
 											Under Trench
 										</p>
 										<p class="mt-0.5 font-semibold text-slate-900 dark:text-white">
@@ -709,7 +746,7 @@
 											</div>
 											<div class="flex flex-wrap gap-1.5">
 												{#if pitData.autoFeatures && pitData.autoFeatures.length > 0}
-													{#each pitData.autoFeatures as feature}
+													{#each pitData.autoFeatures as feature (feature)}
 														<span
 															class="rounded-md bg-emerald-50 px-2 py-0.5 font-semibold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
 														>
@@ -791,7 +828,8 @@
 							No pit scouting data recorded yet for Team {data.teamnum}.
 						</p>
 						<a
-							href="/pit-scout/new?team={data.teamnum}"
+							href={`${resolve('/pit-scout/new')}?team=${encodeURIComponent(data.teamnum)}`}
+							rel="external"
 							class="mt-3.5 inline-flex items-center gap-1.5 rounded-xl bg-cyan-600 px-4 py-2 text-xs font-bold text-white shadow-2xs transition-colors hover:bg-cyan-700 active:bg-cyan-800"
 						>
 							+ Scout Pit for Team {data.teamnum} →
@@ -829,7 +867,7 @@
 					</div>
 
 					<div class="divide-y divide-slate-100 dark:divide-slate-800">
-						{#each sortedTeamMatches as match}
+						{#each sortedTeamMatches as match (match.id)}
 							{@const onRed = [match.red1, match.red2, match.red3].includes(data.teamnum)}
 							{@const myScore = onRed ? match.redScore : match.blueScore}
 							{@const theirScore = onRed ? match.blueScore : match.redScore}
@@ -839,7 +877,8 @@
 							{@const isPredWin = predProb > 0.51}
 							{@const isPredLoss = predProb < 0.49}
 							<a
-								href="/matches?match={match.id}"
+								href={`${resolve('/matches')}?match=${encodeURIComponent(match.id)}`}
+								rel="external"
 								class="flex items-center gap-2 px-3 py-2 text-xs transition-colors hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20"
 							>
 								<span class="w-14 font-mono font-bold text-slate-700 dark:text-slate-300">

@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { resolve } from '$app/paths';
 	import { matchFullLabel } from '$lib/matchUtils';
+	import { SvelteMap } from 'svelte/reactivity';
 
 	let { data } = $props();
 
@@ -9,7 +11,7 @@
 
 	// Build a map of teamNumber → reports[] for quick lookup
 	const reportsByTeam = $derived.by(() => {
-		const map = new Map<number, typeof reports>();
+		const map = new SvelteMap<number, typeof reports>();
 		for (const r of reports) {
 			if (!map.has(r.teamNumber)) map.set(r.teamNumber, []);
 			map.get(r.teamNumber)!.push(r);
@@ -49,7 +51,7 @@
 	<div class="border-b border-slate-200/80 pb-5 dark:border-slate-800/80">
 		<div class="mb-3">
 			<a
-				href="/reports"
+				href={resolve('/reports')}
 				class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
 			>
 				<svg
@@ -79,7 +81,8 @@
 
 			<div class="flex items-center gap-2">
 				<a
-					href="/matches?match={m?.id ?? data.matchId}"
+					href={`${resolve('/matches')}?match=${encodeURIComponent(m?.id ?? data.matchId)}`}
+					rel="external"
 					class="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-cyan-700 shadow-2xs transition-colors hover:bg-cyan-50 dark:border-slate-800 dark:bg-slate-900 dark:text-cyan-300 dark:hover:bg-cyan-950/40"
 				>
 					Match Analysis ↗
@@ -97,7 +100,7 @@
 			Red Alliance Reports
 		</h2>
 		<div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-			{#each [redSlots[0], redSlots[1], redSlots[2]] as teamNum}
+			{#each [redSlots[0], redSlots[1], redSlots[2]] as teamNum, idx (teamNum != null ? teamNum : `red-${idx}`)}
 				{@const teamReports = teamNum != null ? (reportsByTeam.get(teamNum) ?? []) : []}
 				<div
 					class="overflow-hidden rounded-2xl border bg-white shadow-xs dark:bg-slate-900
@@ -114,7 +117,7 @@
 					>
 						{#if teamNum != null}
 							<a
-								href="/teams/{teamNum}"
+								href={resolve('/teams/[teamnum]', { teamnum: String(teamNum) })}
 								class="font-mono text-base font-black hover:underline
                                    {teamReports.length > 0
 									? 'text-rose-600 dark:text-rose-400'
@@ -140,7 +143,7 @@
 						{/if}
 					</div>
 
-					{#each teamReports as report, i}
+					{#each teamReports as report, i (report.id)}
 						{#if teamReports.length > 1}
 							<div
 								class="{i > 0
@@ -256,7 +259,7 @@
 			Blue Alliance Reports
 		</h2>
 		<div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-			{#each [blueSlots[0], blueSlots[1], blueSlots[2]] as teamNum}
+			{#each [blueSlots[0], blueSlots[1], blueSlots[2]] as teamNum, idx (teamNum != null ? teamNum : `blue-${idx}`)}
 				{@const teamReports = teamNum != null ? (reportsByTeam.get(teamNum) ?? []) : []}
 				<div
 					class="overflow-hidden rounded-2xl border bg-white shadow-xs dark:bg-slate-900
@@ -273,7 +276,7 @@
 					>
 						{#if teamNum != null}
 							<a
-								href="/teams/{teamNum}"
+								href={resolve('/teams/[teamnum]', { teamnum: String(teamNum) })}
 								class="font-mono text-base font-black hover:underline
                                    {teamReports.length > 0
 									? 'text-blue-600 dark:text-blue-400'
@@ -299,7 +302,7 @@
 						{/if}
 					</div>
 
-					{#each teamReports as report, i}
+					{#each teamReports as report, i (report.id)}
 						{#if teamReports.length > 1}
 							<div
 								class="{i > 0

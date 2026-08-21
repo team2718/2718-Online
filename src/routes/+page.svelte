@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { fmt1, fmtPct } from '$lib/utils/formatters';
 
 	let { data } = $props();
@@ -30,7 +31,7 @@
 		<!-- Quick Actions -->
 		<div class="flex flex-wrap gap-2">
 			<a
-				href="/scan"
+				href={resolve('/scan')}
 				class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-2xs transition-colors hover:bg-emerald-700"
 			>
 				<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -43,7 +44,7 @@
 				Scan QR
 			</a>
 			<a
-				href="/pit-scout"
+				href={resolve('/pit-scout')}
 				class="inline-flex items-center gap-1.5 rounded-lg bg-cyan-600 px-3.5 py-2 text-xs font-bold text-white shadow-2xs transition-colors hover:bg-cyan-700"
 			>
 				<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -57,8 +58,8 @@
 			</a>
 			<a
 				href="/StrategyBoard.html"
+				rel="external"
 				target="_blank"
-				rel="noopener noreferrer"
 				class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
 			>
 				Strategy Board ↗
@@ -149,7 +150,7 @@
 					Team Performance Leaderboards
 				</h2>
 				<a
-					href="/teams"
+					href={resolve('/teams')}
 					class="text-xs font-bold text-cyan-600 hover:text-cyan-700 hover:underline dark:text-cyan-400"
 				>
 					View All Teams →
@@ -163,7 +164,7 @@
 						class="overflow-hidden rounded-2xl border border-purple-200 bg-white shadow-xs transition-all hover:shadow-md dark:border-purple-900/60 dark:bg-slate-900"
 					>
 						<div
-							class="border-b border-purple-100 bg-gradient-to-r from-purple-50 via-purple-50/50 to-white px-4 py-3 dark:border-purple-900/50 dark:from-purple-950/40 dark:to-slate-900"
+							class="border-b border-purple-100 bg-purple-50/75 px-4 py-3 dark:border-purple-900/50 dark:bg-purple-950/40"
 						>
 							<div class="flex items-center justify-between">
 								<h3
@@ -182,9 +183,9 @@
 							</p>
 						</div>
 						<div class="divide-y divide-slate-100 dark:divide-slate-800">
-							{#each data.epopLeaderboard as row, i}
+							{#each data.epopLeaderboard as row, i (row.number)}
 								<a
-									href="/teams/{row.number}"
+									href={resolve('/teams/[teamnum]', { teamnum: String(row.number) })}
 									class="group flex items-center gap-2.5 px-4 py-2 text-xs transition-colors hover:bg-purple-50/60 dark:hover:bg-purple-950/30"
 								>
 									<span
@@ -231,9 +232,9 @@
 						<p class="text-[11px] text-slate-400">Autonomous game pieces made per match</p>
 					</div>
 					<div class="divide-y divide-slate-100 dark:divide-slate-800">
-						{#each rankings.autoScoring as row, i}
+						{#each rankings.autoScoring as row, i (row.number)}
 							<a
-								href="/teams/{row.number}"
+								href={resolve('/teams/[teamnum]', { teamnum: String(row.number) })}
 								class="group flex items-center gap-2.5 px-4 py-2 text-xs transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
 							>
 								<span class="w-5 text-right font-mono text-[10px] font-bold text-slate-400">
@@ -271,9 +272,9 @@
 					</div>
 					<div class="divide-y divide-slate-100 dark:divide-slate-800">
 						{#if rankings.defense.length > 0}
-							{#each rankings.defense as row, i}
+							{#each rankings.defense as row, i (row.number)}
 								<a
-									href="/teams/{row.number}"
+									href={resolve('/teams/[teamnum]', { teamnum: String(row.number) })}
 									class="group flex items-center gap-2.5 px-4 py-2 text-xs transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
 								>
 									<span class="w-5 text-right font-mono text-[10px] font-bold text-slate-400">
@@ -314,9 +315,9 @@
 					</div>
 					<div class="divide-y divide-slate-100 dark:divide-slate-800">
 						{#if rankings.passScore.length > 0}
-							{#each rankings.passScore as row, i}
+							{#each rankings.passScore as row, i (row.number)}
 								<a
-									href="/teams/{row.number}"
+									href={resolve('/teams/[teamnum]', { teamnum: String(row.number) })}
 									class="group flex items-center gap-2.5 px-4 py-2 text-xs transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
 								>
 									<span class="w-5 text-right font-mono text-[10px] font-bold text-slate-400">
@@ -356,9 +357,9 @@
 						<p class="text-[11px] text-slate-400">% of matches with successful climb</p>
 					</div>
 					<div class="divide-y divide-slate-100 dark:divide-slate-800">
-						{#each rankings.climbing as row, i}
+						{#each rankings.climbing as row, i (row.number)}
 							<a
-								href="/teams/{row.number}"
+								href={resolve('/teams/[teamnum]', { teamnum: String(row.number) })}
 								class="group flex items-center gap-2.5 px-4 py-2 text-xs transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
 							>
 								<span class="w-5 text-right font-mono text-[10px] font-bold text-slate-400">
@@ -406,28 +407,28 @@
 					</div>
 					<div class="space-y-1.5 p-3">
 						<a
-							href="/matches"
+							href={resolve('/matches')}
 							class="flex items-center justify-between rounded-xl border border-slate-100 p-2.5 text-xs font-bold text-slate-700 transition-colors hover:border-cyan-200 hover:bg-cyan-50 dark:border-slate-800 dark:text-slate-200 dark:hover:border-cyan-900 dark:hover:bg-cyan-950/40"
 						>
 							<span>Match Analysis & Win Prob</span>
 							<span class="text-cyan-500">→</span>
 						</a>
 						<a
-							href="/teams"
+							href={resolve('/teams')}
 							class="flex items-center justify-between rounded-xl border border-slate-100 p-2.5 text-xs font-bold text-slate-700 transition-colors hover:border-cyan-200 hover:bg-cyan-50 dark:border-slate-800 dark:text-slate-200 dark:hover:border-cyan-900 dark:hover:bg-cyan-950/40"
 						>
 							<span>All Teams Directory</span>
 							<span class="text-cyan-500">→</span>
 						</a>
 						<a
-							href="/reports"
+							href={resolve('/reports')}
 							class="flex items-center justify-between rounded-xl border border-slate-100 p-2.5 text-xs font-bold text-slate-700 transition-colors hover:border-cyan-200 hover:bg-cyan-50 dark:border-slate-800 dark:text-slate-200 dark:hover:border-cyan-900 dark:hover:bg-cyan-950/40"
 						>
 							<span>Match Scouting Reports</span>
 							<span class="text-cyan-500">→</span>
 						</a>
 						<a
-							href="/pit-scout"
+							href={resolve('/pit-scout')}
 							class="flex items-center justify-between rounded-xl border border-slate-100 p-2.5 text-xs font-bold text-slate-700 transition-colors hover:border-cyan-200 hover:bg-cyan-50 dark:border-slate-800 dark:text-slate-200 dark:hover:border-cyan-900 dark:hover:bg-cyan-950/40"
 						>
 							<span>Pit Scouting Status</span>
@@ -461,13 +462,13 @@
 			</p>
 			<div class="mt-6 flex justify-center gap-3">
 				<a
-					href="/admin"
+					href={resolve('/admin')}
 					class="rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow-xs transition-colors hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
 				>
 					Import from TBA
 				</a>
 				<a
-					href="/scan"
+					href={resolve('/scan')}
 					class="rounded-xl bg-cyan-600 px-4 py-2 text-xs font-bold text-white shadow-xs transition-colors hover:bg-cyan-700"
 				>
 					Scan QR Codes

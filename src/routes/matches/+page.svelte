@@ -1,25 +1,22 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import { matchShortLabel, matchFullLabel, matchTypeColor, playoffKey } from '$lib/matchUtils';
 	import { winProbability } from '$lib/winProb';
 
 	let { data } = $props();
 
-	let selectedMatchId = $state('');
+	const selectedMatchId = $derived(data.matchId ?? '');
 	let pickerOpen = $state(false);
 	let filterText = $state('');
 	let pickerEl: HTMLElement | undefined;
 	let filterInputEl = $state<HTMLInputElement | undefined>(undefined);
 
-	$effect(() => {
-		selectedMatchId = data.matchId ?? '';
-	});
-
 	function selectMatch(id: string) {
-		selectedMatchId = id;
 		pickerOpen = false;
-		if (id) goto(`/matches?match=${encodeURIComponent(id)}`);
-		else goto('/matches');
+		// eslint-disable-next-line svelte/no-navigation-without-resolve
+		if (id) goto(`${resolve('/matches')}?match=${encodeURIComponent(id)}`);
+		else goto(resolve('/matches'));
 	}
 
 	const fmt1 = (v: number | null) => (v == null ? '—' : v.toFixed(1));
@@ -50,78 +47,97 @@
 							matchFullLabel(m).toLowerCase().includes(q)
 					)
 				: ms;
-		const practice = filter(
-			data.allMatches
-				.filter((m) => m.matchType === 'practice')
-				.sort((a, b) => a.matchNumber - b.matchNumber)
-		);
-		const qual = filter(
-			data.allMatches
-				.filter((m) => m.matchType === 'qualification')
-				.sort((a, b) => a.matchNumber - b.matchNumber)
-		);
-		const playoff = filter(
-			data.allMatches
-				.filter((m) => m.matchType === 'playoff')
-				.sort((a, b) => playoffKey(a.id) - playoffKey(b.id))
-		);
+
 		return [
-			{ type: 'practice', label: 'Practice', matches: practice },
-			{ type: 'qualification', label: 'Qualification', matches: qual },
-			{ type: 'playoff', label: 'Playoff', matches: playoff }
+			{
+				label: 'Practice',
+				matches: filter(data.allMatches.filter((m) => m.matchType === 'practice'))
+			},
+			{
+				label: 'Qualification',
+				matches: filter(
+					data.allMatches
+						.filter((m) => m.matchType === 'qualification')
+						.sort((a, b) => a.matchNumber - b.matchNumber)
+				)
+			},
+			{
+				label: 'Playoff',
+				matches: filter(
+					data.allMatches
+						.filter((m) => m.matchType === 'playoff')
+						.sort((a, b) => playoffKey(a.id) - playoffKey(b.id))
+				)
+			}
 		];
 	});
 
 	$effect(() => {
-		if (!pickerOpen) return;
-		function handleClick(e: MouseEvent) {
-			if (!pickerEl?.contains(e.target as Node)) pickerOpen = false;
+		if (pickerOpen) {
+			setTimeout(() => filterInputEl?.focus(), 50);
+		} else {
+			filterText = '';
 		}
-		document.addEventListener('mousedown', handleClick);
-		return () => document.removeEventListener('mousedown', handleClick);
 	});
+
+	$effect(() => {
+		function onClickOutside(e: MouseEvent) {
+			if (pickerEl && !pickerEl.contains(e.target as Node)) {
+				pickerOpen = false;
+			}
+		}
+		if (pickerOpen) {
+			document.addEventListener('click', onClickOutside);
+			return () => document.removeEventListener('click', onClickOutside);
+		}
+	});
+
+	// Probability computation
+	const redEpopSum = $derived(
+		data.matchTeams ? data.matchTeams.red.reduce((acc, t) => acc + (t.epop ?? 0), 0) : null
+	);
+	const blueEpopSum = $derived(
+		data.matchTeams ? data.matchTeams.blue.reduce((acc, t) => acc + (t.epop ?? 0), 0) : null
+	);
+
+	const winProbRed = $derived(
+		redEpopSum != null && blueEpopSum != null ? winProbability(redEpopSum, blueEpopSum) : 0.5
+	);
+	const winProbBlue = $derived(1 - winProbRed);
 </script>
 
-<div class="mx-auto max-w-7xl space-y-4 sm:space-y-6">
-	<!-- Page Header & Match Selector -->
-	<div class="border-b border-slate-200/80 pb-4 sm:pb-5 dark:border-slate-800/80">
-		<div class="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+<div class="mx-auto max-w-7xl space-y-6">
+	<!-- Top Bar: Match Picker & Quick Links -->
+	<div class="border-b border-slate-200/80 pb-4 dark:border-slate-800/80">
+		<div class="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
 			<div>
 				<h1 class="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl dark:text-white">
 					Match Analysis
 				</h1>
 				<p class="mt-0.5 text-xs text-slate-500 sm:text-sm dark:text-slate-400">
-					Pre-match alliance predictions, win probability, and robot scouting breakdowns.
+					Pre-match scouting breakdown, ePOP predictions & telemetry
 				</p>
 			</div>
 
-			<!-- Match Dropdown Picker -->
+			<!-- Match Dropdown Selector -->
 			<div class="relative w-full sm:w-auto" bind:this={pickerEl}>
-				<div class="flex w-full items-center gap-2">
+				<div class="flex items-center gap-2">
 					<button
 						type="button"
-						onclick={() => {
-							pickerOpen = !pickerOpen;
-							if (pickerOpen) {
-								filterText = '';
-								setTimeout(() => filterInputEl?.focus(), 30);
-							}
-						}}
-						class="flex flex-1 items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-800 shadow-2xs transition-colors hover:border-cyan-500 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 focus:outline-none sm:w-60 sm:flex-initial dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
+						onclick={() => (pickerOpen = !pickerOpen)}
+						class="flex flex-1 items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-800 shadow-2xs transition-colors hover:border-cyan-400 sm:w-60 sm:flex-initial dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
 					>
-						{#if selectedMatch}
-							<span>{matchFullLabel(selectedMatch)}</span>
-						{:else}
-							<span class="text-slate-400">Select match…</span>
-						{/if}
+						<span class="truncate">
+							{selectedMatch ? matchFullLabel(selectedMatch) : 'Select Match…'}
+						</span>
 						<svg
 							class="h-4 w-4 shrink-0 text-slate-400 transition-transform {pickerOpen
 								? 'rotate-180'
 								: ''}"
 							fill="none"
+							viewBox="0 0 24 24"
 							stroke="currentColor"
 							stroke-width="2"
-							viewBox="0 0 24 24"
 						>
 							<path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
 						</svg>
@@ -129,7 +145,7 @@
 
 					{#if selectedMatch}
 						<a
-							href="/reports/{selectedMatch.id}"
+							href={resolve('/reports/[matchId]', { matchId: selectedMatch.id })}
 							class="inline-flex shrink-0 items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-bold text-cyan-700 shadow-2xs transition-colors hover:bg-cyan-50 dark:border-slate-800 dark:bg-slate-900 dark:text-cyan-300 dark:hover:bg-cyan-950/40"
 						>
 							Reports ↗
@@ -152,14 +168,14 @@
 							/>
 						</div>
 						<div class="max-h-72 overflow-y-auto py-1">
-							{#each filteredMatchGroups as group}
+							{#each filteredMatchGroups as group (group.label)}
 								{#if group.matches.length > 0}
 									<p
 										class="px-3 pt-2 pb-1 text-[10px] font-bold tracking-wider text-slate-400 uppercase"
 									>
 										{group.label}
 									</p>
-									{#each group.matches as m}
+									{#each group.matches as m (m.id)}
 										<button
 											type="button"
 											onclick={() => selectMatch(m.id)}
@@ -194,9 +210,10 @@
 				<span class="shrink-0 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
 					Team 2718:
 				</span>
-				{#each sortedOurMatches as m}
+				{#each sortedOurMatches as m (m.id)}
 					<a
-						href="/matches?match={encodeURIComponent(m.id)}"
+						href={`${resolve('/matches')}?match=${encodeURIComponent(m.id)}`}
+						rel="external"
 						class="shrink-0 rounded-lg px-2.5 py-1 font-mono text-xs font-bold transition-all
 							{data.matchId === m.id
 							? 'bg-cyan-600 text-white shadow-2xs'
@@ -219,107 +236,105 @@
 		>
 			{data.error}
 		</div>
-	{:else if data.matchTeams}
-		{@const redEpopPred = data.matchTeams.red.reduce((s, t) => s + (t.epop ?? 0), 0)}
-		{@const blueEpopPred = data.matchTeams.blue.reduce((s, t) => s + (t.epop ?? 0), 0)}
-		{@const redAutoPred = data.matchTeams.red.reduce((s, t) => s + (t.avgAutoFuel ?? 0), 0)}
-		{@const blueAutoPred = data.matchTeams.blue.reduce((s, t) => s + (t.avgAutoFuel ?? 0), 0)}
-		{@const hasEpopPred = redEpopPred > 0 || blueEpopPred > 0}
-		{@const winProbRed = winProbability(redEpopPred, blueEpopPred)}
-		{@const winProbBlue = 1 - winProbRed}
+	{/if}
 
-		<!-- Match Prediction Summary Card -->
-		{#if hasEpopPred}
+	{#if selectedMatch && data.matchTeams}
+		<!-- Prediction Center -->
+		{#if data.prediction}
+			{@const p = data.prediction}
 			<div
-				class="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800/80 dark:bg-slate-900"
+				class="overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xs sm:p-6 dark:border-slate-800/80 dark:bg-slate-900"
 			>
-				<div class="grid grid-cols-2 divide-x divide-slate-100 dark:divide-slate-800">
-					<!-- Red Alliance Score Header -->
-					<div class="p-4 sm:p-5">
-						<div class="flex items-center justify-between">
+				<div
+					class="mb-4 flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800"
+				>
+					<div>
+						<h2 class="text-xs font-bold tracking-wider text-slate-400 uppercase">
+							Match Forecast & Prediction
+						</h2>
+						<p class="font-mono text-base font-black text-slate-900 sm:text-lg dark:text-white">
+							{matchFullLabel(selectedMatch)}
+						</p>
+					</div>
+					{#if p.actualRedScore != null && p.actualBlueScore != null}
+						<span
+							class="rounded-full bg-slate-100 px-3 py-1 font-mono text-xs font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+						>
+							Final Result
+						</span>
+					{:else}
+						<span
+							class="rounded-full bg-cyan-50 px-3 py-1 font-mono text-xs font-bold text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300"
+						>
+							Pre-Match Forecast
+						</span>
+					{/if}
+				</div>
+
+				<!-- Side by Side Score Forecast -->
+				<div class="grid grid-cols-2 gap-4 text-center">
+					<!-- Red Alliance Score -->
+					<div
+						class="rounded-2xl border border-rose-100 bg-rose-50/50 p-4 sm:p-5 dark:border-rose-900/40 dark:bg-rose-950/20"
+					>
+						<p class="text-xs font-bold tracking-wider text-rose-600 uppercase dark:text-rose-400">
+							Red Alliance
+						</p>
+						<div class="mt-2 flex items-baseline justify-center gap-2">
 							<span
-								class="inline-flex items-center gap-1.5 font-mono text-xs font-bold text-rose-600 dark:text-rose-400"
+								class="font-mono text-xl font-bold tracking-tight text-rose-600 sm:text-2xl dark:text-rose-400"
 							>
-								<span class="h-2 w-2 rounded-full bg-rose-500"></span>
-								RED ALLIANCE
+								{p.predictedRedScore.toFixed(0)}
 							</span>
+							<span class="text-[11px] font-semibold text-rose-400">pred</span>
 						</div>
-
-						<div class="mt-2.5 grid grid-cols-2 gap-3">
-							<div>
-								<p class="text-[11px] font-medium text-slate-400">Predicted ePOP</p>
-								<p class="font-mono text-xl font-bold text-rose-600 sm:text-2xl dark:text-rose-400">
-									{redEpopPred.toFixed(1)}
-								</p>
-							</div>
-							{#if data.match?.redScore != null}
-								<div>
-									<p class="text-[11px] font-medium text-slate-400">Final Score</p>
-									<p
-										class="font-mono text-xl font-bold text-slate-800 sm:text-2xl dark:text-slate-200"
-									>
-										{data.match.redScore}
-									</p>
-								</div>
-							{/if}
-						</div>
-
-						{#if redAutoPred > 0}
+						{#if p.actualRedScore != null}
 							<div
-								class="mt-2.5 flex items-center gap-1.5 text-xs text-rose-600 dark:text-rose-400"
+								class="mt-1 flex items-baseline justify-center gap-1.5 border-t border-rose-200/60 pt-1.5 dark:border-rose-900/60"
 							>
-								<span class="text-slate-400">Auto Pred:</span>
-								<span class="font-mono font-bold">{redAutoPred.toFixed(1)} fuel</span>
+								<span
+									class="font-mono text-lg font-black text-rose-700 sm:text-xl dark:text-rose-300"
+								>
+									{p.actualRedScore}
+								</span>
+								<span class="text-[10px] font-bold text-rose-500 uppercase">final</span>
 							</div>
 						{/if}
 					</div>
 
-					<!-- Blue Alliance Score Header -->
-					<div class="p-4 sm:p-5">
-						<div class="flex items-center justify-between">
+					<!-- Blue Alliance Score -->
+					<div
+						class="rounded-2xl border border-blue-100 bg-blue-50/50 p-4 sm:p-5 dark:border-blue-900/40 dark:bg-blue-950/20"
+					>
+						<p class="text-xs font-bold tracking-wider text-blue-600 uppercase dark:text-blue-400">
+							Blue Alliance
+						</p>
+						<div class="mt-2 flex items-baseline justify-center gap-2">
 							<span
-								class="inline-flex items-center gap-1.5 font-mono text-xs font-bold text-blue-600 dark:text-blue-400"
+								class="font-mono text-xl font-bold tracking-tight text-blue-600 sm:text-2xl dark:text-blue-400"
 							>
-								<span class="h-2 w-2 rounded-full bg-blue-500"></span>
-								BLUE ALLIANCE
+								{p.predictedBlueScore.toFixed(0)}
 							</span>
+							<span class="text-[11px] font-semibold text-blue-400">pred</span>
 						</div>
-
-						<div class="mt-2.5 grid grid-cols-2 gap-3">
-							<div>
-								<p class="text-[11px] font-medium text-slate-400">Predicted ePOP</p>
-								<p class="font-mono text-xl font-bold text-blue-600 sm:text-2xl dark:text-blue-400">
-									{blueEpopPred.toFixed(1)}
-								</p>
-							</div>
-							{#if data.match?.blueScore != null}
-								<div>
-									<p class="text-[11px] font-medium text-slate-400">Final Score</p>
-									<p
-										class="font-mono text-xl font-bold text-slate-800 sm:text-2xl dark:text-slate-200"
-									>
-										{data.match.blueScore}
-									</p>
-								</div>
-							{/if}
-						</div>
-
-						{#if blueAutoPred > 0}
+						{#if p.actualBlueScore != null}
 							<div
-								class="mt-2.5 flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400"
+								class="mt-1 flex items-baseline justify-center gap-1.5 border-t border-blue-200/60 pt-1.5 dark:border-blue-900/60"
 							>
-								<span class="text-slate-400">Auto Pred:</span>
-								<span class="font-mono font-bold">{blueAutoPred.toFixed(1)} fuel</span>
+								<span
+									class="font-mono text-lg font-black text-blue-700 sm:text-xl dark:text-blue-300"
+								>
+									{p.actualBlueScore}
+								</span>
+								<span class="text-[10px] font-bold text-blue-500 uppercase">final</span>
 							</div>
 						{/if}
 					</div>
 				</div>
 
 				<!-- Win Probability Bar -->
-				<div
-					class="border-t border-slate-100 bg-slate-50/50 p-3.5 sm:p-4 dark:border-slate-800 dark:bg-slate-800/30"
-				>
-					<div class="mb-1.5 flex items-center justify-between text-xs font-bold">
+				<div class="mt-5 space-y-1.5">
+					<div class="flex items-center justify-between text-xs font-bold">
 						<span class="font-mono text-rose-600 dark:text-rose-400">
 							Red {(winProbRed * 100).toFixed(0)}%
 						</span>
@@ -331,7 +346,7 @@
 						</span>
 					</div>
 					<div
-						class="relative h-2.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700"
+						class="relative h-3 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800"
 					>
 						<div
 							class="absolute inset-y-0 left-0 rounded-l-full bg-rose-500 transition-all duration-500"
@@ -357,7 +372,7 @@
 					Red Alliance Robots
 				</h2>
 				<div class="space-y-3">
-					{#each data.matchTeams.red as team}
+					{#each data.matchTeams.red as team (team.number)}
 						{@render teamCard(team, 'red')}
 					{/each}
 					{#if data.matchTeams.red.length === 0}
@@ -379,7 +394,7 @@
 					Blue Alliance Robots
 				</h2>
 				<div class="space-y-3">
-					{#each data.matchTeams.blue as team}
+					{#each data.matchTeams.blue as team (team.number)}
 						{@render teamCard(team, 'blue')}
 					{/each}
 					{#if data.matchTeams.blue.length === 0}
@@ -438,7 +453,7 @@
 		>
 			<div class="flex items-center gap-2">
 				<a
-					href="/teams/{team.number}"
+					href={resolve('/teams/[teamnum]', { teamnum: String(team.number) })}
 					class="font-mono text-base font-black {textAccent} hover:underline"
 				>
 					{team.number}
@@ -463,78 +478,73 @@
 			</div>
 		</div>
 
-		{#if team.reportCount > 0}
-			<!-- Scouting Stats -->
+		<!-- Telemetry Stats Grid -->
+		<div class="grid grid-cols-3 gap-2 p-3 text-center text-xs sm:grid-cols-6">
+			<!-- Rank -->
+			<div class="rounded-xl bg-slate-50 p-2 dark:bg-slate-800/40">
+				<p class="text-[10px] font-bold text-slate-400 uppercase">Rank</p>
+				<p class="mt-0.5 font-mono font-bold text-slate-700 dark:text-slate-300">
+					{team.rank != null ? `#${team.rank}` : '—'}
+				</p>
+			</div>
+
+			<!-- Auto Scored -->
+			<div class="rounded-xl bg-slate-50 p-2 dark:bg-slate-800/40">
+				<p class="text-[10px] font-bold text-slate-400 uppercase">Auto</p>
+				<p class="mt-0.5 font-mono font-bold text-slate-700 dark:text-slate-300">
+					{fmt1(team.avgAutoFuel)}
+				</p>
+			</div>
+
+			<!-- Teleop Fuel -->
+			<div class="rounded-xl bg-slate-50 p-2 dark:bg-slate-800/40">
+				<p class="text-[10px] font-bold text-slate-400 uppercase">Tele Fuel</p>
+				<p class="mt-0.5 font-mono font-bold text-slate-700 dark:text-slate-300">
+					{team.avgTeleFuel != null ? `${fmt1(team.avgTeleFuel)}/5` : '—'}
+				</p>
+			</div>
+
+			<!-- Passing -->
+			<div class="rounded-xl bg-slate-50 p-2 dark:bg-slate-800/40">
+				<p class="text-[10px] font-bold text-slate-400 uppercase">Pass</p>
+				<p class="mt-0.5 font-mono font-bold text-slate-700 dark:text-slate-300">
+					{team.avgPassScore != null ? `${fmt1(team.avgPassScore)}/5` : '—'}
+				</p>
+			</div>
+
+			<!-- Defense -->
+			<div class="rounded-xl bg-slate-50 p-2 dark:bg-slate-800/40">
+				<p class="text-[10px] font-bold text-slate-400 uppercase">Def</p>
+				<p class="mt-0.5 font-mono font-bold text-slate-700 dark:text-slate-300">
+					{team.avgDefScore != null ? `${fmt1(team.avgDefScore)}/5` : '—'}
+				</p>
+			</div>
+
+			<!-- Climb % -->
+			<div class="rounded-xl bg-slate-50 p-2 dark:bg-slate-800/40">
+				<p class="text-[10px] font-bold text-slate-400 uppercase">Climb</p>
+				<p class="mt-0.5 font-mono font-bold text-slate-700 dark:text-slate-300">
+					{team.climbRate != null ? `${team.climbRate.toFixed(0)}%` : '—'}
+				</p>
+			</div>
+		</div>
+
+		<!-- Pit Hardware Strip -->
+		{#if team.pitData}
 			<div
-				class="grid grid-cols-3 divide-x divide-slate-100 border-b border-slate-100 p-2.5 text-center text-xs dark:divide-slate-800 dark:border-slate-800"
+				class="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-slate-100 bg-slate-50/40 px-4 py-2 text-[11px] text-slate-500 dark:border-slate-800 dark:bg-slate-800/20 dark:text-slate-400"
 			>
-				<div>
-					<p class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Fuel</p>
-					<p class="font-mono text-sm font-bold text-cyan-600 dark:text-cyan-400">
-						{team.fuelPercent > 0 ? `${fmt1(team.avgTeleFuelScore)}/5` : '—'}
-					</p>
-				</div>
-				<div>
-					<p class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Defense</p>
-					<p class="font-mono text-sm font-bold text-amber-600 dark:text-amber-400">
-						{team.avgDefScore != null ? `${team.avgDefScore.toFixed(1)}/5` : '—'}
-					</p>
-				</div>
-				<div>
-					<p class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Passing</p>
-					<p class="font-mono text-sm font-bold text-indigo-600 dark:text-indigo-400">
-						{team.avgPassScore != null ? `${team.avgPassScore.toFixed(1)}/5` : '—'}
-					</p>
-				</div>
-			</div>
-
-			<div
-				class="grid grid-cols-2 divide-x divide-slate-100 border-b border-slate-100 p-2.5 text-center text-xs dark:divide-slate-800 dark:border-slate-800"
-			>
-				<div>
-					<p class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Auto Fuel</p>
-					<p class="font-mono text-sm font-bold text-slate-800 dark:text-slate-200">
-						{fmt1(team.avgAutoFuel)}
-					</p>
-				</div>
-				<div>
-					<p class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Climb %</p>
-					<div
-						class="flex justify-center gap-1.5 font-mono text-[11px] font-bold text-slate-600 dark:text-slate-400"
-					>
-						<span>L1:{team.climbL1Pct}%</span>
-						<span>L2:{team.climbL2Pct}%</span>
-						<span>L3:{team.climbL3Pct}%</span>
-					</div>
-				</div>
-			</div>
-		{/if}
-
-		{#if team.pit}
-			<div class="bg-slate-50/50 p-2.5 text-[11px] dark:bg-slate-800/30">
-				<div class="flex items-center justify-between text-slate-500 dark:text-slate-400">
-					<span
-						>Drive: <b class="text-slate-800 dark:text-slate-200"
-							>{team.pit.data?.drivetrain ?? '—'}</b
-						></span
-					>
-					<span
-						>Shooter: <b class="text-slate-800 dark:text-slate-200"
-							>{team.pit.data?.shooterType ?? '—'}</b
-						></span
-					>
-					<span
-						>Trench: <b class="text-slate-800 dark:text-slate-200"
-							>{team.canGoUnderTrench ? 'Yes' : 'No'}</b
-						></span
-					>
-				</div>
-			</div>
-		{/if}
-
-		{#if team.reportCount === 0 && !team.pit}
-			<div class="p-4 text-center text-xs text-slate-400 italic">
-				No scouting data available yet for this team.
+				<span class="font-semibold text-slate-700 dark:text-slate-300"
+					>Drive: <span class="font-normal">{team.pitData.drivetrain || '—'}</span></span
+				>
+				<span class="text-slate-300 dark:text-slate-700">•</span>
+				<span class="font-semibold text-slate-700 dark:text-slate-300"
+					>Shooter: <span class="font-normal">{team.pitData.shooterType || '—'}</span></span
+				>
+				<span class="text-slate-300 dark:text-slate-700">•</span>
+				<span class="font-semibold text-slate-700 dark:text-slate-300"
+					>Intake: <span class="font-normal">{team.pitData.intakeType || '—'}</span></span
+				>
 			</div>
 		{/if}
 	</div>

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { PitScoutReportData } from '$lib';
 	import { deserialize } from '$app/forms';
-	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
 
 	const props = $props<{ data: { prefillTeam: string } }>();
@@ -135,7 +135,7 @@
 	<!-- Header -->
 	<div class="border-b border-slate-200/80 pb-4 dark:border-slate-800/80">
 		<a
-			href="/pit-scout"
+			href={resolve('/pit-scout')}
 			class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
 		>
 			<svg
@@ -223,7 +223,7 @@
 						bind:value={form.driverYOE}
 						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
 					>
-						{#each OPTIONS.yoe as y}<option>{y}</option>{/each}
+						{#each OPTIONS.yoe as y (y)}<option>{y}</option>{/each}
 					</select>
 				</div>
 			</div>
@@ -253,7 +253,7 @@
 						bind:value={form.drivetrain}
 						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
 					>
-						{#each OPTIONS.drivetrain as d}<option>{d}</option>{/each}
+						{#each OPTIONS.drivetrain as d (d)}<option>{d}</option>{/each}
 					</select>
 				</div>
 
@@ -269,7 +269,7 @@
 						bind:value={form.hopperCapacity}
 						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
 					>
-						{#each OPTIONS.hopper as h}<option>{h}</option>{/each}
+						{#each OPTIONS.hopper as h (h)}<option>{h}</option>{/each}
 					</select>
 				</div>
 
@@ -285,7 +285,7 @@
 						bind:value={form.shooterType}
 						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
 					>
-						{#each OPTIONS.shooter as s}<option>{s}</option>{/each}
+						{#each OPTIONS.shooter as s (s)}<option>{s}</option>{/each}
 					</select>
 				</div>
 
@@ -301,7 +301,7 @@
 						bind:value={form.intakeType}
 						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
 					>
-						{#each OPTIONS.intake as i}<option>{i}</option>{/each}
+						{#each OPTIONS.intake as i (i)}<option>{i}</option>{/each}
 					</select>
 				</div>
 
@@ -336,14 +336,14 @@
 
 				<div>
 					<label for="climb" class="block text-xs font-bold text-slate-700 dark:text-slate-300">
-						Maximum Climb Ability
+						Max Climb Capability
 					</label>
 					<select
 						id="climb"
 						bind:value={form.climb}
 						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
 					>
-						{#each OPTIONS.climb as climbOption}<option>{climbOption}</option>{/each}
+						{#each OPTIONS.climb as climbOption (climbOption)}<option>{climbOption}</option>{/each}
 					</select>
 				</div>
 
@@ -385,7 +385,7 @@
 						bind:value={form.autoStart}
 						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
 					>
-						{#each OPTIONS.autoStart as a}<option>{a}</option>{/each}
+						{#each OPTIONS.autoStart as a (a)}<option>{a}</option>{/each}
 					</select>
 				</div>
 
@@ -394,7 +394,7 @@
 						Auto Routines & Features
 					</p>
 					<div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-						{#each OPTIONS.autoFeatures as feature}
+						{#each OPTIONS.autoFeatures as feature (feature.key)}
 							<label
 								class="flex cursor-pointer items-center justify-between rounded-xl border border-slate-200 bg-slate-50/50 p-3 transition-colors hover:bg-cyan-50/40 dark:border-slate-800 dark:bg-slate-800/40"
 							>
@@ -499,7 +499,7 @@
 			</p>
 			<div class="mt-6 flex flex-col gap-2">
 				<a
-					href="/pit-scout"
+					href={resolve('/pit-scout')}
 					class="w-full rounded-xl bg-cyan-600 py-2.5 text-xs font-bold text-white shadow-2xs transition-colors hover:bg-cyan-700"
 				>
 					Return to Pit Directory

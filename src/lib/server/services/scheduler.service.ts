@@ -10,11 +10,8 @@ const BACKUP_JOB_KEY = '__2718_DB_BACKUP_JOB__';
 const SESSION_PURGE_JOB_KEY = '__2718_SESSION_PURGE_JOB__';
 
 declare global {
-	// eslint-disable-next-line no-var
 	var __2718_TBA_POLL_JOB__: schedule.Job | undefined;
-	// eslint-disable-next-line no-var
 	var __2718_DB_BACKUP_JOB__: schedule.Job | undefined;
-	// eslint-disable-next-line no-var
 	var __2718_SESSION_PURGE_JOB__: schedule.Job | undefined;
 }
 

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { resolve } from '$app/paths';
 	import { untrack } from 'svelte';
 
 	let { data, form } = $props();
@@ -9,10 +10,6 @@
 
 	let selectedMatchType = $state(untrack(() => data.defaultMatchType ?? 'qualification'));
 	let autoTbaPull = $state(untrack(() => data.autoTbaPull ?? false));
-
-	$effect(() => {
-		selectedMatchType = data.defaultMatchType ?? 'qualification';
-	});
 
 	const tbaMatchesSkipped = $derived(
 		(form as Record<string, unknown> | null)?.matchesSkipped === true
@@ -42,7 +39,7 @@
 
 		<div class="flex items-center gap-2">
 			<a
-				href="/admin/reports"
+				href={resolve('/admin/reports')}
 				class="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
 			>
 				Report Fixer ↗
@@ -109,7 +106,7 @@
 				<div class="mt-1 text-rose-700 dark:text-rose-400">
 					{#if form.errors?.length}
 						<ul class="list-disc pl-4">
-							{#each form.errors as err}
+							{#each form.errors as err, idx (idx)}
 								<li>{err}</li>
 							{/each}
 						</ul>

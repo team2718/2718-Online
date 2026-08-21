@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
 	import { Html5Qrcode } from 'html5-qrcode';
 
@@ -138,7 +139,7 @@
 		</div>
 
 		<a
-			href="/admin"
+			href={resolve('/admin')}
 			title="Change in Admin settings"
 			class="rounded-full px-2.5 py-1 font-mono text-[11px] font-bold tracking-wide uppercase
 				{data.matchType === 'practice'
@@ -182,7 +183,7 @@
 				<span class="font-mono text-[10px] text-slate-400">{recentScans.length} logged</span>
 			</div>
 			<div class="divide-y divide-slate-100 dark:divide-slate-800">
-				{#each recentScans as scan}
+				{#each recentScans as scan (scan.id)}
 					<div class="flex items-center justify-between px-4 py-2 text-xs">
 						<div class="flex items-center gap-2">
 							<span

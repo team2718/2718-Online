@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
+
 	let { data } = $props();
 
 	type SortKey = 'rank' | 'number' | 'name' | 'epop' | 'record' | 'rankingPoints';
@@ -138,7 +140,7 @@
 	<div class="flex items-center justify-between gap-2 sm:hidden">
 		<span class="text-[11px] font-bold tracking-wider text-slate-400 uppercase">Sort By:</span>
 		<div class="flex flex-wrap gap-1">
-			{#each ['rank', 'number', 'epop', 'record'] as const as key}
+			{#each ['rank', 'number', 'epop', 'record'] as const as key (key)}
 				<button
 					type="button"
 					onclick={() => toggleSort(key)}
@@ -159,9 +161,9 @@
 		<div
 			class="divide-y divide-slate-100 rounded-2xl border border-slate-200/80 bg-white shadow-xs sm:hidden dark:divide-slate-800 dark:border-slate-800/80 dark:bg-slate-900"
 		>
-			{#each sortedTeams as team}
+			{#each sortedTeams as team (team.number)}
 				<a
-					href="/teams/{team.number}"
+					href={resolve('/teams/[teamnum]', { teamnum: String(team.number) })}
 					class="flex items-center justify-between gap-3 p-3.5 transition-colors hover:bg-cyan-50/50 active:bg-cyan-50 dark:hover:bg-cyan-950/20"
 				>
 					<div class="flex items-center gap-3">
@@ -283,7 +285,7 @@
 						</tr>
 					</thead>
 					<tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-						{#each sortedTeams as team, i}
+						{#each sortedTeams as team, i (team.number)}
 							<tr
 								class="transition-colors hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 {i % 2 === 1
 									? 'bg-slate-50/30 dark:bg-slate-900/30'
@@ -309,7 +311,7 @@
 								</td>
 								<td class="px-4 py-3">
 									<a
-										href="/teams/{team.number}"
+										href={resolve('/teams/[teamnum]', { teamnum: String(team.number) })}
 										class="font-mono text-sm font-black text-cyan-600 hover:text-cyan-700 hover:underline dark:text-cyan-400"
 									>
 										{team.number}
@@ -317,7 +319,7 @@
 								</td>
 								<td class="px-4 py-3">
 									<a
-										href="/teams/{team.number}"
+										href={resolve('/teams/[teamnum]', { teamnum: String(team.number) })}
 										class="font-medium text-slate-800 hover:text-cyan-600 hover:underline dark:text-slate-200 dark:hover:text-cyan-400"
 									>
 										{team.name}

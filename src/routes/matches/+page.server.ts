@@ -104,24 +104,31 @@ export async function load({ url }: { url: URL }) {
 		const count = reports.length;
 		const epop = epopMap.get(teamNum) ?? null;
 
+		const meta = team?.metadata as Record<string, unknown> | null;
+		const rank = (typeof meta?.rank === 'number' ? meta.rank : null) as number | null;
+
 		if (count === 0) {
 			return {
 				number: teamNum,
 				name: team?.name ?? `Team ${teamNum}`,
+				rank,
 				epop,
 				reportCount: 0,
 				avgAutoFuel: null as number | null,
+				avgTeleFuel: null as number | null,
 				avgTeleFuelScore: null as number | null,
 				fuelPercent: 0,
 				avgDefScore: null as number | null,
 				defPercent: 0,
 				avgPassScore: null as number | null,
 				passPercent: 0,
+				climbRate: null as number | null,
 				climbL1Pct: 0,
 				climbL2Pct: 0,
 				climbL3Pct: 0,
 				canGoUnderTrench: pit?.data?.canGoUnderTrench ?? null,
-				pit
+				pit,
+				pitData: pit?.data ?? null
 			};
 		}
 
@@ -156,23 +163,29 @@ export async function load({ url }: { url: URL }) {
 			if (climbType == 3) climbL3Count++;
 		}
 
+		const totalClimbs = climbL1Count + climbL2Count + climbL3Count;
+
 		return {
 			number: teamNum,
 			name: team?.name ?? `Team ${teamNum}`,
+			rank,
 			epop,
 			reportCount: count,
 			avgAutoFuel: autoFuelSum / count,
+			avgTeleFuel: teleFuelSum / count,
 			avgTeleFuelScore: teleFuelSum / count,
 			fuelPercent: Math.round((fuelCount / count) * 100),
 			avgDefScore: defCount > 0 ? defSum / defCount : null,
 			defPercent: Math.round((defCount / count) * 100),
 			avgPassScore: passCount > 0 ? passSum / passCount : null,
 			passPercent: Math.round((passCount / count) * 100),
+			climbRate: Math.round((totalClimbs / count) * 100),
 			climbL1Pct: Math.round((climbL1Count / count) * 100),
 			climbL2Pct: Math.round((climbL2Count / count) * 100),
 			climbL3Pct: Math.round((climbL3Count / count) * 100),
 			canGoUnderTrench: pit?.data?.canGoUnderTrench ?? null,
-			pit
+			pit,
+			pitData: pit?.data ?? null
 		};
 	};
 
@@ -185,5 +198,15 @@ export async function load({ url }: { url: URL }) {
 			.map(computeTeamStats)
 	};
 
-	return { matchId, match, allMatches, ourMatches, matchTeams, error: null };
+	const redEpopSum = matchTeams.red.reduce((acc, t) => acc + (t.epop ?? 0), 0);
+	const blueEpopSum = matchTeams.blue.reduce((acc, t) => acc + (t.epop ?? 0), 0);
+
+	const prediction = {
+		predictedRedScore: redEpopSum,
+		predictedBlueScore: blueEpopSum,
+		actualRedScore: match.redScore,
+		actualBlueScore: match.blueScore
+	};
+
+	return { matchId, match, allMatches, ourMatches, matchTeams, prediction, error: null };
 }

@@ -1,4 +1,4 @@
-import { and, eq, notInArray, isNull } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { matches, pitScoutingReports, scoutingReports, teams } from '$lib/server/db/schema';
 import type { PitScoutReportData, ScoutingReportData, MatchType } from '$lib/types';

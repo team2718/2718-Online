@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { untrack } from 'svelte';
 	let { data } = $props();
 
@@ -291,7 +292,7 @@
 
 	<!-- 8 Alliance Draft Board Grid (2x4 or 4x2) -->
 	<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-		{#each alliances as alliance, ai}
+		{#each alliances as alliance, ai (ai)}
 			<div
 				class="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800/80 dark:bg-slate-900"
 			>
@@ -308,7 +309,7 @@
 					</span>
 				</div>
 				<div class="space-y-1.5 p-2">
-					{#each alliance as occupant, si}
+					{#each alliance as occupant, si (si)}
 						{@const info = teamInfo(occupant)}
 						{@const isSelected = occupant === selectedTeam}
 						{#if occupant != null}
@@ -430,7 +431,7 @@
 					>
 						<g transform="translate({PAD.left},{PAD.top})">
 							<!-- Grid lines -->
-							{#each [1, 2, 3, 4, 5] as y}
+							{#each [1, 2, 3, 4, 5] as y (y)}
 								<line
 									x1="0"
 									y1={yScale(y)}
@@ -453,7 +454,7 @@
 								</text>
 							{/each}
 
-							{#each xTicks as xv}
+							{#each xTicks as xv (xv)}
 								<line
 									x1={xScale(xv)}
 									y1="0"
@@ -520,7 +521,7 @@
 							</text>
 
 							<!-- Chosen teams (muted) -->
-							{#each data.teams.filter((t) => chosenSet.has(t.number)) as t}
+							{#each data.teams.filter((t) => chosenSet.has(t.number)) as t (t.number)}
 								{#if t.epop != null && (metric === 'def' ? t.defScore : t.passScore) != null}
 									{@const pt = teamPoint(t)}
 									<circle
@@ -535,7 +536,7 @@
 							{/each}
 
 							<!-- Available Teams & Pareto Front -->
-							{#each unchosenTeams as t}
+							{#each unchosenTeams as t (t.number)}
 								{#if t.epop != null && (metric === 'def' ? t.defScore : t.passScore) != null}
 									{@const pt = teamPoint(t)}
 									{@const onFront = paretoFront.includes(t)}
@@ -618,7 +619,7 @@
 
 									<div class="flex items-center gap-1.5">
 										<a
-											href="/teams/{t.number}"
+											href={resolve('/teams/[teamnum]', { teamnum: String(t.number) })}
 											class="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-700 shadow-2xs hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
 										>
 											Profile ↗
@@ -685,14 +686,14 @@
 								</tr>
 							</thead>
 							<tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-								{#each paretoSorted as t}
+								{#each paretoSorted as t (t.number)}
 									<tr class="transition-colors hover:bg-amber-50/60 dark:hover:bg-amber-950/20">
 										<td class="py-1.5 font-mono font-bold text-slate-400"
 											>{t.rank != null ? `#${t.rank}` : '—'}</td
 										>
 										<td class="py-1.5 font-mono font-bold">
 											<a
-												href="/teams/{t.number}"
+												href={resolve('/teams/[teamnum]', { teamnum: String(t.number) })}
 												class="text-cyan-600 hover:underline dark:text-cyan-400"
 											>
 												{t.number}
@@ -767,7 +768,7 @@
 						</tr>
 					</thead>
 					<tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-						{#each filteredTeams as t}
+						{#each filteredTeams as t (t.number)}
 							{@const onFront = paretoFront.includes(t)}
 							{@const isSelected = t.number === selectedTeam}
 							<tr
@@ -797,7 +798,7 @@
 								<td class="px-2.5 py-2">
 									<div class="flex items-center gap-1.5">
 										<a
-											href="/teams/{t.number}"
+											href={resolve('/teams/[teamnum]', { teamnum: String(t.number) })}
 											onclick={(e) => e.stopPropagation()}
 											class="font-mono text-xs font-black text-cyan-600 hover:underline dark:text-cyan-400"
 										>

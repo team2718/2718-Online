@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { resolve } from '$app/paths';
 	import { matchFullLabel, matchTypeColorBorder, playoffKey } from '$lib/matchUtils';
 
 	let { data } = $props();
@@ -121,7 +122,7 @@
 			</div>
 
 			<div class="divide-y divide-slate-100 dark:divide-slate-800">
-				{#each sortedMatches as match}
+				{#each sortedMatches as match (match.id)}
 					{@const reported = reportedTeamsForMatch(match.id)}
 					{@const redScheduled = hasRedSchedule(match)}
 					{@const blueScheduled = hasBlueSchedule(match)}
@@ -134,7 +135,7 @@
 
 					<div class="flex items-stretch">
 						<a
-							href="/reports/{match.id}"
+							href={resolve('/reports/[matchId]', { matchId: match.id })}
 							class="grid flex-1 grid-cols-[4.5rem_1fr_auto_1fr_1.5rem] items-center gap-x-1.5 px-3 py-3 transition-colors hover:bg-cyan-50/50 active:bg-cyan-50 sm:grid-cols-[6rem_1fr_auto_1fr_2rem] sm:gap-x-2 dark:hover:bg-cyan-950/20"
 						>
 							<!-- Match label -->
@@ -148,7 +149,7 @@
 
 							<!-- Red alliance -->
 							<div class="flex flex-wrap justify-center gap-1">
-								{#each red as team}
+								{#each red as team, idx (team != null ? team : `r-${idx}`)}
 									{#if team != null}
 										{@const hasReport = reported.has(team)}
 										<span
@@ -183,7 +184,7 @@
 
 							<!-- Blue alliance -->
 							<div class="flex flex-wrap justify-center gap-1">
-								{#each blue as team}
+								{#each blue as team, idx (team != null ? team : `b-${idx}`)}
 									{#if team != null}
 										{@const hasReport = reported.has(team)}
 										<span

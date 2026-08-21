@@ -1,21 +1,24 @@
 <script lang="ts">
-	import { page } from '$app/state';
+	import { resolve } from '$app/paths';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
 
-	interface Props {
+	let {
+		teams = [],
+		isAdmin = false,
+		isPrivileged = false
+	}: {
 		teams?: { number: number; name: string }[];
 		isAdmin?: boolean;
 		isPrivileged?: boolean;
-	}
-	let { teams = [], isAdmin = false, isPrivileged = false }: Props = $props();
+	} = $props();
 
 	const activePath = $derived.by(() => {
 		const path = page.url.pathname;
-		if (path === '/') return '/';
 		if (path.startsWith('/teams')) return '/teams';
-		if (path.startsWith('/pit-scout')) return '/pit-scout';
-		if (path.startsWith('/reports')) return '/reports';
 		if (path.startsWith('/matches')) return '/matches';
+		if (path.startsWith('/reports')) return '/reports';
+		if (path.startsWith('/pit-scout')) return '/pit-scout';
 		if (path.startsWith('/alliance-selection')) return '/alliance-selection';
 		if (path.startsWith('/admin')) return '/admin';
 		if (path.startsWith('/scan')) return '/scan';
@@ -26,20 +29,20 @@
 		{ href: '/', label: 'Home' },
 		{ href: '/teams', label: 'Teams' },
 		{ href: '/matches', label: 'Matches' }
-	];
+	] as const;
 
 	const scoutNav = [
 		{ href: '/reports', label: 'Reports' },
 		{ href: '/scan', label: 'Scan QR' },
-		{ href: '/pit-scout', label: 'Pit Scout' },
-		{ href: '/StrategyBoard.html', label: 'Strategy' }
-	];
+		{ href: '/pit-scout', label: 'Pit Scout' }
+	] as const;
 
 	// --- Mobile menu state ---
 	let mobileOpen = $state(false);
 	$effect(() => {
-		page.url.pathname;
-		mobileOpen = false;
+		if (page.url.pathname) {
+			mobileOpen = false;
+		}
 	});
 
 	// --- Search state & keyboard shortcut ---
@@ -63,35 +66,30 @@
 		focused = false;
 		selectedIndex = -1;
 		mobileOpen = false;
-		goto(`/teams/${num}`);
+		goto(resolve('/teams/[teamnum]', { teamnum: String(num) }));
 	}
 
 	function onSearchKeydown(e: KeyboardEvent) {
-		if (!showDropdown) {
-			if (e.key === 'Escape') {
-				query = '';
-				searchRef?.blur();
-			}
-			return;
-		}
+		if (!showDropdown) return;
+
 		if (e.key === 'ArrowDown') {
 			e.preventDefault();
-			selectedIndex = Math.min(selectedIndex + 1, results.length - 1);
+			selectedIndex = (selectedIndex + 1) % results.length;
 		} else if (e.key === 'ArrowUp') {
 			e.preventDefault();
-			selectedIndex = Math.max(selectedIndex - 1, -1);
-		} else if (e.key === 'Enter' && selectedIndex >= 0) {
+			selectedIndex = (selectedIndex - 1 + results.length) % results.length;
+		} else if (e.key === 'Enter') {
 			e.preventDefault();
-			selectTeam(results[selectedIndex].number);
+			if (selectedIndex >= 0 && selectedIndex < results.length) {
+				selectTeam(results[selectedIndex].number);
+			} else if (results.length > 0) {
+				selectTeam(results[0].number);
+			}
 		} else if (e.key === 'Escape') {
-			query = '';
 			focused = false;
-			selectedIndex = -1;
-			searchRef?.blur();
 		}
 	}
 
-	// Global hotkey: press '/' to focus search when not in an input
 	function onGlobalKeydown(e: KeyboardEvent) {
 		if (
 			e.key === '/' &&
@@ -104,8 +102,9 @@
 	}
 
 	$effect(() => {
-		query;
-		selectedIndex = -1;
+		if (typeof query === 'string') {
+			selectedIndex = -1;
+		}
 	});
 
 	// --- Auth popover ---
@@ -117,64 +116,67 @@
 	let mobileAuthPanelRef: HTMLElement | null = $state(null);
 
 	$effect(() => {
-		if (!authOpen) return;
 		function handleClickOutside(e: MouseEvent) {
-			const inDesktop = authContainerRef?.contains(e.target as Node);
-			const inMobile = mobileAuthPanelRef?.contains(e.target as Node);
+			const target = e.target as Node;
+			const inDesktop = authContainerRef && authContainerRef.contains(target);
+			const inMobile = mobileAuthPanelRef && mobileAuthPanelRef.contains(target);
 			if (!inDesktop && !inMobile) {
 				authOpen = false;
+				authError = '';
 			}
 		}
-		document.addEventListener('click', handleClickOutside);
-		return () => document.removeEventListener('click', handleClickOutside);
+		if (authOpen) {
+			document.addEventListener('click', handleClickOutside);
+			return () => document.removeEventListener('click', handleClickOutside);
+		}
 	});
 
-	function toggleAuth(e: MouseEvent) {
-		e.stopPropagation();
-		authOpen = !authOpen;
-		if (authOpen) {
-			authPassword = '';
-			authError = '';
-		}
-	}
-
-	async function submitAuth() {
-		if (!authPassword) return;
+	async function handleAuthSubmit(e: SubmitEvent) {
+		e.preventDefault();
 		authLoading = true;
 		authError = '';
+
 		try {
-			const res = await fetch('/api/auth', {
+			const formData = new FormData();
+			formData.append('password', authPassword);
+
+			const res = await fetch('?/login', {
 				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ password: authPassword })
+				body: formData
 			});
+
 			if (res.ok) {
+				authPassword = '';
+				authOpen = false;
 				window.location.reload();
 			} else {
-				const data = await res.json().catch(() => ({}));
-				authError = data.error || 'Incorrect password';
-				authPassword = '';
+				authError = 'Incorrect password';
 			}
 		} catch {
-			authError = 'Network connection error';
+			authError = 'Authentication failed';
 		} finally {
 			authLoading = false;
 		}
 	}
 
-	async function logout() {
-		window.location.href = '/logout';
+	async function handleLogout() {
+		try {
+			await fetch('?/logout', { method: 'POST' });
+			window.location.reload();
+		} catch {
+			// silent fallback
+		}
 	}
 
-	function onAuthKeydown(e: KeyboardEvent) {
-		if (e.key === 'Enter') submitAuth();
-		if (e.key === 'Escape') authOpen = false;
-	}
+	const accessTierLabel = $derived.by(() => {
+		if (isAdmin) return 'Admin';
+		if (isPrivileged) return 'Team 2718 Member';
+		return 'Guest';
+	});
 
-	const roleLabel = $derived(isAdmin ? 'Admin' : isPrivileged ? 'Privileged' : 'Guest');
-	const lockColorClass = $derived(
+	const accessButtonClass = $derived.by(() =>
 		isAdmin
-			? 'text-rose-500 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50'
+			? 'text-rose-600 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50'
 			: isPrivileged
 				? 'text-amber-500 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/50'
 				: 'text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-200'
@@ -186,15 +188,18 @@
 <nav class="px-4 py-2.5 sm:px-6">
 	<div class="flex items-center justify-between gap-4 md:grid md:grid-cols-[auto_1fr_auto]">
 		<!-- Left: Brand Logo -->
-		<a href="/" class="text-base font-bold tracking-tight text-slate-900 dark:text-white">
+		<a
+			href={resolve('/')}
+			class="text-base font-bold tracking-tight text-slate-900 dark:text-white"
+		>
 			2718 Online
 		</a>
 
 		<!-- Center: Navigation Links -->
 		<div class="hidden items-center justify-center gap-1 md:flex">
-			{#each mainNav as link}
+			{#each mainNav as link (link.href)}
 				<a
-					href={link.href}
+					href={resolve(link.href)}
 					class="rounded-lg px-3 py-1.5 text-xs font-semibold tracking-wide transition-all
 						{activePath === link.href
 						? 'bg-cyan-50 text-cyan-700 shadow-xs dark:bg-cyan-950/70 dark:text-cyan-300'
@@ -206,9 +211,9 @@
 
 			<span class="mx-1 h-3.5 w-px bg-slate-200 dark:bg-slate-700" aria-hidden="true"></span>
 
-			{#each scoutNav as link}
+			{#each scoutNav as link (link.href)}
 				<a
-					href={link.href}
+					href={resolve(link.href)}
 					class="rounded-lg px-3 py-1.5 text-xs font-semibold tracking-wide transition-all
 						{activePath === link.href
 						? 'bg-cyan-50 text-cyan-700 shadow-xs dark:bg-cyan-950/70 dark:text-cyan-300'
@@ -218,10 +223,20 @@
 				</a>
 			{/each}
 
+			<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
+			<a
+				href="/StrategyBoard.html"
+				rel="external"
+				target="_blank"
+				class="rounded-lg px-3 py-1.5 text-xs font-semibold tracking-wide text-slate-600 transition-all hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800/80 dark:hover:text-white"
+			>
+				Strategy ↗
+			</a>
+
 			{#if isPrivileged}
 				<span class="mx-1 h-3.5 w-px bg-slate-200 dark:bg-slate-700" aria-hidden="true"></span>
 				<a
-					href="/alliance-selection"
+					href={resolve('/alliance-selection')}
 					class="rounded-lg px-3 py-1.5 text-xs font-semibold tracking-wide transition-all
 						{activePath === '/alliance-selection'
 						? 'bg-emerald-50 text-emerald-700 shadow-xs dark:bg-emerald-950/70 dark:text-emerald-300'
@@ -234,7 +249,7 @@
 			{#if isAdmin}
 				<span class="mx-1 h-3.5 w-px bg-slate-200 dark:bg-slate-700" aria-hidden="true"></span>
 				<a
-					href="/admin"
+					href={resolve('/admin')}
 					class="rounded-lg px-3 py-1.5 text-xs font-semibold tracking-wide transition-all
 						{activePath === '/admin'
 						? 'bg-rose-50 text-rose-700 shadow-xs dark:bg-rose-950/70 dark:text-rose-300'
@@ -285,7 +300,7 @@
 					<div
 						class="absolute top-full right-0 z-50 mt-1.5 w-64 overflow-hidden rounded-xl border border-slate-200 bg-white/95 p-1 shadow-xl backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/95"
 					>
-						{#each results as team, i}
+						{#each results as team, i (team.number)}
 							<button
 								type="button"
 								onmousedown={() => selectTeam(team.number)}
@@ -309,11 +324,152 @@
 			<!-- Auth Popover Button -->
 			<div class="relative" bind:this={authContainerRef}>
 				<button
-					onclick={toggleAuth}
-					class="flex items-center gap-1.5 rounded-lg p-1.5 text-xs font-semibold transition-colors {lockColorClass}"
-					aria-label="Authentication"
-					title="Role: {roleLabel}"
+					type="button"
+					onclick={() => (authOpen = !authOpen)}
+					class="flex h-7 w-7 items-center justify-center rounded-lg transition-colors {accessButtonClass}"
+					title={`Access: ${accessTierLabel}`}
+					aria-label="Access tier"
 				>
+					{#if isAdmin}
+						<!-- Shield Key for Admin -->
+						<svg
+							class="h-3.5 w-3.5"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+							stroke-width="2"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+							/>
+						</svg>
+					{:else if isPrivileged}
+						<!-- Star Key for Member -->
+						<svg
+							class="h-3.5 w-3.5"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+							stroke-width="2"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+							/>
+						</svg>
+					{:else}
+						<!-- Lock for Guest -->
+						<svg
+							class="h-3.5 w-3.5"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+							stroke-width="2"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+							/>
+						</svg>
+					{/if}
+				</button>
+
+				<!-- Auth Popover Dropdown -->
+				{#if authOpen}
+					<div
+						class="absolute top-full right-0 z-50 mt-1.5 w-64 rounded-2xl border border-slate-200 bg-white p-4 shadow-xl backdrop-blur-md dark:border-slate-800 dark:bg-slate-900"
+					>
+						<div class="mb-3">
+							<span class="text-xs font-bold text-slate-900 dark:text-white">
+								{accessTierLabel}
+							</span>
+							<p class="text-[11px] text-slate-500 dark:text-slate-400">
+								{#if isAdmin}
+									Full administrative privileges enabled.
+								{:else if isPrivileged}
+									Scouting & match strategy mode unlocked.
+								{:else}
+									Enter password for team access or admin controls.
+								{/if}
+							</p>
+						</div>
+
+						{#if isAdmin || isPrivileged}
+							<button
+								type="button"
+								onclick={handleLogout}
+								class="w-full rounded-xl border border-slate-200 bg-slate-50 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+							>
+								Log Out
+							</button>
+						{:else}
+							<form onsubmit={handleAuthSubmit} class="space-y-2">
+								<input
+									type="password"
+									bind:value={authPassword}
+									placeholder="Password…"
+									class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-900 outline-none focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+								/>
+								{#if authError}
+									<p class="text-[11px] text-rose-500">{authError}</p>
+								{/if}
+								<button
+									type="submit"
+									disabled={authLoading || !authPassword}
+									class="w-full rounded-xl bg-cyan-600 py-1.5 text-xs font-bold text-white shadow-2xs transition-colors hover:bg-cyan-700 disabled:opacity-50"
+								>
+									{authLoading ? 'Verifying…' : 'Unlock Access'}
+								</button>
+							</form>
+						{/if}
+					</div>
+				{/if}
+			</div>
+		</div>
+
+		<!-- Mobile Menu & Actions -->
+		<div class="flex items-center gap-1.5 md:hidden">
+			<!-- Mobile Auth Trigger -->
+			<button
+				type="button"
+				onclick={() => (authOpen = !authOpen)}
+				class="flex h-8 w-8 items-center justify-center rounded-lg transition-colors {accessButtonClass}"
+				title={`Access: ${accessTierLabel}`}
+				aria-label="Access tier"
+			>
+				{#if isAdmin}
+					<svg
+						class="h-4 w-4"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke="currentColor"
+						stroke-width="2"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+						/>
+					</svg>
+				{:else if isPrivileged}
+					<svg
+						class="h-4 w-4"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke="currentColor"
+						stroke-width="2"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+						/>
+					</svg>
+				{:else}
 					<svg
 						class="h-4 w-4"
 						fill="none"
@@ -327,203 +483,99 @@
 							d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
 						/>
 					</svg>
-					{#if isAdmin || isPrivileged}
-						<span class="text-[11px] font-bold">{roleLabel}</span>
-					{/if}
-				</button>
-
-				{#if authOpen}
-					<div
-						class="absolute top-full right-0 z-50 mt-2 w-68 overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl dark:border-slate-800 dark:bg-slate-900"
-					>
-						<div
-							class="flex items-center justify-between border-b border-slate-100 pb-2.5 dark:border-slate-800"
-						>
-							<p
-								class="text-xs font-bold tracking-wider text-slate-500 uppercase dark:text-slate-400"
-							>
-								Access Level
-							</p>
-							<span
-								class="rounded-md px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase
-								{isAdmin
-									? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300'
-									: isPrivileged
-										? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
-										: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'}"
-							>
-								{roleLabel}
-							</span>
-						</div>
-
-						<div class="pt-3">
-							<label
-								for="desktopAuthPassword"
-								class="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-300"
-							>
-								Password
-							</label>
-							<input
-								id="desktopAuthPassword"
-								type="password"
-								bind:value={authPassword}
-								onkeydown={onAuthKeydown}
-								placeholder="Enter admin password"
-								class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-800 outline-none focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-cyan-400 dark:focus:bg-slate-900"
-							/>
-							{#if authError}
-								<p class="mt-1.5 text-[11px] font-medium text-rose-500">{authError}</p>
-							{/if}
-							<button
-								onclick={submitAuth}
-								disabled={authLoading || !authPassword}
-								class="mt-3 w-full rounded-lg bg-cyan-600 py-1.5 text-xs font-bold text-white shadow-xs transition-colors hover:bg-cyan-700 disabled:opacity-50 dark:bg-cyan-500 dark:hover:bg-cyan-600"
-							>
-								{authLoading ? 'Verifying…' : 'Authenticate'}
-							</button>
-
-							{#if isPrivileged}
-								<button
-									onclick={logout}
-									class="mt-1.5 w-full rounded-lg py-1.5 text-xs font-semibold text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-								>
-									Log out
-								</button>
-							{/if}
-						</div>
-					</div>
 				{/if}
-			</div>
-		</div>
+			</button>
 
-		<!-- Mobile Header Controls -->
-		<div class="flex items-center gap-1 md:hidden">
+			<!-- Mobile Menu Trigger -->
 			<button
-				onclick={toggleAuth}
-				class="rounded-lg p-2 transition-colors {lockColorClass}"
-				aria-label="Authenticate"
+				type="button"
+				onclick={() => (mobileOpen = !mobileOpen)}
+				class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+				aria-label="Toggle navigation menu"
 			>
 				<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-					/>
-				</svg>
-			</button>
-			<button
-				onclick={() => {
-					mobileOpen = !mobileOpen;
-					authOpen = false;
-				}}
-				class="rounded-lg p-2 text-slate-500 hover:bg-slate-100 focus:outline-none dark:text-slate-400 dark:hover:bg-slate-800"
-				aria-label="Toggle menu"
-			>
-				{#if mobileOpen}
-					<svg
-						class="h-5 w-5"
-						fill="none"
-						viewBox="0 0 24 24"
-						stroke="currentColor"
-						stroke-width="2"
-					>
+					{#if mobileOpen}
 						<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-					</svg>
-				{:else}
-					<svg
-						class="h-5 w-5"
-						fill="none"
-						viewBox="0 0 24 24"
-						stroke="currentColor"
-						stroke-width="2"
-					>
+					{:else}
 						<path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-					</svg>
-				{/if}
+					{/if}
+				</svg>
 			</button>
 		</div>
 	</div>
 
-	<!-- Mobile Auth Popover -->
-	{#if authOpen && !mobileOpen}
+	<!-- Mobile Auth Dropdown (when toggled from mobile button) -->
+	{#if authOpen}
 		<div
 			bind:this={mobileAuthPanelRef}
-			class="mt-2.5 rounded-xl border border-slate-200 bg-white p-4 shadow-lg md:hidden dark:border-slate-800 dark:bg-slate-900"
+			class="mt-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-xl md:hidden dark:border-slate-800 dark:bg-slate-900"
 		>
-			<div
-				class="flex items-center justify-between border-b border-slate-100 pb-2 dark:border-slate-800"
-			>
-				<p class="text-xs font-bold tracking-wider text-slate-500 uppercase">Access Level</p>
-				<span
-					class="rounded bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-300"
-				>
-					{roleLabel}
+			<div class="mb-3">
+				<span class="text-xs font-bold text-slate-900 dark:text-white">
+					{accessTierLabel}
 				</span>
+				<p class="text-[11px] text-slate-500 dark:text-slate-400">
+					{#if isAdmin}
+						Full administrative privileges enabled.
+					{:else if isPrivileged}
+						Scouting & match strategy mode unlocked.
+					{:else}
+						Enter password for team access or admin controls.
+					{/if}
+				</p>
 			</div>
-			<div class="pt-3">
-				<input
-					type="password"
-					bind:value={authPassword}
-					onkeydown={onAuthKeydown}
-					placeholder="Enter password"
-					class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-				/>
-				{#if authError}
-					<p class="mt-1 text-xs font-semibold text-rose-500">{authError}</p>
-				{/if}
+
+			{#if isAdmin || isPrivileged}
 				<button
-					onclick={submitAuth}
-					disabled={authLoading || !authPassword}
-					class="mt-2.5 w-full rounded-lg bg-cyan-600 py-2 text-xs font-bold text-white shadow-xs transition-colors hover:bg-cyan-700 disabled:opacity-50 dark:bg-cyan-500"
+					type="button"
+					onclick={handleLogout}
+					class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
 				>
-					{authLoading ? 'Verifying…' : 'Authenticate'}
+					Log Out
 				</button>
-				{#if isPrivileged}
+			{:else}
+				<form onsubmit={handleAuthSubmit} class="space-y-2">
+					<input
+						type="password"
+						bind:value={authPassword}
+						placeholder="Password…"
+						class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 outline-none focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+					/>
+					{#if authError}
+						<p class="text-[11px] text-rose-500">{authError}</p>
+					{/if}
 					<button
-						onclick={logout}
-						class="mt-1.5 w-full rounded-lg py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+						type="submit"
+						disabled={authLoading || !authPassword}
+						class="w-full rounded-xl bg-cyan-600 py-2 text-xs font-bold text-white shadow-2xs transition-colors hover:bg-cyan-700 disabled:opacity-50"
 					>
-						Log out
+						{authLoading ? 'Verifying…' : 'Unlock Access'}
 					</button>
-				{/if}
-			</div>
+				</form>
+			{/if}
 		</div>
 	{/if}
 
-	<!-- Mobile Drawer -->
+	<!-- Mobile Navigation Drawer -->
 	{#if mobileOpen}
-		<div class="mt-2 border-t border-slate-100 pt-3 md:hidden dark:border-slate-800">
-			<!-- Search on Mobile -->
-			<div class="relative mb-3">
-				<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-					<svg
-						class="h-4 w-4 text-slate-400"
-						fill="none"
-						viewBox="0 0 24 24"
-						stroke="currentColor"
-						stroke-width="2"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"
-						/>
-					</svg>
-				</div>
+		<div
+			class="mt-2 space-y-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl md:hidden dark:border-slate-800 dark:bg-slate-900"
+		>
+			<!-- Mobile Search -->
+			<div class="relative">
 				<input
 					bind:value={query}
 					onfocus={() => (focused = true)}
 					onblur={() => setTimeout(() => (focused = false), 150)}
-					onkeydown={onSearchKeydown}
 					type="search"
-					placeholder="Search by team # or name…"
-					class="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pr-3 pl-9 text-xs outline-none focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+					placeholder="Search team # or name…"
+					class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 outline-none placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
 				/>
 				{#if showDropdown}
 					<div
 						class="mt-1 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-800 dark:bg-slate-900"
 					>
-						{#each results as team, i}
+						{#each results as team, i (team.number)}
 							<button
 								type="button"
 								onmousedown={() => selectTeam(team.number)}
@@ -541,9 +593,9 @@
 			</div>
 
 			<div class="space-y-1">
-				{#each mainNav as link}
+				{#each mainNav as link (link.href)}
 					<a
-						href={link.href}
+						href={resolve(link.href)}
 						class="block rounded-lg px-3 py-2 text-xs font-semibold transition-colors
 							{activePath === link.href
 							? 'bg-cyan-50 text-cyan-700 dark:bg-cyan-950/60 dark:text-cyan-300'
@@ -557,9 +609,9 @@
 			<hr class="my-2 border-slate-100 dark:border-slate-800" />
 
 			<div class="space-y-1">
-				{#each scoutNav as link}
+				{#each scoutNav as link (link.href)}
 					<a
-						href={link.href}
+						href={resolve(link.href)}
 						class="block rounded-lg px-3 py-2 text-xs font-semibold transition-colors
 							{activePath === link.href
 							? 'bg-cyan-50 text-cyan-700 dark:bg-cyan-950/60 dark:text-cyan-300'
@@ -568,13 +620,22 @@
 						{link.label}
 					</a>
 				{/each}
+				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
+				<a
+					href="/StrategyBoard.html"
+					rel="external"
+					target="_blank"
+					class="block rounded-lg px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+				>
+					Strategy Board ↗
+				</a>
 			</div>
 
 			{#if isPrivileged}
 				<hr class="my-2 border-slate-100 dark:border-slate-800" />
 				<div class="space-y-1">
 					<a
-						href="/alliance-selection"
+						href={resolve('/alliance-selection')}
 						class="block rounded-lg px-3 py-2 text-xs font-semibold transition-colors
 							{activePath === '/alliance-selection'
 							? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
@@ -589,7 +650,7 @@
 				<hr class="my-2 border-slate-100 dark:border-slate-800" />
 				<div class="space-y-1">
 					<a
-						href="/admin"
+						href={resolve('/admin')}
 						class="block rounded-lg px-3 py-2 text-xs font-semibold transition-colors
 							{activePath === '/admin'
 							? 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300'
