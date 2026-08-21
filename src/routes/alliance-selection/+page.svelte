@@ -21,33 +21,69 @@
 	// ── Derived: set of all chosen team numbers ───────────────────
 	const chosenSet = $derived(new Set(alliances.flat().filter((n): n is number => n != null)));
 
-	// ── Derived: unchosen teams sorted by rank ────────────────────
+	// ── Available Draft Pool Sorting ──────────────────────────────
+	type DraftPoolSortKey = 'rank' | 'team' | 'epop' | 'def' | 'pass';
+	let poolSortKey = $state<DraftPoolSortKey>('rank');
+	let poolSortDir = $state<'asc' | 'desc'>('asc');
+
+	function togglePoolSort(key: DraftPoolSortKey) {
+		if (poolSortKey === key) {
+			poolSortDir = poolSortDir === 'asc' ? 'desc' : 'asc';
+		} else {
+			poolSortKey = key;
+			poolSortDir = key === 'rank' || key === 'team' ? 'asc' : 'desc';
+		}
+	}
+
+	// ── Derived: unchosen teams ───────────────────────────────────
 	const unchosenTeams = $derived(data.teams.filter((t) => !chosenSet.has(t.number)));
 
-	// ── Filtered teams (search) ───────────────────────────────────
+	// ── Filtered & Sorted Draft Pool teams ─────────────────────────
 	const filteredTeams = $derived.by(() => {
 		const q = searchQuery.trim().toLowerCase();
-		if (!q) return unchosenTeams;
-		return unchosenTeams.filter(
-			(t) => String(t.number).includes(q) || t.name.toLowerCase().includes(q)
-		);
+		const list = q
+			? unchosenTeams.filter(
+					(t) => String(t.number).includes(q) || t.name.toLowerCase().includes(q)
+				)
+			: unchosenTeams;
+
+		return [...list].sort((a, b) => {
+			let v = 0;
+			if (poolSortKey === 'rank') {
+				v = (a.rank ?? Infinity) - (b.rank ?? Infinity);
+			} else if (poolSortKey === 'team') {
+				v = a.number - b.number;
+			} else if (poolSortKey === 'epop') {
+				v = (a.epop ?? -Infinity) - (b.epop ?? -Infinity);
+			} else if (poolSortKey === 'def') {
+				v = (a.defScore ?? -Infinity) - (b.defScore ?? -Infinity);
+			} else if (poolSortKey === 'pass') {
+				v = (a.passScore ?? -Infinity) - (b.passScore ?? -Infinity);
+			}
+
+			const primary = poolSortDir === 'asc' ? v : -v;
+			if (primary !== 0) return primary;
+
+			const rankA = a.rank ?? Infinity;
+			const rankB = b.rank ?? Infinity;
+			if (rankA !== rankB) return rankA - rankB;
+			return a.number - b.number;
+		});
 	});
 
 	// ── Pareto front computation ──────────────────────────────────
-	const PARETO_EPOP_EPS = 10;
-	const PARETO_SCORE_EPS = 0.3;
+	const PARETO_EPOP_EPS = 4;
+	const PARETO_SCORE_EPS = 0.2;
 
 	function computePareto(teams: typeof data.teams, m: Metric) {
-		const eligible = teams.filter(
-			(t) => t.epop != null && (m === 'def' ? t.defScore : t.passScore) != null
-		);
+		const eligible = teams.filter((t) => t.epop != null);
 		return eligible.filter((t) => {
 			const tx = t.epop!;
-			const ty = m === 'def' ? t.defScore! : t.passScore!;
+			const ty = (m === 'def' ? t.defScore : t.passScore) ?? 0;
 			return !eligible.some((u) => {
 				if (u === t) return false;
 				const ux = u.epop!;
-				const uy = m === 'def' ? u.defScore! : u.passScore!;
+				const uy = (m === 'def' ? u.defScore : u.passScore) ?? 0;
 				return ux > tx + PARETO_EPOP_EPS && uy > ty + PARETO_SCORE_EPS;
 			});
 		});
@@ -55,11 +91,86 @@
 
 	const paretoFront = $derived(computePareto(unchosenTeams, metric));
 
+	// ── Strategic Role Classification ─────────────────────────────
+	function getTeamRole(t: (typeof data.teams)[0], m: Metric) {
+		const isPareto = paretoFront.some((p) => p.number === t.number);
+
+		// Top 3 Scorers by ePOP
+		const topScorerNums = [...unchosenTeams]
+			.sort((a, b) => (b.epop ?? 0) - (a.epop ?? 0))
+			.slice(0, 3)
+			.map((x) => x.number);
+
+		const isTopScorer = topScorerNums.includes(t.number);
+
+		if (m === 'def') {
+			const hasDef = t.defScore != null && t.defScore >= 3.0 && t.defRate >= 0.15;
+			if (isTopScorer && (!t.defScore || t.defScore < 3.0)) {
+				return {
+					label: 'Top Scorer',
+					type: 'scorer',
+					desc: '1st Pick — Primary Scoring Partner'
+				};
+			}
+			if (hasDef) {
+				return {
+					label: 'Def Specialist',
+					type: 'defense',
+					desc: '2nd Pick — Shutdown Defender'
+				};
+			}
+			if (isPareto) {
+				return {
+					label: 'Pareto Edge',
+					type: 'pareto',
+					desc: 'Value Pick — Optimal Efficiency'
+				};
+			}
+		} else {
+			const hasPass = t.passScore != null && t.passScore >= 3.0 && t.passRate >= 0.15;
+			if (isTopScorer && (!t.passScore || t.passScore < 3.0)) {
+				return {
+					label: 'Top Scorer',
+					type: 'scorer',
+					desc: '1st Pick — Primary Scoring Partner'
+				};
+			}
+			if (hasPass) {
+				return {
+					label: 'Feeder / Passer',
+					type: 'passer',
+					desc: '2nd Pick — Cycle Feeder'
+				};
+			}
+			if (isPareto) {
+				return {
+					label: 'Pareto Edge',
+					type: 'pareto',
+					desc: 'Value Pick — Optimal Efficiency'
+				};
+			}
+		}
+
+		if (isPareto) {
+			return {
+				label: 'Pareto Edge',
+				type: 'pareto',
+				desc: 'Value Pick — Optimal Efficiency'
+			};
+		}
+
+		return null;
+	}
+
 	const paretoSorted = $derived(
 		[...paretoFront].sort((a, b) => {
-			const ay = metric === 'def' ? (a.defScore ?? 0) : (a.passScore ?? 0);
-			const by_ = metric === 'def' ? (b.defScore ?? 0) : (b.passScore ?? 0);
-			return by_ - ay;
+			const roleA = getTeamRole(a, metric);
+			const roleB = getTeamRole(b, metric);
+			const order: Record<string, number> = { scorer: 1, pareto: 2, defense: 3, passer: 3 };
+			const ordA = roleA ? (order[roleA.type] ?? 4) : 5;
+			const ordB = roleB ? (order[roleB.type] ?? 4) : 5;
+			if (ordA !== ordB) return ordA - ordB;
+			return (b.epop ?? 0) - (a.epop ?? 0);
 		})
 	);
 
@@ -522,7 +633,7 @@
 
 							<!-- Chosen teams (muted) -->
 							{#each data.teams.filter((t) => chosenSet.has(t.number)) as t (t.number)}
-								{#if t.epop != null && (metric === 'def' ? t.defScore : t.passScore) != null}
+								{#if t.epop != null}
 									{@const pt = teamPoint(t)}
 									<circle
 										cx={pt.x}
@@ -537,17 +648,28 @@
 
 							<!-- Available Teams & Pareto Front -->
 							{#each unchosenTeams as t (t.number)}
-								{#if t.epop != null && (metric === 'def' ? t.defScore : t.passScore) != null}
+								{#if t.epop != null}
 									{@const pt = teamPoint(t)}
-									{@const onFront = paretoFront.includes(t)}
+									{@const onFront = paretoFront.some((x) => x.number === t.number)}
+									{@const role = getTeamRole(t, metric)}
 									{@const isHovered = hoverTeam === t.number || selectedTeam === t.number}
+									{@const hasMetricScore = (metric === 'def' ? t.defScore : t.passScore) != null}
 									<circle
 										cx={pt.x}
 										cy={pt.y}
-										r={isHovered ? (onFront ? 7 : 5.5) : onFront ? 6 : 4.5}
-										fill={onFront ? '#f59e0b' : '#06b6d4'}
-										stroke={isHovered ? '#0284c7' : '#ffffff'}
+										r={isHovered ? (onFront ? 7.5 : 6) : onFront ? 6 : 4.5}
+										fill={onFront
+											? role?.type === 'scorer'
+												? '#06b6d4'
+												: role?.type === 'defense'
+													? '#f43f5e'
+													: role?.type === 'passer'
+														? '#6366f1'
+														: '#f59e0b'
+											: '#94a3b8'}
+										stroke={isHovered ? '#0284c7' : onFront ? '#ffffff' : '#cbd5e1'}
 										stroke-width={isHovered ? 2.5 : 1}
+										opacity={hasMetricScore ? 1 : 0.8}
 										class="cursor-pointer"
 										onmouseenter={() => (hoverTeam = t.number)}
 										onmouseleave={() => (hoverTeam = null)}
@@ -564,7 +686,15 @@
 											y={pt.y + 4}
 											font-size="10"
 											font-weight="700"
-											fill={onFront ? '#b45309' : '#0891b2'}
+											fill={onFront
+												? role?.type === 'scorer'
+													? '#0891b2'
+													: role?.type === 'defense'
+														? '#e11d48'
+														: role?.type === 'passer'
+															? '#4f46e5'
+															: '#b45309'
+												: '#64748b'}
 											class="pointer-events-none font-mono select-none"
 										>
 											{t.number}
@@ -579,15 +709,21 @@
 					<div
 						class="mt-2 flex items-center justify-between border-t border-slate-100 px-2 pt-2 text-[11px] text-slate-500 dark:border-slate-800 dark:text-slate-400"
 					>
-						<div class="flex items-center gap-3">
+						<div class="flex flex-wrap items-center gap-3">
 							<span class="flex items-center gap-1.5">
-								<span class="inline-block h-2.5 w-2.5 rounded-full bg-amber-400"></span> Pareto Frontier
+								<span class="inline-block h-2.5 w-2.5 rounded-full bg-amber-400"></span> Pareto Edge
 							</span>
 							<span class="flex items-center gap-1.5">
-								<span class="inline-block h-2.5 w-2.5 rounded-full bg-cyan-500"></span> Available
+								<span class="inline-block h-2.5 w-2.5 rounded-full bg-cyan-500"></span> Top Scorer
 							</span>
 							<span class="flex items-center gap-1.5">
-								<span class="inline-block h-2.5 w-2.5 rounded-full bg-slate-300 dark:bg-slate-700"
+								<span class="inline-block h-2.5 w-2.5 rounded-full bg-rose-500"></span> Specialist
+							</span>
+							<span class="flex items-center gap-1.5">
+								<span class="inline-block h-2.5 w-2.5 rounded-full bg-slate-400"></span> Available
+							</span>
+							<span class="flex items-center gap-1.5">
+								<span class="inline-block h-2.5 w-2.5 rounded-full bg-slate-200 dark:bg-slate-700"
 								></span> Picked
 							</span>
 						</div>
@@ -598,21 +734,28 @@
 						{@const activeTeamNum = (hoverTeam ?? selectedTeam)!}
 						{@const t = teamInfo(activeTeamNum)}
 						{#if t}
-							{@const onFront = paretoFront.some((x) => x.number === t.number)}
+							{@const role = getTeamRole(t, metric)}
 							<div
 								class="mt-3 rounded-2xl border border-cyan-200/80 bg-cyan-50/60 p-3.5 text-xs shadow-xs dark:border-cyan-900/50 dark:bg-cyan-950/30"
 							>
 								<div class="flex items-center justify-between">
-									<div class="flex items-center gap-2">
+									<div class="flex flex-wrap items-center gap-2">
 										<span class="font-mono text-sm font-black text-cyan-700 dark:text-cyan-300">
 											Team {t.number}
 										</span>
 										<span class="font-bold text-slate-800 dark:text-slate-200">{t.name}</span>
-										{#if onFront}
+										{#if role}
 											<span
-												class="rounded bg-amber-100 px-1.5 py-0.5 font-mono text-[10px] font-bold text-amber-700 dark:bg-amber-950 dark:text-amber-300"
+												class="rounded px-1.5 py-0.5 font-mono text-[10px] font-bold
+													{role.type === 'scorer'
+													? 'bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-300'
+													: role.type === 'defense'
+														? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+														: role.type === 'passer'
+															? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300'
+															: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'}"
 											>
-												Pareto
+												{role.label}
 											</span>
 										{/if}
 									</div>
@@ -652,13 +795,13 @@
 									<div>
 										<span class="text-[10px] font-bold text-slate-400 uppercase">Defense</span>
 										<p class="font-mono font-bold text-amber-600 dark:text-amber-400">
-											{t.defScore != null ? `${fmt1(t.defScore)}/5` : '—'}
+											{t.defScore != null ? `${fmt1(t.defScore)}/5` : '0.0 (No Def)'}
 										</p>
 									</div>
 									<div>
 										<span class="text-[10px] font-bold text-slate-400 uppercase">Passing</span>
 										<p class="font-mono font-bold text-indigo-600 dark:text-indigo-400">
-											{t.passScore != null ? `${fmt1(t.passScore)}/5` : '—'}
+											{t.passScore != null ? `${fmt1(t.passScore)}/5` : '0.0 (No Pass)'}
 										</p>
 									</div>
 								</div>
@@ -667,19 +810,20 @@
 					{/if}
 				</div>
 
-				<!-- Pareto Front Teams Table -->
+				<!-- Recommendations Table -->
 				{#if paretoSorted.length > 0}
 					<div class="border-t border-slate-100 p-3 dark:border-slate-800">
 						<p
 							class="mb-2 text-[10px] font-bold tracking-wider text-amber-600 uppercase dark:text-amber-400"
 						>
-							Pareto Frontier Recommendations
+							Recommendations & Role Targets
 						</p>
 						<table class="w-full text-xs">
 							<thead>
 								<tr class="text-left text-[10px] font-bold text-slate-400 uppercase">
 									<th class="pb-1">Rank</th>
 									<th class="pb-1">Team</th>
+									<th class="pb-1">Role</th>
 									<th class="pb-1">ePOP</th>
 									<th class="pb-1">Def</th>
 									<th class="pb-1">Pass</th>
@@ -687,6 +831,7 @@
 							</thead>
 							<tbody class="divide-y divide-slate-100 dark:divide-slate-800">
 								{#each paretoSorted as t (t.number)}
+									{@const role = getTeamRole(t, metric)}
 									<tr class="transition-colors hover:bg-amber-50/60 dark:hover:bg-amber-950/20">
 										<td class="py-1.5 font-mono font-bold text-slate-400"
 											>{t.rank != null ? `#${t.rank}` : '—'}</td
@@ -698,6 +843,22 @@
 											>
 												{t.number}
 											</a>
+										</td>
+										<td class="py-1.5">
+											{#if role}
+												<span
+													class="rounded px-1.5 py-0.5 font-mono text-[9px] font-bold
+														{role.type === 'scorer'
+														? 'bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-300'
+														: role.type === 'defense'
+															? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+															: role.type === 'passer'
+																? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300'
+																: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'}"
+												>
+													{role.label}
+												</span>
+											{/if}
 										</td>
 										<td class="py-1.5 font-mono font-bold {epopColorClass(t.epop)}"
 											>{fmt1(t.epop)}</td
@@ -760,16 +921,87 @@
 							class="border-b border-slate-100 bg-slate-50/75 text-[10px] font-bold tracking-wider text-slate-400 uppercase dark:border-slate-800 dark:bg-slate-800/50"
 						>
 							<th class="w-10 px-2.5 py-2.5"></th>
-							<th class="px-2.5 py-2.5">Rank</th>
-							<th class="px-2.5 py-2.5">Team</th>
-							<th class="px-2.5 py-2.5">ePOP</th>
-							<th class="px-2.5 py-2.5">Defense</th>
-							<th class="px-2.5 py-2.5">Passing</th>
+							<th class="px-2.5 py-2.5">
+								<button
+									type="button"
+									onclick={() => togglePoolSort('rank')}
+									class="inline-flex items-center gap-1 font-bold uppercase transition-colors hover:text-slate-700 dark:hover:text-slate-200 {poolSortKey ===
+									'rank'
+										? 'text-cyan-600 dark:text-cyan-400'
+										: 'text-slate-400'}"
+								>
+									Rank
+									<span class="text-[9px]"
+										>{poolSortKey === 'rank' ? (poolSortDir === 'asc' ? '↑' : '↓') : '↕'}</span
+									>
+								</button>
+							</th>
+							<th class="px-2.5 py-2.5">
+								<button
+									type="button"
+									onclick={() => togglePoolSort('team')}
+									class="inline-flex items-center gap-1 font-bold uppercase transition-colors hover:text-slate-700 dark:hover:text-slate-200 {poolSortKey ===
+									'team'
+										? 'text-cyan-600 dark:text-cyan-400'
+										: 'text-slate-400'}"
+								>
+									Team
+									<span class="text-[9px]"
+										>{poolSortKey === 'team' ? (poolSortDir === 'asc' ? '↑' : '↓') : '↕'}</span
+									>
+								</button>
+							</th>
+							<th class="px-2.5 py-2.5">
+								<button
+									type="button"
+									onclick={() => togglePoolSort('epop')}
+									class="inline-flex items-center gap-1 font-bold uppercase transition-colors hover:text-slate-700 dark:hover:text-slate-200 {poolSortKey ===
+									'epop'
+										? 'text-cyan-600 dark:text-cyan-400'
+										: 'text-slate-400'}"
+								>
+									ePOP
+									<span class="text-[9px]"
+										>{poolSortKey === 'epop' ? (poolSortDir === 'asc' ? '↑' : '↓') : '↕'}</span
+									>
+								</button>
+							</th>
+							<th class="px-2.5 py-2.5">
+								<button
+									type="button"
+									onclick={() => togglePoolSort('def')}
+									class="inline-flex items-center gap-1 font-bold uppercase transition-colors hover:text-slate-700 dark:hover:text-slate-200 {poolSortKey ===
+									'def'
+										? 'text-cyan-600 dark:text-cyan-400'
+										: 'text-slate-400'}"
+								>
+									Defense
+									<span class="text-[9px]"
+										>{poolSortKey === 'def' ? (poolSortDir === 'asc' ? '↑' : '↓') : '↕'}</span
+									>
+								</button>
+							</th>
+							<th class="px-2.5 py-2.5">
+								<button
+									type="button"
+									onclick={() => togglePoolSort('pass')}
+									class="inline-flex items-center gap-1 font-bold uppercase transition-colors hover:text-slate-700 dark:hover:text-slate-200 {poolSortKey ===
+									'pass'
+										? 'text-cyan-600 dark:text-cyan-400'
+										: 'text-slate-400'}"
+								>
+									Passing
+									<span class="text-[9px]"
+										>{poolSortKey === 'pass' ? (poolSortDir === 'asc' ? '↑' : '↓') : '↕'}</span
+									>
+								</button>
+							</th>
 						</tr>
 					</thead>
 					<tbody class="divide-y divide-slate-100 dark:divide-slate-800">
 						{#each filteredTeams as t (t.number)}
-							{@const onFront = paretoFront.includes(t)}
+							{@const onFront = paretoFront.some((x) => x.number === t.number)}
+							{@const role = getTeamRole(t, metric)}
 							{@const isSelected = t.number === selectedTeam}
 							<tr
 								class="cursor-pointer transition-colors
@@ -804,11 +1036,18 @@
 										>
 											{t.number}
 										</a>
-										{#if onFront}
+										{#if role}
 											<span
-												class="py-0.2 rounded bg-amber-100 px-1 font-mono text-[9px] font-bold text-amber-700 dark:bg-amber-950 dark:text-amber-300"
+												class="rounded px-1.5 py-0.5 font-mono text-[9px] font-bold
+													{role.type === 'scorer'
+													? 'bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-300'
+													: role.type === 'defense'
+														? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+														: role.type === 'passer'
+															? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300'
+															: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'}"
 											>
-												Pareto
+												{role.label}
 											</span>
 										{/if}
 									</div>

@@ -137,12 +137,10 @@
 		authError = '';
 
 		try {
-			const formData = new FormData();
-			formData.append('password', authPassword);
-
-			const res = await fetch('?/login', {
+			const res = await fetch('/api/auth', {
 				method: 'POST',
-				body: formData
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ password: authPassword })
 			});
 
 			if (res.ok) {
@@ -150,7 +148,8 @@
 				authOpen = false;
 				window.location.reload();
 			} else {
-				authError = 'Incorrect password';
+				const body = await res.json().catch(() => ({}));
+				authError = body.error || 'Incorrect password';
 			}
 		} catch {
 			authError = 'Authentication failed';
@@ -161,7 +160,7 @@
 
 	async function handleLogout() {
 		try {
-			await fetch('?/logout', { method: 'POST' });
+			await fetch('/logout', { method: 'POST' });
 			window.location.reload();
 		} catch {
 			// silent fallback
@@ -325,7 +324,10 @@
 			<div class="relative" bind:this={authContainerRef}>
 				<button
 					type="button"
-					onclick={() => (authOpen = !authOpen)}
+					onclick={(e) => {
+						e.stopPropagation();
+						authOpen = !authOpen;
+					}}
 					class="flex h-7 w-7 items-center justify-center rounded-lg transition-colors {accessButtonClass}"
 					title={`Access: ${accessTierLabel}`}
 					aria-label="Access tier"
@@ -431,13 +433,16 @@
 			</div>
 		</div>
 
-		<!-- Mobile Menu & Actions -->
-		<div class="flex items-center gap-1.5 md:hidden">
+		<!-- Mobile Menu & Actions (44px minimum touch targets) -->
+		<div class="flex items-center gap-1 md:hidden">
 			<!-- Mobile Auth Trigger -->
 			<button
 				type="button"
-				onclick={() => (authOpen = !authOpen)}
-				class="flex h-8 w-8 items-center justify-center rounded-lg transition-colors {accessButtonClass}"
+				onclick={(e) => {
+					e.stopPropagation();
+					authOpen = !authOpen;
+				}}
+				class="flex h-11 w-11 items-center justify-center rounded-xl transition-colors {accessButtonClass}"
 				title={`Access: ${accessTierLabel}`}
 				aria-label="Access tier"
 			>
@@ -490,7 +495,7 @@
 			<button
 				type="button"
 				onclick={() => (mobileOpen = !mobileOpen)}
-				class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+				class="flex h-11 w-11 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
 				aria-label="Toggle navigation menu"
 			>
 				<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -529,7 +534,7 @@
 				<button
 					type="button"
 					onclick={handleLogout}
-					class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+					class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
 				>
 					Log Out
 				</button>
@@ -539,7 +544,7 @@
 						type="password"
 						bind:value={authPassword}
 						placeholder="Password…"
-						class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 outline-none focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+						class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-base text-slate-900 outline-none focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 sm:text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
 					/>
 					{#if authError}
 						<p class="text-[11px] text-rose-500">{authError}</p>
@@ -547,7 +552,7 @@
 					<button
 						type="submit"
 						disabled={authLoading || !authPassword}
-						class="w-full rounded-xl bg-cyan-600 py-2 text-xs font-bold text-white shadow-2xs transition-colors hover:bg-cyan-700 disabled:opacity-50"
+						class="w-full rounded-xl bg-cyan-600 py-2.5 text-xs font-bold text-white shadow-2xs transition-colors hover:bg-cyan-700 disabled:opacity-50"
 					>
 						{authLoading ? 'Verifying…' : 'Unlock Access'}
 					</button>
@@ -569,7 +574,7 @@
 					onblur={() => setTimeout(() => (focused = false), 150)}
 					type="search"
 					placeholder="Search team # or name…"
-					class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 outline-none placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+					class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-base text-slate-900 outline-none placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 sm:text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
 				/>
 				{#if showDropdown}
 					<div
@@ -579,7 +584,7 @@
 							<button
 								type="button"
 								onmousedown={() => selectTeam(team.number)}
-								class="flex w-full items-center gap-3 px-3 py-2 text-left text-xs hover:bg-cyan-50 dark:hover:bg-cyan-950/40
+								class="flex w-full items-center gap-3 px-3 py-2.5 text-left text-xs hover:bg-cyan-50 dark:hover:bg-cyan-950/40
 									{i === selectedIndex ? 'bg-cyan-50 dark:bg-cyan-950/50' : ''}"
 							>
 								<span class="w-12 font-mono font-bold text-cyan-700 dark:text-cyan-400"
@@ -596,7 +601,7 @@
 				{#each mainNav as link (link.href)}
 					<a
 						href={resolve(link.href)}
-						class="block rounded-lg px-3 py-2 text-xs font-semibold transition-colors
+						class="block rounded-lg px-3 py-2.5 text-xs font-semibold transition-colors
 							{activePath === link.href
 							? 'bg-cyan-50 text-cyan-700 dark:bg-cyan-950/60 dark:text-cyan-300'
 							: 'text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}"
@@ -612,7 +617,7 @@
 				{#each scoutNav as link (link.href)}
 					<a
 						href={resolve(link.href)}
-						class="block rounded-lg px-3 py-2 text-xs font-semibold transition-colors
+						class="block rounded-lg px-3 py-2.5 text-xs font-semibold transition-colors
 							{activePath === link.href
 							? 'bg-cyan-50 text-cyan-700 dark:bg-cyan-950/60 dark:text-cyan-300'
 							: 'text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}"
@@ -625,7 +630,7 @@
 					href="/StrategyBoard.html"
 					rel="external"
 					target="_blank"
-					class="block rounded-lg px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+					class="block rounded-lg px-3 py-2.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
 				>
 					Strategy Board ↗
 				</a>
@@ -636,7 +641,7 @@
 				<div class="space-y-1">
 					<a
 						href={resolve('/alliance-selection')}
-						class="block rounded-lg px-3 py-2 text-xs font-semibold transition-colors
+						class="block rounded-lg px-3 py-2.5 text-xs font-semibold transition-colors
 							{activePath === '/alliance-selection'
 							? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
 							: 'text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/40'}"
@@ -651,7 +656,7 @@
 				<div class="space-y-1">
 					<a
 						href={resolve('/admin')}
-						class="block rounded-lg px-3 py-2 text-xs font-semibold transition-colors
+						class="block rounded-lg px-3 py-2.5 text-xs font-semibold transition-colors
 							{activePath === '/admin'
 							? 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300'
 							: 'text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/40'}"

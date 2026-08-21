@@ -152,9 +152,9 @@
 
 	<!-- Camera Viewport -->
 	<div
-		class="relative overflow-hidden rounded-3xl border border-slate-200/80 bg-slate-900 shadow-lg dark:border-slate-800/80"
+		class="relative flex min-h-[260px] items-center justify-center overflow-hidden rounded-3xl border border-slate-200/80 bg-slate-900 shadow-lg dark:border-slate-800/80"
 	>
-		<div id="reader" class="w-full"></div>
+		<div id="reader" class="min-h-[260px] w-full"></div>
 	</div>
 
 	<!-- Scanner Instructions -->

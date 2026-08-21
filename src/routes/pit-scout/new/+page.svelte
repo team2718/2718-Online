@@ -193,7 +193,7 @@
 						bind:value={form.scoutName}
 						placeholder="e.g. Alex"
 						required
-						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-base text-slate-900 outline-none placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 sm:text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
 					/>
 				</div>
 
@@ -210,7 +210,7 @@
 						bind:value={form.teamNumber}
 						placeholder="e.g. 2718"
 						required
-						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-base text-slate-900 outline-none placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 sm:text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
 					/>
 				</div>
 
@@ -221,7 +221,7 @@
 					<select
 						id="driverYOE"
 						bind:value={form.driverYOE}
-						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-base text-slate-900 outline-none focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 sm:text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
 					>
 						{#each OPTIONS.yoe as y (y)}<option>{y}</option>{/each}
 					</select>
@@ -251,7 +251,7 @@
 					<select
 						id="drivetrain"
 						bind:value={form.drivetrain}
-						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-base text-slate-900 outline-none focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 sm:text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
 					>
 						{#each OPTIONS.drivetrain as d (d)}<option>{d}</option>{/each}
 					</select>
@@ -267,7 +267,7 @@
 					<select
 						id="hopperCapacity"
 						bind:value={form.hopperCapacity}
-						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-base text-slate-900 outline-none focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 sm:text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
 					>
 						{#each OPTIONS.hopper as h (h)}<option>{h}</option>{/each}
 					</select>
@@ -283,7 +283,7 @@
 					<select
 						id="shooterType"
 						bind:value={form.shooterType}
-						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-base text-slate-900 outline-none focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 sm:text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
 					>
 						{#each OPTIONS.shooter as s (s)}<option>{s}</option>{/each}
 					</select>
@@ -299,7 +299,7 @@
 					<select
 						id="intakeType"
 						bind:value={form.intakeType}
-						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-base text-slate-900 outline-none focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 sm:text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
 					>
 						{#each OPTIONS.intake as i (i)}<option>{i}</option>{/each}
 					</select>
@@ -314,7 +314,7 @@
 						type="number"
 						bind:value={form.weightLbs}
 						placeholder="e.g. 115"
-						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-base text-slate-900 outline-none placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 sm:text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
 					/>
 				</div>
 
@@ -330,7 +330,7 @@
 						type="text"
 						bind:value={form.fuelPerSecond}
 						placeholder="e.g. 3.5"
-						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-base text-slate-900 outline-none placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 sm:text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
 					/>
 				</div>
 
@@ -341,7 +341,7 @@
 					<select
 						id="climb"
 						bind:value={form.climb}
-						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-base text-slate-900 outline-none focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 sm:text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
 					>
 						{#each OPTIONS.climb as climbOption (climbOption)}<option>{climbOption}</option>{/each}
 					</select>
@@ -383,7 +383,7 @@
 					<select
 						id="autoStart"
 						bind:value={form.autoStart}
-						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-base text-slate-900 outline-none focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 sm:text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
 					>
 						{#each OPTIONS.autoStart as a (a)}<option>{a}</option>{/each}
 					</select>
@@ -438,7 +438,7 @@
 						bind:value={form.knownIssues}
 						rows="2"
 						placeholder="e.g. Belt slips under high load, intake occasionally jams"
-						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs text-slate-900 outline-none placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-base text-slate-900 outline-none placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 sm:text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
 					></textarea>
 				</div>
 
@@ -451,7 +451,7 @@
 						bind:value={form.comments}
 						rows="3"
 						placeholder="e.g. Clean electrical wiring, very organized drive team, fast cycle potential"
-						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs text-slate-900 outline-none placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-base text-slate-900 outline-none placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20 sm:text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
 					></textarea>
 				</div>
 			</div>
