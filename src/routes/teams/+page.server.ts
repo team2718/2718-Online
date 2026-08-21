@@ -8,9 +8,14 @@ export async function load() {
 		db.select().from(teams).orderBy(asc(teams.number)).all(),
 		db
 			.select({
-				red1: matches.red1, red2: matches.red2, red3: matches.red3,
-				blue1: matches.blue1, blue2: matches.blue2, blue3: matches.blue3,
-				redScore: matches.redScore, blueScore: matches.blueScore
+				red1: matches.red1,
+				red2: matches.red2,
+				red3: matches.red3,
+				blue1: matches.blue1,
+				blue2: matches.blue2,
+				blue3: matches.blue3,
+				redScore: matches.redScore,
+				blueScore: matches.blueScore
 			})
 			.from(matches)
 			.where(and(eq(matches.matchType, 'qualification'), isNotNull(matches.redScore)))
@@ -29,12 +34,16 @@ export async function load() {
 		for (const t of redTeams) {
 			if (!recordMap.has(t)) recordMap.set(t, { wins: 0, losses: 0, ties: 0 });
 			const rec = recordMap.get(t)!;
-			if (redWon) rec.wins++; else if (blueWon) rec.losses++; else rec.ties++;
+			if (redWon) rec.wins++;
+			else if (blueWon) rec.losses++;
+			else rec.ties++;
 		}
 		for (const t of blueTeams) {
 			if (!recordMap.has(t)) recordMap.set(t, { wins: 0, losses: 0, ties: 0 });
 			const rec = recordMap.get(t)!;
-			if (blueWon) rec.wins++; else if (redWon) rec.losses++; else rec.ties++;
+			if (blueWon) rec.wins++;
+			else if (redWon) rec.losses++;
+			else rec.ties++;
 		}
 	}
 
@@ -45,9 +54,7 @@ export async function load() {
 			epop: epopMap.get(t.number) ?? null,
 			record: recordMap.get(t.number) ?? { wins: 0, losses: 0, ties: 0 },
 			rank:
-				t.metadata != null &&
-				'rank' in t.metadata &&
-				typeof t.metadata.rank === 'number'
+				t.metadata != null && 'rank' in t.metadata && typeof t.metadata.rank === 'number'
 					? (t.metadata.rank as number)
 					: null,
 			rankingPoints:

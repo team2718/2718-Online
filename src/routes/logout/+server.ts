@@ -1,14 +1,21 @@
 import { redirect } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { db } from '$lib/server/db';
-import { admin_sessions } from '$lib/server/db/schema';
-import { eq } from 'drizzle-orm';
+import { deleteSession } from '$lib/server/services/auth.service';
 
 export const GET: RequestHandler = async ({ cookies }) => {
-	const sessionToken = cookies.get('admin-auth');
-	if (sessionToken) {
-		await db.delete(admin_sessions).where(eq(admin_sessions.cookieId, sessionToken)).run();
+	const sessionId = cookies.get('admin-auth');
+	if (sessionId) {
+		await deleteSession(sessionId);
+		cookies.delete('admin-auth', { path: '/' });
 	}
-	cookies.delete('admin-auth', { path: '/' });
+	throw redirect(303, '/');
+};
+
+export const POST: RequestHandler = async ({ cookies }) => {
+	const sessionId = cookies.get('admin-auth');
+	if (sessionId) {
+		await deleteSession(sessionId);
+		cookies.delete('admin-auth', { path: '/' });
+	}
 	throw redirect(303, '/');
 };

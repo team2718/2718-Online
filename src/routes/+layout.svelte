@@ -5,7 +5,11 @@
 	import '../app.css';
 	interface Props {
 		children: Snippet;
-		data: { teamSearchList: { number: number; name: string }[]; isAdmin: boolean; isPrivileged: boolean };
+		data: {
+			teamSearchList: { number: number; name: string }[];
+			isAdmin: boolean;
+			isPrivileged: boolean;
+		};
 	}
 	let { children, data }: Props = $props();
 

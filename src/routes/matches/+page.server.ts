@@ -17,10 +17,16 @@ export async function load({ url }: { url: URL }) {
 		db
 			.select({ id: matches.id, matchNumber: matches.matchNumber, matchType: matches.matchType })
 			.from(matches)
-			.where(or(
-				eq(matches.red1, OUR_TEAM), eq(matches.red2, OUR_TEAM), eq(matches.red3, OUR_TEAM),
-				eq(matches.blue1, OUR_TEAM), eq(matches.blue2, OUR_TEAM), eq(matches.blue3, OUR_TEAM)
-			))
+			.where(
+				or(
+					eq(matches.red1, OUR_TEAM),
+					eq(matches.red2, OUR_TEAM),
+					eq(matches.red3, OUR_TEAM),
+					eq(matches.blue1, OUR_TEAM),
+					eq(matches.blue2, OUR_TEAM),
+					eq(matches.blue3, OUR_TEAM)
+				)
+			)
 			.orderBy(asc(matches.matchNumber))
 			.all()
 	]);
@@ -31,20 +37,43 @@ export async function load({ url }: { url: URL }) {
 
 	const match = await db.select().from(matches).where(eq(matches.id, matchId)).get();
 	if (!match) {
-		return { matchId, match: null, allMatches, ourMatches, matchTeams: null, error: `Match "${matchId}" not found.` };
+		return {
+			matchId,
+			match: null,
+			allMatches,
+			ourMatches,
+			matchTeams: null,
+			error: `Match "${matchId}" not found.`
+		};
 	}
 
-	const teamNums = [match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3].filter(
-		(n): n is number => n != null
-	);
+	const teamNums = [
+		match.red1,
+		match.red2,
+		match.red3,
+		match.blue1,
+		match.blue2,
+		match.blue3
+	].filter((n): n is number => n != null);
 
 	if (teamNums.length === 0) {
-		return { matchId, match, allMatches, ourMatches, matchTeams: { red: [], blue: [] }, error: null };
+		return {
+			matchId,
+			match,
+			allMatches,
+			ourMatches,
+			matchTeams: { red: [], blue: [] },
+			error: null
+		};
 	}
 
 	const [allReports, allPitReports, teamRows, epopMap] = await Promise.all([
 		db.select().from(scoutingReports).where(inArray(scoutingReports.teamNumber, teamNums)).all(),
-		db.select().from(pitScoutingReports).where(inArray(pitScoutingReports.teamNumber, teamNums)).all(),
+		db
+			.select()
+			.from(pitScoutingReports)
+			.where(inArray(pitScoutingReports.teamNumber, teamNums))
+			.all(),
 		db.select().from(teams).where(inArray(teams.number, teamNums)).all(),
 		match.matchType === 'playoff' ? getEpop() : getEpopBeforeMatch(match.matchNumber)
 	]);
@@ -96,11 +125,16 @@ export async function load({ url }: { url: URL }) {
 			};
 		}
 
-		let autoFuelSum = 0, teleFuelSum = 0;
+		let autoFuelSum = 0,
+			teleFuelSum = 0;
 		let fuelCount = 0;
-		let defSum = 0, defCount = 0;
-		let passSum = 0, passCount = 0;
-		let climbL1Count = 0, climbL2Count = 0, climbL3Count = 0;
+		let defSum = 0,
+			defCount = 0;
+		let passSum = 0,
+			passCount = 0;
+		let climbL1Count = 0,
+			climbL2Count = 0,
+			climbL3Count = 0;
 
 		for (const r of reports) {
 			const d = r.data;
@@ -108,8 +142,14 @@ export async function load({ url }: { url: URL }) {
 			autoFuelSum += Number(d.autoFuel) || 0;
 			teleFuelSum += Number(d.teleFuelScore) || 0;
 			if ((d.teleFuelScoredAny ?? Number(d.teleFuelScore) > 0) === true) fuelCount++;
-			if (d.teleDidDef) { defSum += Number(d.teleDefScore) || 0; defCount++; }
-			if (d.teleDidPass) { passSum += Number(d.telePassScore) || 0; passCount++; }
+			if (d.teleDidDef) {
+				defSum += Number(d.teleDefScore) || 0;
+				defCount++;
+			}
+			if (d.teleDidPass) {
+				passSum += Number(d.telePassScore) || 0;
+				passCount++;
+			}
 			const climbType = d.climbType ?? 0;
 			if (climbType == 1) climbL1Count++;
 			if (climbType == 2) climbL2Count++;

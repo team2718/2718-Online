@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Badge, Button, Heading } from 'flowbite-svelte';
+	import { Button, Heading } from 'flowbite-svelte';
 	import { CheckCircleSolid, CloseCircleSolid } from 'flowbite-svelte-icons';
 
 	let { data } = $props();
@@ -13,7 +13,13 @@
 	<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
 		<div>
 			<Heading tag="h1" class="text-3xl font-bold">Pit Scouting</Heading>
-			<a href="https://frc.nexus/en/event/2026daly/team/2718/map" target="_blank" rel="noopener noreferrer" class="mt-1 inline-block text-sm font-medium text-blue-600 hover:underline">View Pit Map →</a>
+			<a
+				href="https://frc.nexus/en/event/2026daly/team/2718/map"
+				target="_blank"
+				rel="noopener noreferrer"
+				class="mt-1 inline-block text-sm font-medium text-blue-600 hover:underline"
+				>View Pit Map →</a
+			>
 			{#if teams.length > 0}
 				<p class="mt-1 text-sm text-gray-500">
 					<span class="font-semibold text-green-600">{scouted} scouted</span>
@@ -29,7 +35,11 @@
 	{#if teams.length > 0}
 		<div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
 			{#each teams as team, i}
-				<div class="flex items-center justify-between px-4 py-3 {i > 0 ? 'border-t border-gray-100' : ''} hover:bg-gray-50">
+				<div
+					class="flex items-center justify-between px-4 py-3 {i > 0
+						? 'border-t border-gray-100'
+						: ''} hover:bg-gray-50"
+				>
 					<div class="flex min-w-0 flex-1 items-center gap-3">
 						{#if team.pitScouted}
 							<CheckCircleSolid class="h-5 w-5 shrink-0 text-green-500" />

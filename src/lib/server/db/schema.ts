@@ -1,5 +1,5 @@
 import { relations, sql } from 'drizzle-orm';
-import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 import type { PitScoutReportData, ScoutingReportData } from '$lib/types';
 
 export const teams = sqliteTable('teams', {
@@ -8,48 +8,67 @@ export const teams = sqliteTable('teams', {
 	metadata: text('metadata', { mode: 'json' }).$type<Record<string, unknown>>()
 });
 
-export const matches = sqliteTable('matches', {
-	id: text('id').primaryKey(),
-	matchNumber: integer('matchNumber').notNull(),
-	matchType: text('matchType'), // 'practice' | 'qualification' | 'playoff'
-	red1: integer('red1'),
-	red2: integer('red2'),
-	red3: integer('red3'),
-	blue1: integer('blue1'),
-	blue2: integer('blue2'),
-	blue3: integer('blue3'),
-	redScore: integer('red_score'),
-	blueScore: integer('blue_score')
-});
+export const matches = sqliteTable(
+	'matches',
+	{
+		id: text('id').primaryKey(),
+		matchNumber: integer('matchNumber').notNull(),
+		matchType: text('matchType'), // 'practice' | 'qualification' | 'playoff'
+		red1: integer('red1'),
+		red2: integer('red2'),
+		red3: integer('red3'),
+		blue1: integer('blue1'),
+		blue2: integer('blue2'),
+		blue3: integer('blue3'),
+		redScore: integer('red_score'),
+		blueScore: integer('blue_score')
+	},
+	(table) => [index('idx_matches_match_type').on(table.matchType)]
+);
 
-export const scoutingReports = sqliteTable('scouting_reports', {
-	id: integer('id').primaryKey(),
-	matchId: text('match_id')
-		.notNull()
-		.references(() => matches.id),
-	teamNumber: integer('team_number')
-		.notNull()
-		.references(() => teams.number),
-	scouterName: text('scouter_name').notNull(),
-	data: text('data', { mode: 'json' }).$type<ScoutingReportData>(),
-	createdAt: integer('created_at').default(sql`(strftime('%s', 'now'))`)
-});
+export const scoutingReports = sqliteTable(
+	'scouting_reports',
+	{
+		id: integer('id').primaryKey(),
+		matchId: text('match_id')
+			.notNull()
+			.references(() => matches.id, { onDelete: 'cascade' }),
+		teamNumber: integer('team_number')
+			.notNull()
+			.references(() => teams.number, { onDelete: 'cascade' }),
+		scouterName: text('scouter_name').notNull(),
+		data: text('data', { mode: 'json' }).$type<ScoutingReportData>(),
+		createdAt: integer('created_at').default(sql`(strftime('%s', 'now'))`)
+	},
+	(table) => [
+		index('idx_scouting_reports_match_id').on(table.matchId),
+		index('idx_scouting_reports_team_number').on(table.teamNumber)
+	]
+);
 
-export const pitScoutingReports = sqliteTable('pit_scouting_reports', {
-	id: integer('id').primaryKey({ autoIncrement: true }),
-	teamNumber: integer('team_number')
-		.notNull()
-		.references(() => teams.number),
-	scouterName: text('scouter_name').notNull(),
-	data: text('data', { mode: 'json' }).$type<PitScoutReportData>(),
-	createdAt: integer('created_at').default(sql`(strftime('%s', 'now'))`)
-});
+export const pitScoutingReports = sqliteTable(
+	'pit_scouting_reports',
+	{
+		id: integer('id').primaryKey({ autoIncrement: true }),
+		teamNumber: integer('team_number')
+			.notNull()
+			.references(() => teams.number, { onDelete: 'cascade' }),
+		scouterName: text('scouter_name').notNull(),
+		data: text('data', { mode: 'json' }).$type<PitScoutReportData>(),
+		createdAt: integer('created_at').default(sql`(strftime('%s', 'now'))`)
+	},
+	(table) => [index('idx_pit_reports_team_number').on(table.teamNumber)]
+);
 
-export const admin_sessions = sqliteTable('admin_sessions', {
-	cookieId: text('cookie_id').primaryKey(),
-	level: text('level').notNull().default('admin'),
-	createdAt: integer('created_at').default(sql`(strftime('%s', 'now'))`)
-});
+export const admin_sessions = sqliteTable(
+	'admin_sessions',
+	{
+		cookieId: text('cookie_id').primaryKey(),
+		level: text('level').notNull().default('admin'),
+		createdAt: integer('created_at').default(sql`(strftime('%s', 'now'))`)
+	},
+	(table) => [index('idx_admin_sessions_created').on(table.createdAt)]
+);
 
 export const eventSettings = sqliteTable('event_settings', {
 	key: text('key').primaryKey(),

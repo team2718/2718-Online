@@ -35,7 +35,10 @@
 
 	// --- Mobile menu ---
 	let mobileOpen = $state(false);
-	$effect(() => { page.url.pathname; mobileOpen = false; });
+	$effect(() => {
+		page.url.pathname;
+		mobileOpen = false;
+	});
 
 	// --- Search ---
 	let query = $state('');
@@ -62,7 +65,10 @@
 
 	function onKeydown(e: KeyboardEvent) {
 		if (!showDropdown) {
-			if (e.key === 'Escape') { query = ''; searchRef?.blur(); }
+			if (e.key === 'Escape') {
+				query = '';
+				searchRef?.blur();
+			}
 			return;
 		}
 		if (e.key === 'ArrowDown') {
@@ -82,7 +88,10 @@
 		}
 	}
 
-	$effect(() => { query; selectedIndex = -1; });
+	$effect(() => {
+		query;
+		selectedIndex = -1;
+	});
 
 	// --- Auth popover ---
 	let authOpen = $state(false);
@@ -156,7 +165,7 @@
 <nav class="px-4 py-3">
 	<div class="hidden items-center md:grid md:grid-cols-[1fr_auto_1fr]">
 		<!-- Left: Brand -->
-		<a href="/" class="text-xl font-semibold text-gray-900 whitespace-nowrap dark:text-white">
+		<a href="/" class="text-xl font-semibold whitespace-nowrap text-gray-900 dark:text-white">
 			2718 Online
 		</a>
 
@@ -167,8 +176,8 @@
 					href={link.href}
 					class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors
 						{activePath === link.href
-							? 'text-blue-600'
-							: 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}"
+						? 'text-blue-600'
+						: 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}"
 				>
 					{link.label}
 				</a>
@@ -180,8 +189,8 @@
 					href={link.href}
 					class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors
 						{activePath === link.href
-							? 'text-blue-600'
-							: 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}"
+						? 'text-blue-600'
+						: 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}"
 				>
 					{link.label}
 				</a>
@@ -192,8 +201,8 @@
 					href="/alliance-selection"
 					class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors
 						{activePath === '/alliance-selection'
-							? 'text-green-700'
-							: 'text-green-600 hover:bg-green-50 hover:text-green-800'}"
+						? 'text-green-700'
+						: 'text-green-600 hover:bg-green-50 hover:text-green-800'}"
 				>
 					Alliance Selection
 				</a>
@@ -203,9 +212,7 @@
 				<a
 					href="/admin"
 					class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors
-						{activePath === '/admin'
-							? 'text-red-600'
-							: 'text-red-500 hover:bg-red-50 hover:text-red-700'}"
+						{activePath === '/admin' ? 'text-red-600' : 'text-red-500 hover:bg-red-50 hover:text-red-700'}"
 				>
 					Admin
 				</a>
@@ -216,8 +223,18 @@
 		<div class="flex items-center justify-end gap-2">
 			<div class="relative">
 				<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-					<svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"/>
+					<svg
+						class="h-4 w-4 text-gray-400"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke="currentColor"
+						stroke-width="2"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"
+						/>
 					</svg>
 				</div>
 				<input
@@ -228,10 +245,12 @@
 					onkeydown={onKeydown}
 					type="search"
 					placeholder="Search"
-					class="w-44 rounded-lg border border-gray-200 bg-gray-50 py-1.5 pr-3 pl-9 text-sm text-gray-800 placeholder:text-gray-400 outline-none transition-all focus:w-60 focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"
+					class="w-44 rounded-lg border border-gray-200 bg-gray-50 py-1.5 pr-3 pl-9 text-sm text-gray-800 transition-all outline-none placeholder:text-gray-400 focus:w-60 focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"
 				/>
 				{#if showDropdown}
-					<div class="absolute top-full right-0 z-50 mt-1 w-72 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
+					<div
+						class="absolute top-full right-0 z-50 mt-1 w-72 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg"
+					>
 						{#each results as team, i}
 							<button
 								type="button"
@@ -256,15 +275,29 @@
 					aria-label="Authenticate"
 					title={isAdmin ? 'Admin' : isPrivileged ? 'Privileged' : 'Authenticate'}
 				>
-					<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+					<svg
+						class="h-5 w-5"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke="currentColor"
+						stroke-width="2"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+						/>
 					</svg>
 				</button>
 
 				{#if authOpen}
-					<div class="absolute top-full right-0 z-50 mt-2 w-64 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
+					<div
+						class="absolute top-full right-0 z-50 mt-2 w-64 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg"
+					>
 						<div class="p-3">
-							<p class="mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">Authenticate</p>
+							<p class="mb-2 text-xs font-semibold tracking-wide text-gray-500 uppercase">
+								Authenticate
+							</p>
 							<input
 								type="password"
 								bind:value={authPassword}
@@ -309,21 +342,40 @@
 				title={isAdmin ? 'Admin' : isPrivileged ? 'Privileged' : 'Authenticate'}
 			>
 				<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-					<path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+					/>
 				</svg>
 			</button>
 			<button
-				onclick={() => { mobileOpen = !mobileOpen; authOpen = false; }}
+				onclick={() => {
+					mobileOpen = !mobileOpen;
+					authOpen = false;
+				}}
 				class="rounded-lg p-2 text-gray-500 hover:bg-gray-100 focus:outline-none"
 				aria-label="Toggle menu"
 			>
 				{#if mobileOpen}
-					<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+					<svg
+						class="h-5 w-5"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke="currentColor"
+						stroke-width="2"
+					>
+						<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
 					</svg>
 				{:else}
-					<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+					<svg
+						class="h-5 w-5"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke="currentColor"
+						stroke-width="2"
+					>
+						<path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
 					</svg>
 				{/if}
 			</button>
@@ -333,7 +385,7 @@
 	<!-- Mobile auth popover (shown below the top bar when open) -->
 	{#if authOpen && mobileOpen === false}
 		<div bind:this={mobileAuthPanelRef} class="mt-2 border-t border-gray-100 pt-3 md:hidden">
-			<p class="mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">Authenticate</p>
+			<p class="mb-2 text-xs font-semibold tracking-wide text-gray-500 uppercase">Authenticate</p>
 			<input
 				type="password"
 				bind:value={authPassword}
@@ -370,9 +422,7 @@
 					<a
 						href={link.href}
 						class="block rounded-md px-3 py-2 text-sm font-medium
-							{activePath === link.href
-								? 'bg-blue-50 text-blue-600'
-								: 'text-gray-700 hover:bg-gray-100'}"
+							{activePath === link.href ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}"
 					>
 						{link.label}
 					</a>
@@ -384,9 +434,7 @@
 					<a
 						href={link.href}
 						class="block rounded-md px-3 py-2 text-sm font-medium
-							{activePath === link.href
-								? 'bg-blue-50 text-blue-600'
-								: 'text-gray-700 hover:bg-gray-100'}"
+							{activePath === link.href ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}"
 					>
 						{link.label}
 					</a>
@@ -399,8 +447,8 @@
 						href="/alliance-selection"
 						class="block rounded-md px-3 py-2 text-sm font-medium
 							{activePath === '/alliance-selection'
-								? 'bg-green-50 text-green-700'
-								: 'text-green-600 hover:bg-green-50 hover:text-green-800'}"
+							? 'bg-green-50 text-green-700'
+							: 'text-green-600 hover:bg-green-50 hover:text-green-800'}"
 					>
 						Alliance Selection
 					</a>
@@ -413,8 +461,8 @@
 						href="/admin"
 						class="block rounded-md px-3 py-2 text-sm font-medium
 							{activePath === '/admin'
-								? 'bg-red-50 text-red-600'
-								: 'text-red-500 hover:bg-red-50 hover:text-red-700'}"
+							? 'bg-red-50 text-red-600'
+							: 'text-red-500 hover:bg-red-50 hover:text-red-700'}"
 					>
 						Admin
 					</a>
@@ -424,8 +472,18 @@
 			<!-- Mobile search -->
 			<div class="relative mt-3">
 				<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-					<svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"/>
+					<svg
+						class="h-4 w-4 text-gray-400"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke="currentColor"
+						stroke-width="2"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"
+						/>
 					</svg>
 				</div>
 				<input

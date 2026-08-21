@@ -1,8 +1,13 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { getEventSetting, setEventSetting } from '$lib/server/db';
+import { getEventSetting, setEventSetting } from '$lib/server/services/settings.service';
 
-const EMPTY_ALLIANCES: (number | null)[][] = Array.from({ length: 8 }, () => [null, null, null, null]);
+const EMPTY_ALLIANCES: (number | null)[][] = Array.from({ length: 8 }, () => [
+	null,
+	null,
+	null,
+	null
+]);
 
 async function loadState(): Promise<{ alliances: (number | null)[][]; version: number }> {
 	const raw = await getEventSetting('allianceSelection');
@@ -32,7 +37,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
 	if (body.reset) {
 		const newVersion = (await loadState()).version + 1;
-		await setEventSetting('allianceSelection', JSON.stringify({ alliances: EMPTY_ALLIANCES, version: newVersion }));
+		await setEventSetting(
+			'allianceSelection',
+			JSON.stringify({ alliances: EMPTY_ALLIANCES, version: newVersion })
+		);
 		return json({ version: newVersion });
 	}
 

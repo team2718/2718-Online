@@ -1,33 +1,45 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { createHash } from 'crypto';
 import { dev } from '$app/environment';
-import { ADMIN_PASSWORD_HASH, PRIVILEGED_PASSWORD_HASH, ADMIN_SESSION_EXPIRY_HOURS } from '$lib/server/config';
-import { saveAdminSessionKey } from '$lib/server/db';
+import { ADMIN_SESSION_EXPIRY_HOURS } from '$lib/server/config';
+import {
+	verifyPassword,
+	createSession,
+	isRateLimited,
+	recordAuthFailure,
+	recordAuthSuccess
+} from '$lib/server/services/auth.service';
 
-export const POST: RequestHandler = async ({ request, cookies }) => {
-	const body = await request.json();
+export const POST: RequestHandler = async ({ request, cookies, getClientAddress }) => {
+	const ip = getClientAddress ? getClientAddress() : 'unknown';
+
+	if (isRateLimited(ip)) {
+		return json(
+			{ error: 'Too many failed login attempts. Please wait 5 minutes before trying again.' },
+			{ status: 429 }
+		);
+	}
+
+	let body: { password?: string };
+	try {
+		body = await request.json();
+	} catch {
+		return json({ error: 'Invalid JSON request' }, { status: 400 });
+	}
+
 	const password = body?.password;
-
-	if (typeof password !== 'string') {
-		return json({ error: 'Invalid input' }, { status: 400 });
+	if (typeof password !== 'string' || !password) {
+		return json({ error: 'Password is required' }, { status: 400 });
 	}
 
-	const hashed = createHash('sha256').update(password).digest('hex');
-
-	let level: 'admin' | 'privileged' | null = null;
-	if (hashed === ADMIN_PASSWORD_HASH) {
-		level = 'admin';
-	} else if (hashed === PRIVILEGED_PASSWORD_HASH) {
-		level = 'privileged';
-	}
-
+	const level = verifyPassword(password);
 	if (!level) {
+		recordAuthFailure(ip);
 		return json({ error: 'Incorrect password' }, { status: 401 });
 	}
 
-	const sessionToken = crypto.randomUUID();
-	await saveAdminSessionKey(sessionToken, level);
+	recordAuthSuccess(ip);
+	const sessionToken = await createSession(level);
 
 	cookies.set('admin-auth', sessionToken, {
 		path: '/',
@@ -37,5 +49,5 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		maxAge: 60 * 60 * ADMIN_SESSION_EXPIRY_HOURS
 	});
 
-	return json({ level });
+	return json({ success: true, level });
 };

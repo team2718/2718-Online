@@ -98,10 +98,12 @@
 					<a
 						href="/matches?match={encodeURIComponent(m.id)}"
 						class="rounded-lg border px-3 py-1.5 text-sm font-bold transition-colors
-							{m.matchType === 'qualification' ? 'border-green-200 bg-green-50 text-green-700 hover:bg-green-100' :
-							 m.matchType === 'practice' ? 'border-yellow-200 bg-yellow-50 text-yellow-700 hover:bg-yellow-100' :
-							 'border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100'}
-							{data.matchId === m.id ? 'ring-2 ring-offset-1 ring-current' : ''}"
+							{m.matchType === 'qualification'
+							? 'border-green-200 bg-green-50 text-green-700 hover:bg-green-100'
+							: m.matchType === 'practice'
+								? 'border-yellow-200 bg-yellow-50 text-yellow-700 hover:bg-yellow-100'
+								: 'border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100'}
+							{data.matchId === m.id ? 'ring-2 ring-current ring-offset-1' : ''}"
 					>
 						{matchFullLabel(m)}
 					</a>
@@ -123,7 +125,7 @@
 						setTimeout(() => filterInputEl?.focus(), 30);
 					}
 				}}
-				class="flex w-56 items-center justify-between gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm hover:border-gray-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+				class="flex w-56 items-center justify-between gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm hover:border-gray-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 focus:outline-none"
 			>
 				{#if selectedMatch}
 					<span class="font-bold text-gray-800">{matchFullLabel(selectedMatch)}</span>
@@ -131,7 +133,9 @@
 					<span class="text-gray-400">Select a match…</span>
 				{/if}
 				<svg
-					class="h-4 w-4 shrink-0 text-gray-400 transition-transform {pickerOpen ? 'rotate-180' : ''}"
+					class="h-4 w-4 shrink-0 text-gray-400 transition-transform {pickerOpen
+						? 'rotate-180'
+						: ''}"
 					fill="none"
 					stroke="currentColor"
 					stroke-width="2"
@@ -151,7 +155,9 @@
 		</div>
 
 		{#if pickerOpen}
-			<div class="absolute left-0 top-full z-30 mt-1 w-64 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
+			<div
+				class="absolute top-full left-0 z-30 mt-1 w-64 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg"
+			>
 				<!-- Search -->
 				<div class="border-b border-gray-100 p-2">
 					<input
@@ -159,26 +165,39 @@
 						bind:value={filterText}
 						type="text"
 						placeholder="Filter matches…"
-						class="w-full rounded-md border border-gray-200 px-2 py-1.5 text-sm focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100"
+						class="w-full rounded-md border border-gray-200 px-2 py-1.5 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none"
 					/>
 				</div>
 				<!-- Match list -->
 				<div class="max-h-72 overflow-y-auto py-1">
 					{#each filteredMatchGroups as group}
 						{#if group.matches.length > 0}
-							<p class="px-3 pb-0.5 pt-2 text-[10px] font-bold tracking-widest text-gray-400 uppercase">
+							<p
+								class="px-3 pt-2 pb-0.5 text-[10px] font-bold tracking-widest text-gray-400 uppercase"
+							>
 								{group.label}
 							</p>
 							{#each group.matches as m}
 								<button
 									type="button"
 									onclick={() => selectMatch(m.id)}
-									class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm hover:bg-gray-50 {selectedMatchId === m.id ? 'bg-blue-50' : ''}"
+									class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm hover:bg-gray-50 {selectedMatchId ===
+									m.id
+										? 'bg-blue-50'
+										: ''}"
 								>
-									<span class="min-w-[2.5rem] rounded px-1.5 py-0.5 text-center text-xs font-bold {matchTypeColor(m.matchType)}">
+									<span
+										class="min-w-[2.5rem] rounded px-1.5 py-0.5 text-center text-xs font-bold {matchTypeColor(
+											m.matchType
+										)}"
+									>
 										{matchShortLabel(m)}
 									</span>
-									<span class="font-medium {selectedMatchId === m.id ? 'text-blue-700' : 'text-gray-700'}">
+									<span
+										class="font-medium {selectedMatchId === m.id
+											? 'text-blue-700'
+											: 'text-gray-700'}"
+									>
 										{matchFullLabel(m)}
 									</span>
 								</button>
@@ -235,7 +254,9 @@
 					</div>
 					<!-- Blue -->
 					<div class="px-4 py-3">
-						<p class="mb-2 text-xs font-bold tracking-wider text-blue-400 uppercase">Blue Alliance</p>
+						<p class="mb-2 text-xs font-bold tracking-wider text-blue-400 uppercase">
+							Blue Alliance
+						</p>
 						<div class="flex items-baseline gap-4">
 							<div>
 								<p class="text-2xl font-black text-blue-600">{blueEpopPred.toFixed(1)}</p>
@@ -258,9 +279,13 @@
 				</div>
 				<!-- Win probability bar -->
 				<div class="border-t border-gray-100 px-4 py-3">
-					<p class="mb-2 text-xs font-bold tracking-wider text-gray-400 uppercase">Win Probability</p>
+					<p class="mb-2 text-xs font-bold tracking-wider text-gray-400 uppercase">
+						Win Probability
+					</p>
 					<div class="flex items-center gap-3">
-						<span class="w-12 text-right text-sm font-black text-red-600">{(winProbRed * 100).toFixed(0)}%</span>
+						<span class="w-12 text-right text-sm font-black text-red-600"
+							>{(winProbRed * 100).toFixed(0)}%</span
+						>
 						<div class="relative h-4 flex-1 overflow-hidden rounded-full bg-gray-100">
 							<div
 								class="absolute inset-y-0 left-0 rounded-l-full bg-red-400 transition-all"
@@ -271,7 +296,9 @@
 								style="width: {(winProbBlue * 100).toFixed(1)}%"
 							></div>
 						</div>
-						<span class="w-12 text-sm font-black text-blue-600">{(winProbBlue * 100).toFixed(0)}%</span>
+						<span class="w-12 text-sm font-black text-blue-600"
+							>{(winProbBlue * 100).toFixed(0)}%</span
+						>
 					</div>
 				</div>
 			</div>
@@ -313,26 +340,38 @@
 	{:else if !data.matchId}
 		<div class="rounded-xl border-2 border-dashed border-gray-200 bg-white p-12 text-center">
 			<p class="text-lg font-bold text-gray-400">Select a match above to begin</p>
-			<p class="mt-1 text-sm text-gray-400">Scouting data and pit info for all six robots will appear here.</p>
+			<p class="mt-1 text-sm text-gray-400">
+				Scouting data and pit info for all six robots will appear here.
+			</p>
 		</div>
 	{/if}
 </div>
 
-{#snippet teamCard(team: NonNullable<typeof data.matchTeams>['red'][number], alliance: 'red' | 'blue')}
+{#snippet teamCard(
+	team: NonNullable<typeof data.matchTeams>['red'][number],
+	alliance: 'red' | 'blue'
+)}
 	{@const accentBorder = alliance === 'red' ? 'border-l-red-400' : 'border-l-blue-400'}
 	{@const accentText = alliance === 'red' ? 'text-red-600' : 'text-blue-600'}
-	<div class="overflow-hidden rounded-xl border border-gray-200 border-l-4 {accentBorder} bg-white shadow-sm">
+	<div
+		class="overflow-hidden rounded-xl border border-l-4 border-gray-200 {accentBorder} bg-white shadow-sm"
+	>
 		<!-- Team header -->
-		<div class="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-100">
-			<div class="min-w-0 flex-1 mr-3 flex items-center gap-x-1.5">
-				<a href="/teams/{team.number}" class="shrink-0 text-lg font-black {accentText} hover:underline">
+		<div class="flex items-center justify-between border-b border-gray-100 bg-gray-50 px-4 py-3">
+			<div class="mr-3 flex min-w-0 flex-1 items-center gap-x-1.5">
+				<a
+					href="/teams/{team.number}"
+					class="shrink-0 text-lg font-black {accentText} hover:underline"
+				>
 					{team.number}
 				</a>
 				<span class="min-w-0 truncate text-sm font-semibold text-gray-600">{team.name}</span>
 			</div>
-			<div class="flex items-center gap-2 shrink-0">
+			<div class="flex shrink-0 items-center gap-2">
 				{#if team.epop != null}
-					<span class="rounded-full bg-purple-100 px-2 py-0.5 text-xs font-semibold text-purple-700">
+					<span
+						class="rounded-full bg-purple-100 px-2 py-0.5 text-xs font-semibold text-purple-700"
+					>
 						ePOP {team.epop.toFixed(1)}
 					</span>
 				{/if}
@@ -379,7 +418,8 @@
 					<p class="text-xs font-semibold tracking-wider text-gray-400 uppercase">Passing</p>
 					{#if team.avgPassScore != null}
 						<p class="text-lg font-black text-violet-600">
-							{team.avgPassScore.toFixed(1)}<span class="text-xs font-normal text-gray-400">/5</span>
+							{team.avgPassScore.toFixed(1)}<span class="text-xs font-normal text-gray-400">/5</span
+							>
 						</p>
 						<p class="text-xs text-gray-400">{team.passPercent}% of matches</p>
 					{:else}
@@ -397,9 +437,15 @@
 				<div class="px-3 py-2.5 text-center">
 					<p class="text-xs font-semibold tracking-wider text-gray-400 uppercase">Climb Ability</p>
 					<div class="mt-1 flex flex-col items-center gap-1 text-xs">
-						<p class="font-semibold {team.climbL1Pct > 0 ? 'text-gray-700' : 'text-gray-300'}">L1: {team.climbL1Pct}%</p>
-						<p class="font-semibold {team.climbL2Pct > 0 ? 'text-gray-700' : 'text-gray-300'}">L2: {team.climbL2Pct}%</p>
-						<p class="font-semibold {team.climbL3Pct > 0 ? 'text-gray-700' : 'text-gray-300'}">L3: {team.climbL3Pct}%</p>
+						<p class="font-semibold {team.climbL1Pct > 0 ? 'text-gray-700' : 'text-gray-300'}">
+							L1: {team.climbL1Pct}%
+						</p>
+						<p class="font-semibold {team.climbL2Pct > 0 ? 'text-gray-700' : 'text-gray-300'}">
+							L2: {team.climbL2Pct}%
+						</p>
+						<p class="font-semibold {team.climbL3Pct > 0 ? 'text-gray-700' : 'text-gray-300'}">
+							L3: {team.climbL3Pct}%
+						</p>
 					</div>
 				</div>
 			</div>
@@ -407,7 +453,7 @@
 
 		{#if team.pit}
 			<!-- Pit info -->
-			<div class="px-4 py-3 bg-gray-50">
+			<div class="bg-gray-50 px-4 py-3">
 				<p class="mb-2 text-xs font-bold tracking-wider text-gray-400 uppercase">Pit Scouting</p>
 				<div class="grid grid-cols-3 gap-2 text-xs">
 					<div>
@@ -416,11 +462,14 @@
 					</div>
 					<div>
 						<span class="text-gray-400">Shooter:</span>
-						<span class="ml-1 font-semibold text-gray-700">{team.pit.data?.shooterType ?? '—'}</span>
+						<span class="ml-1 font-semibold text-gray-700">{team.pit.data?.shooterType ?? '—'}</span
+						>
 					</div>
 					<div>
 						<span class="text-gray-400">Under Trench:</span>
-						<span class="ml-1 font-semibold text-gray-700">{team.canGoUnderTrench ? 'Yes' : 'No'}</span>
+						<span class="ml-1 font-semibold text-gray-700"
+							>{team.canGoUnderTrench ? 'Yes' : 'No'}</span
+						>
 					</div>
 				</div>
 			</div>

@@ -5,9 +5,14 @@
 	let { data } = $props();
 
 	let scanner: Html5Qrcode;
-	let notification: { message: string; type: 'success' | 'error' | 'warning' } | null = $state(null);
+	let notification: { message: string; type: 'success' | 'error' | 'warning' } | null =
+		$state(null);
 
-	const showNotification = (message: string, type: 'success' | 'error' | 'warning', shouldPause: boolean) => {
+	const showNotification = (
+		message: string,
+		type: 'success' | 'error' | 'warning',
+		shouldPause: boolean
+	) => {
 		notification = { message, type };
 
 		if (shouldPause) {
@@ -29,7 +34,8 @@
 			{ facingMode: 'environment' },
 			{ fps: 10, qrbox: { width: 250, height: 250 } },
 			async (decodedText: string) => {
-				if (notification && (notification.type === 'success' || notification.type === 'warning')) return;
+				if (notification && (notification.type === 'success' || notification.type === 'warning'))
+					return;
 
 				try {
 					const formData = new FormData();
@@ -70,10 +76,10 @@
 		<a
 			href="/admin"
 			title="Change in Admin settings"
-			class="rounded-full border px-3 py-0.5 text-xs font-bold uppercase tracking-wide
+			class="rounded-full border px-3 py-0.5 text-xs font-bold tracking-wide uppercase
 				{data.matchType === 'practice'
-					? 'border-orange-200 bg-orange-50 text-orange-700'
-					: 'border-green-200 bg-green-50 text-green-700'}"
+				? 'border-orange-200 bg-orange-50 text-orange-700'
+				: 'border-green-200 bg-green-50 text-green-700'}"
 		>
 			{data.matchType === 'practice' ? 'Practice' : 'Qualification'} mode
 		</a>
@@ -86,10 +92,14 @@
 
 {#if notification}
 	<div class="pointer-events-none fixed inset-0 z-50 flex items-center justify-center">
-		<div class="min-w-56 rounded-xl px-10 py-5 text-center text-lg font-bold text-white shadow-2xl
-			{notification.type === 'success' ? 'bg-green-800' :
-			 notification.type === 'warning' ? 'bg-orange-600' :
-			                                   'bg-red-700'}">
+		<div
+			class="min-w-56 rounded-xl px-10 py-5 text-center text-lg font-bold text-white shadow-2xl
+			{notification.type === 'success'
+				? 'bg-green-800'
+				: notification.type === 'warning'
+					? 'bg-orange-600'
+					: 'bg-red-700'}"
+		>
 			{notification.message}
 		</div>
 	</div>

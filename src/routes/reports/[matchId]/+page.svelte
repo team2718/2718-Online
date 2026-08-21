@@ -1,244 +1,340 @@
 <script lang="ts">
-    import { enhance } from '$app/forms';
-    import { matchFullLabel } from '$lib/matchUtils';
+	import { enhance } from '$app/forms';
+	import { matchFullLabel } from '$lib/matchUtils';
 
-    let { data } = $props();
+	let { data } = $props();
 
-    const m = $derived(data.match);
-    const reports = $derived(data.reports ?? []);
+	const m = $derived(data.match);
+	const reports = $derived(data.reports ?? []);
 
-    // Build a map of teamNumber → reports[] for quick lookup
-    const reportsByTeam = $derived.by(() => {
-        const map = new Map<number, typeof reports>();
-        for (const r of reports) {
-            if (!map.has(r.teamNumber)) map.set(r.teamNumber, []);
-            map.get(r.teamNumber)!.push(r);
-        }
-        return map;
-    });
+	// Build a map of teamNumber → reports[] for quick lookup
+	const reportsByTeam = $derived.by(() => {
+		const map = new Map<number, typeof reports>();
+		for (const r of reports) {
+			if (!map.has(r.teamNumber)) map.set(r.teamNumber, []);
+			map.get(r.teamNumber)!.push(r);
+		}
+		return map;
+	});
 
-    // Resolve alliance slots from schedule or from report data
-    const redSlots = $derived.by((): (number | null)[] => {
-        if (m?.red1 || m?.red2 || m?.red3) return [m.red1, m.red2, m.red3];
-        // Fall back: teams that reported Red alliance (0)
-        return reports.filter((r) => r.data?.alliance === 0).map((r) => r.teamNumber);
-    });
+	// Resolve alliance slots from schedule or from report data
+	const redSlots = $derived.by((): (number | null)[] => {
+		if (m?.red1 || m?.red2 || m?.red3) return [m.red1, m.red2, m.red3];
+		// Fall back: teams that reported Red alliance (0)
+		return reports.filter((r) => r.data?.alliance === 0).map((r) => r.teamNumber);
+	});
 
-    const blueSlots = $derived.by((): (number | null)[] => {
-        if (m?.blue1 || m?.blue2 || m?.blue3) return [m.blue1, m.blue2, m.blue3];
-        return reports.filter((r) => r.data?.alliance === 1).map((r) => r.teamNumber);
-    });
+	const blueSlots = $derived.by((): (number | null)[] => {
+		if (m?.blue1 || m?.blue2 || m?.blue3) return [m.blue1, m.blue2, m.blue3];
+		return reports.filter((r) => r.data?.alliance === 1).map((r) => r.teamNumber);
+	});
 
-    const matchLabel = $derived(m ? matchFullLabel(m) : data.matchId);
+	const matchLabel = $derived(m ? matchFullLabel(m) : data.matchId);
 
-    const reportCount = $derived(reports.length);
-
-    function climbLabel(v: number | undefined) {
-        return ['None', 'L1', 'L2', 'L3'][v ?? 0] ?? 'None';
-    }
-    function cardLabel(v: number | undefined) {
-        return ['None', 'Yellow', 'Red'][v ?? 0] ?? 'None';
-    }
-    function posLabel(v: number | undefined) {
-        return ['L Trench', 'L Bump', 'Center', 'R Bump', 'R Trench'][v ?? 2] ?? '—';
-    }
-    function yn(v: boolean | undefined) {
-        return v ? '✓' : '✗';
-    }
+	function climbLabel(v: number | undefined) {
+		return ['None', 'L1', 'L2', 'L3'][v ?? 0] ?? 'None';
+	}
+	function cardLabel(v: number | undefined) {
+		return ['None', 'Yellow', 'Red'][v ?? 0] ?? 'None';
+	}
+	function posLabel(v: number | undefined) {
+		return ['L Trench', 'L Bump', 'Center', 'R Bump', 'R Trench'][v ?? 2] ?? '—';
+	}
+	function yn(v: boolean | undefined) {
+		return v ? '✓' : '✗';
+	}
 </script>
 
 <div class="mx-auto max-w-5xl px-3 py-5">
-    <!-- Header -->
-    <div class="mb-5">
-        <a href="/reports" class="text-sm text-blue-600 hover:underline">← All Reports</a>
-        <div class="mt-1 flex flex-wrap items-baseline gap-3">
-            <h1 class="text-2xl font-black text-gray-900">{matchLabel}</h1>
-            <a
-                href="/matches?match={m?.id ?? data.matchId}"
-                class="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 transition-colors hover:bg-blue-100"
-            >
-                Match Analysis <span class="text-blue-400">↗</span>
-            </a>
-        </div>
-    </div>
+	<!-- Header -->
+	<div class="mb-5">
+		<a href="/reports" class="text-sm text-blue-600 hover:underline">← All Reports</a>
+		<div class="mt-1 flex flex-wrap items-baseline gap-3">
+			<h1 class="text-2xl font-black text-gray-900">{matchLabel}</h1>
+			<a
+				href="/matches?match={m?.id ?? data.matchId}"
+				class="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 transition-colors hover:bg-blue-100"
+			>
+				Match Analysis <span class="text-blue-400">↗</span>
+			</a>
+		</div>
+	</div>
 
-    <!-- Red Alliance -->
-    <div class="mb-4">
-        <p class="mb-2 text-xs font-bold tracking-widest text-red-500 uppercase">Red Alliance</p>
-        <div class="grid grid-cols-3 gap-2">
-            {#each [redSlots[0], redSlots[1], redSlots[2]] as teamNum}
-                {@const teamReports = teamNum != null ? (reportsByTeam.get(teamNum) ?? []) : []}
-                <div class="overflow-hidden rounded-xl border bg-white shadow-sm
-                    {teamReports.length > 0 ? 'border-red-200' : 'border-gray-200'}">
-                    <!-- Team header -->
-                    <div class="border-b px-2 py-2 text-center
-                        {teamReports.length > 0 ? 'border-red-100 bg-red-50' : 'border-gray-100 bg-gray-50'}">
-                        {#if teamNum != null}
-                            <a href="/teams/{teamNum}"
-                               class="block text-base font-black leading-tight hover:underline
-                                   {teamReports.length > 0 ? 'text-red-700' : 'text-gray-400'}">
-                                {teamNum}
-                            </a>
-                            {#if teamReports.length === 1}
-                                <p class="truncate text-[10px] text-gray-400">{teamReports[0].scouterName}</p>
-                            {:else if teamReports.length > 1}
-                                <p class="text-[10px] font-semibold text-orange-400">{teamReports.length} reports</p>
-                            {:else}
-                                <p class="text-[10px] text-gray-400 italic">No report</p>
-                            {/if}
-                        {:else}
-                            <span class="text-sm text-gray-300">—</span>
-                        {/if}
-                    </div>
+	<!-- Red Alliance -->
+	<div class="mb-4">
+		<p class="mb-2 text-xs font-bold tracking-widest text-red-500 uppercase">Red Alliance</p>
+		<div class="grid grid-cols-3 gap-2">
+			{#each [redSlots[0], redSlots[1], redSlots[2]] as teamNum}
+				{@const teamReports = teamNum != null ? (reportsByTeam.get(teamNum) ?? []) : []}
+				<div
+					class="overflow-hidden rounded-xl border bg-white shadow-sm
+                    {teamReports.length > 0 ? 'border-red-200' : 'border-gray-200'}"
+				>
+					<!-- Team header -->
+					<div
+						class="border-b px-2 py-2 text-center
+                        {teamReports.length > 0
+							? 'border-red-100 bg-red-50'
+							: 'border-gray-100 bg-gray-50'}"
+					>
+						{#if teamNum != null}
+							<a
+								href="/teams/{teamNum}"
+								class="block text-base leading-tight font-black hover:underline
+                                   {teamReports.length > 0 ? 'text-red-700' : 'text-gray-400'}"
+							>
+								{teamNum}
+							</a>
+							{#if teamReports.length === 1}
+								<p class="truncate text-[10px] text-gray-400">{teamReports[0].scouterName}</p>
+							{:else if teamReports.length > 1}
+								<p class="text-[10px] font-semibold text-orange-400">
+									{teamReports.length} reports
+								</p>
+							{:else}
+								<p class="text-[10px] text-gray-400 italic">No report</p>
+							{/if}
+						{:else}
+							<span class="text-sm text-gray-300">—</span>
+						{/if}
+					</div>
 
-                    {#each teamReports as report, i}
-                        {#if teamReports.length > 1}
-                            <div class="{i > 0 ? 'border-t border-orange-100' : ''} px-2 pt-1">
-                                <p class="text-[9px] font-semibold uppercase tracking-wide text-orange-400">{'Report '}{i + 1} · {report.scouterName}</p>
-                            </div>
-                        {/if}
-                        <div class="space-y-2 p-2 text-[11px]">
-                            <!-- Alliance/position -->
-                            <div class="text-gray-500">{posLabel(report.data?.startingPosition)}</div>
+					{#each teamReports as report, i}
+						{#if teamReports.length > 1}
+							<div class="{i > 0 ? 'border-t border-orange-100' : ''} px-2 pt-1">
+								<p class="text-[9px] font-semibold tracking-wide text-orange-400 uppercase">
+									{'Report '}{i + 1} · {report.scouterName}
+								</p>
+							</div>
+						{/if}
+						<div class="space-y-2 p-2 text-[11px]">
+							<!-- Alliance/position -->
+							<div class="text-gray-500">{posLabel(report.data?.startingPosition)}</div>
 
-                            <!-- Auto -->
-                            <div>
-                                <p class="font-semibold text-gray-600 uppercase tracking-wide text-[9px] mb-0.5">Auto</p>
-                                <div class="grid grid-cols-2 gap-x-1 gap-y-0.5 text-gray-700">
-                                    <span>Move</span><span class="font-semibold {report.data?.didLeave ? 'text-green-600' : 'text-gray-400'}">{yn(report.data?.didLeave)}</span>
-                                    <span>Climb</span><span class="font-semibold {report.data?.autoClimbed ? 'text-green-600' : 'text-gray-400'}">{yn(report.data?.autoClimbed)}</span>
-                                    <span>Scored</span><span class="font-semibold text-blue-600">{report.data?.autoFuel ?? 0}</span>
-                                    <span>Missed</span><span class="font-semibold text-red-400">{report.data?.autoFuelMissed ?? 0}</span>
-                                </div>
-                            </div>
+							<!-- Auto -->
+							<div>
+								<p class="mb-0.5 text-[9px] font-semibold tracking-wide text-gray-600 uppercase">
+									Auto
+								</p>
+								<div class="grid grid-cols-2 gap-x-1 gap-y-0.5 text-gray-700">
+									<span>Move</span><span
+										class="font-semibold {report.data?.didLeave
+											? 'text-green-600'
+											: 'text-gray-400'}">{yn(report.data?.didLeave)}</span
+									>
+									<span>Climb</span><span
+										class="font-semibold {report.data?.autoClimbed
+											? 'text-green-600'
+											: 'text-gray-400'}">{yn(report.data?.autoClimbed)}</span
+									>
+									<span>Scored</span><span class="font-semibold text-blue-600"
+										>{report.data?.autoFuel ?? 0}</span
+									>
+									<span>Missed</span><span class="font-semibold text-red-400"
+										>{report.data?.autoFuelMissed ?? 0}</span
+									>
+								</div>
+							</div>
 
-                            <!-- Teleop -->
-                            <div>
-                                <p class="font-semibold text-gray-600 uppercase tracking-wide text-[9px] mb-0.5">Teleop</p>
-                                <div class="grid grid-cols-2 gap-x-1 gap-y-0.5 text-gray-700">
-                                    <span>Fuel</span><span class="font-semibold {report.data?.teleFuelScoredAny ? '' : 'text-gray-400'}">{report.data?.teleFuelScoredAny ? `${report.data?.teleFuelScore}/5` : '—'}</span>
-                                    <span>Pass</span><span class="font-semibold {report.data?.teleDidPass ? '' : 'text-gray-400'}">{report.data?.teleDidPass ? `${report.data?.telePassScore}/5` : '—'}</span>
-                                    <span>Def</span><span class="font-semibold {report.data?.teleDidDef ? '' : 'text-gray-400'}">{report.data?.teleDidDef ? `${report.data?.teleDefScore}/5` : '—'}</span>
-                                </div>
-                            </div>
+							<!-- Teleop -->
+							<div>
+								<p class="mb-0.5 text-[9px] font-semibold tracking-wide text-gray-600 uppercase">
+									Teleop
+								</p>
+								<div class="grid grid-cols-2 gap-x-1 gap-y-0.5 text-gray-700">
+									<span>Fuel</span><span
+										class="font-semibold {report.data?.teleFuelScoredAny ? '' : 'text-gray-400'}"
+										>{report.data?.teleFuelScoredAny
+											? `${report.data?.teleFuelScore}/5`
+											: '—'}</span
+									>
+									<span>Pass</span><span
+										class="font-semibold {report.data?.teleDidPass ? '' : 'text-gray-400'}"
+										>{report.data?.teleDidPass ? `${report.data?.telePassScore}/5` : '—'}</span
+									>
+									<span>Def</span><span
+										class="font-semibold {report.data?.teleDidDef ? '' : 'text-gray-400'}"
+										>{report.data?.teleDidDef ? `${report.data?.teleDefScore}/5` : '—'}</span
+									>
+								</div>
+							</div>
 
-                            <!-- Endgame -->
-                            <div>
-                                <p class="font-semibold text-gray-600 uppercase tracking-wide text-[9px] mb-0.5">Endgame</p>
-                                <div class="grid grid-cols-2 gap-x-1 gap-y-0.5 text-gray-700">
-                                    <span>Climb</span><span class="font-semibold">{climbLabel(report.data?.climbType)}</span>
-                                    {#if (report.data?.cardReceived ?? 0) > 0}
-                                        <span>Card</span><span class="font-semibold text-yellow-600">{cardLabel(report.data?.cardReceived)}</span>
-                                    {/if}
-                                </div>
-                            </div>
+							<!-- Endgame -->
+							<div>
+								<p class="mb-0.5 text-[9px] font-semibold tracking-wide text-gray-600 uppercase">
+									Endgame
+								</p>
+								<div class="grid grid-cols-2 gap-x-1 gap-y-0.5 text-gray-700">
+									<span>Climb</span><span class="font-semibold"
+										>{climbLabel(report.data?.climbType)}</span
+									>
+									{#if (report.data?.cardReceived ?? 0) > 0}
+										<span>Card</span><span class="font-semibold text-yellow-600"
+											>{cardLabel(report.data?.cardReceived)}</span
+										>
+									{/if}
+								</div>
+							</div>
 
-                            <!-- Notes -->
-                            {#if (data.isAdmin || data.isPrivileged) && report.data?.notes}
-                                <p class="text-gray-500 italic leading-snug">{report.data.notes}</p>
-                            {/if}
+							<!-- Notes -->
+							{#if (data.isAdmin || data.isPrivileged) && report.data?.notes}
+								<p class="leading-snug text-gray-500 italic">{report.data.notes}</p>
+							{/if}
 
-                            <!-- Admin delete -->
-                            {#if data.isAdmin}
-                                <form method="POST" action="?/deleteReport" use:enhance class="pt-1">
-                                    <input type="hidden" name="id" value={report.id} />
-                                    <button type="submit"
-                                        class="w-full rounded bg-red-50 py-1 text-[10px] font-semibold text-red-500 hover:bg-red-100">
-                                        Delete
-                                    </button>
-                                </form>
-                            {/if}
-                        </div>
-                    {/each}
-                </div>
-            {/each}
-        </div>
-    </div>
+							<!-- Admin delete -->
+							{#if data.isAdmin}
+								<form method="POST" action="?/deleteReport" use:enhance class="pt-1">
+									<input type="hidden" name="id" value={report.id} />
+									<button
+										type="submit"
+										class="w-full rounded bg-red-50 py-1 text-[10px] font-semibold text-red-500 hover:bg-red-100"
+									>
+										Delete
+									</button>
+								</form>
+							{/if}
+						</div>
+					{/each}
+				</div>
+			{/each}
+		</div>
+	</div>
 
-    <!-- Blue Alliance -->
-    <div>
-        <p class="mb-2 text-xs font-bold tracking-widest text-blue-500 uppercase">Blue Alliance</p>
-        <div class="grid grid-cols-3 gap-2">
-            {#each [blueSlots[0], blueSlots[1], blueSlots[2]] as teamNum}
-                {@const teamReports = teamNum != null ? (reportsByTeam.get(teamNum) ?? []) : []}
-                <div class="overflow-hidden rounded-xl border bg-white shadow-sm
-                    {teamReports.length > 0 ? 'border-blue-200' : 'border-gray-200'}">
-                    <div class="border-b px-2 py-2 text-center
-                        {teamReports.length > 0 ? 'border-blue-100 bg-blue-50' : 'border-gray-100 bg-gray-50'}">
-                        {#if teamNum != null}
-                            <a href="/teams/{teamNum}"
-                               class="block text-base font-black leading-tight hover:underline
-                                   {teamReports.length > 0 ? 'text-blue-700' : 'text-gray-400'}">
-                                {teamNum}
-                            </a>
-                            {#if teamReports.length === 1}
-                                <p class="truncate text-[10px] text-gray-400">{teamReports[0].scouterName}</p>
-                            {:else if teamReports.length > 1}
-                                <p class="text-[10px] font-semibold text-orange-400">{teamReports.length} reports</p>
-                            {:else}
-                                <p class="text-[10px] text-gray-400 italic">No report</p>
-                            {/if}
-                        {:else}
-                            <span class="text-sm text-gray-300">—</span>
-                        {/if}
-                    </div>
+	<!-- Blue Alliance -->
+	<div>
+		<p class="mb-2 text-xs font-bold tracking-widest text-blue-500 uppercase">Blue Alliance</p>
+		<div class="grid grid-cols-3 gap-2">
+			{#each [blueSlots[0], blueSlots[1], blueSlots[2]] as teamNum}
+				{@const teamReports = teamNum != null ? (reportsByTeam.get(teamNum) ?? []) : []}
+				<div
+					class="overflow-hidden rounded-xl border bg-white shadow-sm
+                    {teamReports.length > 0 ? 'border-blue-200' : 'border-gray-200'}"
+				>
+					<div
+						class="border-b px-2 py-2 text-center
+                        {teamReports.length > 0
+							? 'border-blue-100 bg-blue-50'
+							: 'border-gray-100 bg-gray-50'}"
+					>
+						{#if teamNum != null}
+							<a
+								href="/teams/{teamNum}"
+								class="block text-base leading-tight font-black hover:underline
+                                   {teamReports.length > 0 ? 'text-blue-700' : 'text-gray-400'}"
+							>
+								{teamNum}
+							</a>
+							{#if teamReports.length === 1}
+								<p class="truncate text-[10px] text-gray-400">{teamReports[0].scouterName}</p>
+							{:else if teamReports.length > 1}
+								<p class="text-[10px] font-semibold text-orange-400">
+									{teamReports.length} reports
+								</p>
+							{:else}
+								<p class="text-[10px] text-gray-400 italic">No report</p>
+							{/if}
+						{:else}
+							<span class="text-sm text-gray-300">—</span>
+						{/if}
+					</div>
 
-                    {#each teamReports as report, i}
-                        {#if teamReports.length > 1}
-                            <div class="{i > 0 ? 'border-t border-orange-100' : ''} px-2 pt-1">
-                                <p class="text-[9px] font-semibold uppercase tracking-wide text-orange-400">{'Report '}{i + 1} · {report.scouterName}</p>
-                            </div>
-                        {/if}
-                        <div class="space-y-2 p-2 text-[11px]">
-                            <div class="text-gray-500">{posLabel(report.data?.startingPosition)}</div>
+					{#each teamReports as report, i}
+						{#if teamReports.length > 1}
+							<div class="{i > 0 ? 'border-t border-orange-100' : ''} px-2 pt-1">
+								<p class="text-[9px] font-semibold tracking-wide text-orange-400 uppercase">
+									{'Report '}{i + 1} · {report.scouterName}
+								</p>
+							</div>
+						{/if}
+						<div class="space-y-2 p-2 text-[11px]">
+							<div class="text-gray-500">{posLabel(report.data?.startingPosition)}</div>
 
-                            <div>
-                                <p class="font-semibold text-gray-600 uppercase tracking-wide text-[9px] mb-0.5">Auto</p>
-                                <div class="grid grid-cols-2 gap-x-1 gap-y-0.5 text-gray-700">
-                                    <span>Move</span><span class="font-semibold {report.data?.didLeave ? 'text-green-600' : 'text-gray-400'}">{yn(report.data?.didLeave)}</span>
-                                    <span>Climb</span><span class="font-semibold {report.data?.autoClimbed ? 'text-green-600' : 'text-gray-400'}">{yn(report.data?.autoClimbed)}</span>
-                                    <span>Scored</span><span class="font-semibold text-blue-600">{report.data?.autoFuel ?? 0}</span>
-                                    <span>Missed</span><span class="font-semibold text-red-400">{report.data?.autoFuelMissed ?? 0}</span>
-                                </div>
-                            </div>
+							<div>
+								<p class="mb-0.5 text-[9px] font-semibold tracking-wide text-gray-600 uppercase">
+									Auto
+								</p>
+								<div class="grid grid-cols-2 gap-x-1 gap-y-0.5 text-gray-700">
+									<span>Move</span><span
+										class="font-semibold {report.data?.didLeave
+											? 'text-green-600'
+											: 'text-gray-400'}">{yn(report.data?.didLeave)}</span
+									>
+									<span>Climb</span><span
+										class="font-semibold {report.data?.autoClimbed
+											? 'text-green-600'
+											: 'text-gray-400'}">{yn(report.data?.autoClimbed)}</span
+									>
+									<span>Scored</span><span class="font-semibold text-blue-600"
+										>{report.data?.autoFuel ?? 0}</span
+									>
+									<span>Missed</span><span class="font-semibold text-red-400"
+										>{report.data?.autoFuelMissed ?? 0}</span
+									>
+								</div>
+							</div>
 
-                            <div>
-                                <p class="font-semibold text-gray-600 uppercase tracking-wide text-[9px] mb-0.5">Teleop</p>
-                                <div class="grid grid-cols-2 gap-x-1 gap-y-0.5 text-gray-700">
-                                    <span>Scored</span><span class="font-semibold {report.data?.teleFuelScoredAny ? 'text-green-600' : 'text-gray-400'}">{report.data?.teleFuelScoredAny ? '✓' : '—'}</span>
-                                    <span>Fuel</span><span class="font-semibold {report.data?.teleFuelScoredAny ? '' : 'text-gray-400'}">{report.data?.teleFuelScoredAny ? `${report.data?.teleFuelScore}/5` : '—'}</span>
-                                    <span>Pass</span><span class="font-semibold {report.data?.teleDidPass ? '' : 'text-gray-400'}">{report.data?.teleDidPass ? `${report.data?.telePassScore}/5` : '—'}</span>
-                                    <span>Def</span><span class="font-semibold {report.data?.teleDidDef ? '' : 'text-gray-400'}">{report.data?.teleDidDef ? `${report.data?.teleDefScore}/5` : '—'}</span>
-                                </div>
-                            </div>
+							<div>
+								<p class="mb-0.5 text-[9px] font-semibold tracking-wide text-gray-600 uppercase">
+									Teleop
+								</p>
+								<div class="grid grid-cols-2 gap-x-1 gap-y-0.5 text-gray-700">
+									<span>Scored</span><span
+										class="font-semibold {report.data?.teleFuelScoredAny
+											? 'text-green-600'
+											: 'text-gray-400'}">{report.data?.teleFuelScoredAny ? '✓' : '—'}</span
+									>
+									<span>Fuel</span><span
+										class="font-semibold {report.data?.teleFuelScoredAny ? '' : 'text-gray-400'}"
+										>{report.data?.teleFuelScoredAny
+											? `${report.data?.teleFuelScore}/5`
+											: '—'}</span
+									>
+									<span>Pass</span><span
+										class="font-semibold {report.data?.teleDidPass ? '' : 'text-gray-400'}"
+										>{report.data?.teleDidPass ? `${report.data?.telePassScore}/5` : '—'}</span
+									>
+									<span>Def</span><span
+										class="font-semibold {report.data?.teleDidDef ? '' : 'text-gray-400'}"
+										>{report.data?.teleDidDef ? `${report.data?.teleDefScore}/5` : '—'}</span
+									>
+								</div>
+							</div>
 
-                            <div>
-                                <p class="font-semibold text-gray-600 uppercase tracking-wide text-[9px] mb-0.5">Endgame</p>
-                                <div class="grid grid-cols-2 gap-x-1 gap-y-0.5 text-gray-700">
-                                    <span>Climb</span><span class="font-semibold">{climbLabel(report.data?.climbType)}</span>
-                                    {#if (report.data?.cardReceived ?? 0) > 0}
-                                        <span>Card</span><span class="font-semibold text-yellow-600">{cardLabel(report.data?.cardReceived)}</span>
-                                    {/if}
-                                </div>
-                            </div>
+							<div>
+								<p class="mb-0.5 text-[9px] font-semibold tracking-wide text-gray-600 uppercase">
+									Endgame
+								</p>
+								<div class="grid grid-cols-2 gap-x-1 gap-y-0.5 text-gray-700">
+									<span>Climb</span><span class="font-semibold"
+										>{climbLabel(report.data?.climbType)}</span
+									>
+									{#if (report.data?.cardReceived ?? 0) > 0}
+										<span>Card</span><span class="font-semibold text-yellow-600"
+											>{cardLabel(report.data?.cardReceived)}</span
+										>
+									{/if}
+								</div>
+							</div>
 
-                            {#if (data.isAdmin || data.isPrivileged) && report.data?.notes}
-                                <p class="text-gray-500 italic leading-snug">{report.data.notes}</p>
-                            {/if}
+							{#if (data.isAdmin || data.isPrivileged) && report.data?.notes}
+								<p class="leading-snug text-gray-500 italic">{report.data.notes}</p>
+							{/if}
 
-                            {#if data.isAdmin}
-                                <form method="POST" action="?/deleteReport" use:enhance class="pt-1">
-                                    <input type="hidden" name="id" value={report.id} />
-                                    <button type="submit"
-                                        class="w-full rounded bg-red-50 py-1 text-[10px] font-semibold text-red-500 hover:bg-red-100">
-                                        Delete
-                                    </button>
-                                </form>
-                            {/if}
-                        </div>
-                    {/each}
-                </div>
-            {/each}
-        </div>
-    </div>
+							{#if data.isAdmin}
+								<form method="POST" action="?/deleteReport" use:enhance class="pt-1">
+									<input type="hidden" name="id" value={report.id} />
+									<button
+										type="submit"
+										class="w-full rounded bg-red-50 py-1 text-[10px] font-semibold text-red-500 hover:bg-red-100"
+									>
+										Delete
+									</button>
+								</form>
+							{/if}
+						</div>
+					{/each}
+				</div>
+			{/each}
+		</div>
+	</div>
 </div>

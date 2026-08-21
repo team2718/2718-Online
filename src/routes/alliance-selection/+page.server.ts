@@ -15,8 +15,10 @@ export async function load({ locals }) {
 
 	// Build per-team scouting aggregates
 	type ReportAgg = {
-		defSum: number; defCount: number;
-		passSum: number; passCount: number;
+		defSum: number;
+		defCount: number;
+		passSum: number;
+		passCount: number;
 		total: number;
 	};
 	const agg = new Map<number, ReportAgg>();
@@ -26,15 +28,25 @@ export async function load({ locals }) {
 		if (!agg.has(tn)) agg.set(tn, { defSum: 0, defCount: 0, passSum: 0, passCount: 0, total: 0 });
 		const a = agg.get(tn)!;
 		a.total++;
-		if (r.data?.teleDidDef) { a.defSum += Number(r.data.teleDefScore) || 0; a.defCount++; }
-		if (r.data?.teleDidPass) { a.passSum += Number(r.data.telePassScore) || 0; a.passCount++; }
+		if (r.data?.teleDidDef) {
+			a.defSum += Number(r.data.teleDefScore) || 0;
+			a.defCount++;
+		}
+		if (r.data?.teleDidPass) {
+			a.passSum += Number(r.data.telePassScore) || 0;
+			a.passCount++;
+		}
 	}
 
 	const teamStats = allTeams.map((t) => {
 		const a = agg.get(t.number);
-		const rank = (t.metadata && typeof t.metadata === 'object' && 'rank' in t.metadata && typeof t.metadata.rank === 'number')
-			? (t.metadata.rank as number)
-			: null;
+		const rank =
+			t.metadata &&
+			typeof t.metadata === 'object' &&
+			'rank' in t.metadata &&
+			typeof t.metadata.rank === 'number'
+				? (t.metadata.rank as number)
+				: null;
 		return {
 			number: t.number,
 			name: t.name,
@@ -43,7 +55,7 @@ export async function load({ locals }) {
 			defScore: a && a.defCount > 0 ? a.defSum / a.defCount : null,
 			passScore: a && a.passCount > 0 ? a.passSum / a.passCount : null,
 			defRate: a && a.total > 0 ? a.defCount / a.total : 0,
-			passRate: a && a.total > 0 ? a.passCount / a.total : 0,
+			passRate: a && a.total > 0 ? a.passCount / a.total : 0
 		};
 	});
 
@@ -62,8 +74,13 @@ export async function load({ locals }) {
 	if (raw) {
 		try {
 			const parsed = JSON.parse(raw);
-			if (Array.isArray(parsed.alliances)) { alliances = parsed.alliances; version = parsed.version ?? 0; }
-		} catch { /* use defaults */ }
+			if (Array.isArray(parsed.alliances)) {
+				alliances = parsed.alliances;
+				version = parsed.version ?? 0;
+			}
+		} catch {
+			/* use defaults */
+		}
 	}
 
 	return { teams: teamStats, alliances, version, isAdmin: locals.admin };

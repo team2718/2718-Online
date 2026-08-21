@@ -1,4 +1,3 @@
-
 # 2718-online
 
 2718 Online is a scouting web app for FRC team 2718 (and friends). It helps teams record and analyze data during competitions.
@@ -36,6 +35,7 @@ npm install -g pnpm
 ```
 
 **On Windows/Mac:**
+
 - Download and install Node.js from [nodejs.org](https://nodejs.org/)
 - Install pnpm: Open a terminal and run `npm install -g pnpm`
 
@@ -101,20 +101,22 @@ All commands need `DATABASE_URL` set, either via `.env` or as a prefix:
 DATABASE_URL=file:local.db pnpm run <command>
 ```
 
-| Command | When to use |
-|---|---|
-| `pnpm run db:push` | **Most common.** Apply schema changes directly to the local database without generating migration files. Use this during development when you change the schema and want to update `local.db` immediately. |
-| `pnpm run db:generate` | Generate SQL migration files in `drizzle/` from your schema changes. Use this when you want a versioned migration record (e.g., before deploying to production or sharing schema changes with teammates). |
-| `pnpm run db:migrate` | Apply the generated migration files in `drizzle/` to the database. Run this after `db:generate` to execute the migrations. |
-| `pnpm run db:studio` | Open Drizzle Studio, a visual browser-based database editor, to inspect and edit data. |
+| Command                | When to use                                                                                                                                                                                                |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm run db:push`     | **Most common.** Apply schema changes directly to the local database without generating migration files. Use this during development when you change the schema and want to update `local.db` immediately. |
+| `pnpm run db:generate` | Generate SQL migration files in `drizzle/` from your schema changes. Use this when you want a versioned migration record (e.g., before deploying to production or sharing schema changes with teammates).  |
+| `pnpm run db:migrate`  | Apply the generated migration files in `drizzle/` to the database. Run this after `db:generate` to execute the migrations.                                                                                 |
+| `pnpm run db:studio`   | Open Drizzle Studio, a visual browser-based database editor, to inspect and edit data.                                                                                                                     |
 
 ### Typical workflow for schema changes
 
 **During development (quick iteration):**
+
 1. Edit `src/lib/server/db/schema.ts`
 2. Run `DATABASE_URL=file:local.db pnpm run db:push`
 
 **When creating a versioned migration (e.g., for production):**
+
 1. Edit `src/lib/server/db/schema.ts`
 2. Run `DATABASE_URL=file:local.db pnpm run db:generate` — creates a `.sql` file in `drizzle/`
 3. Run `DATABASE_URL=file:local.db pnpm run db:migrate` — applies it to the database

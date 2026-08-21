@@ -3,6 +3,8 @@ import { scoutingReports, teams, matches } from '$lib/server/db/schema';
 import { eq, isNull, asc } from 'drizzle-orm';
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
+import { deleteScoutingReport } from '$lib/server/services/scouting.service';
+import { invalidateEpopCache } from '$lib/server/epop';
 
 export const load: PageServerLoad = async () => {
 	const [allReports, ghostTeams] = await Promise.all([
@@ -66,21 +68,24 @@ export const actions: Actions = {
 			.get();
 		if (!report) return fail(404, { error: 'Report not found' });
 
-		// Ensure the target team row exists
-		await db
-			.insert(teams)
-			.values({ number: newTeam, name: `Team ${newTeam}` })
-			.onConflictDoNothing()
-			.run();
+		await db.transaction(async (tx) => {
+			// Ensure the target team row exists
+			await tx
+				.insert(teams)
+				.values({ number: newTeam, name: `Team ${newTeam}` })
+				.onConflictDoNothing()
+				.run();
 
-		// Update both the column and the JSON data field
-		const newData = report.data ? { ...report.data, teamNumber: newTeam } : report.data;
-		await db
-			.update(scoutingReports)
-			.set({ teamNumber: newTeam, data: newData as typeof report.data })
-			.where(eq(scoutingReports.id, reportId))
-			.run();
+			// Update both the column and the JSON data field
+			const newData = report.data ? { ...report.data, teamNumber: newTeam } : report.data;
+			await tx
+				.update(scoutingReports)
+				.set({ teamNumber: newTeam, data: newData as typeof report.data })
+				.where(eq(scoutingReports.id, reportId))
+				.run();
+		});
 
+		invalidateEpopCache();
 		return { success: true, action: 'fixReport' };
 	},
 
@@ -88,7 +93,7 @@ export const actions: Actions = {
 		const formData = await request.formData();
 		const id = formData.get('id');
 		if (typeof id !== 'string') return fail(400, { error: 'Invalid ID' });
-		await db.delete(scoutingReports).where(eq(scoutingReports.id, parseInt(id, 10))).run();
+		await deleteScoutingReport(parseInt(id, 10));
 		return { success: true, action: 'deleteReport' };
 	},
 
@@ -100,7 +105,8 @@ export const actions: Actions = {
 
 		const team = await db.select().from(teams).where(eq(teams.number, teamNum)).get();
 		if (!team) return fail(404, { error: 'Team not found' });
-		if (team.metadata != null) return fail(400, { error: 'Cannot delete a team with TBA metadata' });
+		if (team.metadata != null)
+			return fail(400, { error: 'Cannot delete a team with TBA metadata' });
 
 		const remaining = await db
 			.select({ id: scoutingReports.id })
@@ -116,6 +122,7 @@ export const actions: Actions = {
 		}
 
 		await db.delete(teams).where(eq(teams.number, teamNum)).run();
+		invalidateEpopCache();
 
 		return { success: true, action: 'deleteGhostTeam', teamNum };
 	}

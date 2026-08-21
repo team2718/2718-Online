@@ -118,7 +118,8 @@ async function computeEpopFull(): Promise<EpopResult> {
 		const fuel = Number(r.data.teleFuelScore);
 		if (!fuel) continue;
 		const key = `${r.teamNumber}:${idx}`;
-		if (!rptScoreMap.has(key)) rptScoreMap.set(key, { teamNumber: r.teamNumber, matchIdx: idx, scores: [] });
+		if (!rptScoreMap.has(key))
+			rptScoreMap.set(key, { teamNumber: r.teamNumber, matchIdx: idx, scores: [] });
 		rptScoreMap.get(key)!.scores.push(fuel);
 	}
 	const rptScores = [...rptScoreMap.values()].map(({ teamNumber, matchIdx, scores }) => ({
@@ -162,7 +163,8 @@ async function computeEpopFull(): Promise<EpopResult> {
 			teamScores.get(r.teamNumber)!.push(r.score);
 		}
 		const allAvail = [...teamScores.values()].flat();
-		const globalAvg = allAvail.length > 0 ? allAvail.reduce((s, v) => s + v, 0) / allAvail.length : 1;
+		const globalAvg =
+			allAvail.length > 0 ? allAvail.reduce((s, v) => s + v, 0) / allAvail.length : 1;
 
 		const rawPriors = teamNums.map((num) => {
 			const s = teamScores.get(num);
